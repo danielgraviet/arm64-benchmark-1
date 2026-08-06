@@ -10,7 +10,7 @@ VENDORED_REPO = REPO_ROOT / "workload" / "repos" / "sqlite-utils"
 
 sys.path.insert(0, str(VENDORED_REPO))
 
-from workload import ast_parse, edit, run_tests, search, sql  # noqa: E402
+from workload import ast_parse, edit, run_tests, search, sql
 
 
 def parse_args() -> argparse.Namespace:
