@@ -582,6 +582,7 @@ def chunks(sequence: Iterable[T], size: int) -> Iterable[Iterable[T]]:
         yield itertools.chain([item], itertools.islice(iterator, size - 1))
 
 
+# benchmark: reviewed by scripted agent edit
 def hash_record(record: Dict[str, Any], keys: Optional[Iterable[str]] = None) -> str:
     """
     ``record`` should be a Python dictionary. Returns a sha1 hash of the
