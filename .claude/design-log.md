@@ -69,3 +69,42 @@ what `--n` scales.
 **Next steps:** decide what `--n` scales inside the one-shot pipeline, then
 pin the exact fixed task sequence (search pattern, AST target, edit target,
 SQL query) and checksum composition across all task outputs.
+
+## 2026-08-06 — Concurrency test harness
+
+**Daniel's approach:** small Python orchestrator (not a shell script) to
+launch N parallel `docker run` invocations and collect per-run latency,
+using Python concurrency primitives and `time.monotonic()` for timing —
+shell looping can handle the concurrency but per-run timing is harder to do
+cleanly there. Deliberately not normalizing for the Mac (arm64, more cores)
+vs. EC2 (`c6i.large`, 2 vCPU) core-count mismatch — goal is observing how
+each machine's concurrency curve behaves under this workload, not producing
+a strict apples-to-apples comparison.
+
+**Critique:**
+- Right: `concurrent.futures.ThreadPoolExecutor` submitting
+  `subprocess.run(["docker","run",...])` per worker, timed with
+  `time.monotonic()`, is the correct shape — threads are fine since the
+  measured CPU work happens inside the containers, not in the Python
+  threads. Not caring about core-count parity is legitimate given the
+  stated goal (curve-shape comparison, not normalized throughput).
+- Missed: without a per-container CPU limit (e.g. `--cpus=1`, as already
+  used in the README's own resource-limit example), "concurrency level"
+  doesn't cleanly mean "N simultaneous single-core workloads" — containers
+  freely contend for all host cores, making the latency/throughput curve
+  hard to interpret even for the single-machine curve-shape goal. Open
+  question for Daniel: apply `--cpus=1 --memory=1g` per container (matches
+  README precedent) or let containers contend freely for all cores?
+- Also worth building in cheaply: verify each concurrent run's `checksum`
+  matches the known-good value from the single-container test — a
+  correctness gate proving concurrency doesn't corrupt any individual run,
+  which should be checked before trusting the latency numbers.
+
+**Decision:** each container runs with `--cpus=1 --memory=1g` during
+concurrency testing, matching the README's own resource-limit example, so
+concurrency level cleanly means N simultaneous single-core workloads on
+both the Mac and the EC2 instance.
+
+**Next steps:** run the orchestrator (`scripts/concurrency.py`) at matching
+concurrency levels on both the Mac and the EC2 instance and compare curve
+shape (p50/p95/p99/throughput vs. concurrency level).
