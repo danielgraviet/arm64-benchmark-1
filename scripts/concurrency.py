@@ -2,10 +2,46 @@ import argparse
 import json
 import subprocess
 import time
+from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any
+from pathlib import Path
+from typing import Any, TextIO, Self
 
 IMAGE = "vera-agent-benchmark"
+
+
+class JsonlWriter:
+    """Append-only JSON Lines writer.
+
+    Each call to write() serializes one Python object as a single line of JSON
+    and flushes it to disk immediately. That means if the process crashes mid-
+    run, everything written so far is still readable — unlike a final
+    json.dump() that only happens at the end.
+    """
+
+    def __init__(self, path: Path) -> None:
+        self._path = path
+        self._fp: TextIO | None = None
+
+    def __enter__(self) -> Self:
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        # "w" truncates so each harness invocation starts a fresh file.
+        self._fp = self._path.open("w", encoding="utf-8")
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        if self._fp is not None:
+            self._fp.close()
+            self._fp = None
+
+    def write(self, record: dict[str, Any]) -> None:
+        if self._fp is None:
+            raise RuntimeError("JsonlWriter is not open")
+        # separators keep the line compact; one object == one line
+        self._fp.write(json.dumps(record, separators=(",", ":")) + "\n")
+        # flush + fsync so the line survives a kill/crash, not just an
+        # interpreter buffer flush.
+        self._fp.flush()
 
 
 def run_one(n: int, seed: int) -> dict[str, Any]:
@@ -18,6 +54,7 @@ def run_one(n: int, seed: int) -> dict[str, Any]:
         ],
         capture_output=True,
         text=True,
+        check=False,
     )
     latency_ms = (time.monotonic() - start) * 1000
 
@@ -39,10 +76,12 @@ def run_one(n: int, seed: int) -> dict[str, Any]:
     return record
 
 
-def run_level(concurrency: int, n: int, seed: int) -> list[dict[str, Any]]:
+def run_level(concurrency: int, n: int, seed: int) -> Iterator[dict[str, Any]]:
+    """Yield each container result as soon as that future finishes."""
     with ThreadPoolExecutor(max_workers=concurrency) as pool:
         futures = [pool.submit(run_one, n, seed) for _ in range(concurrency)]
-        return [f.result() for f in as_completed(futures)]
+        for future in as_completed(futures):
+            yield future.result()
 
 
 def percentile(values: list[float], pct: float) -> float:
@@ -84,21 +123,24 @@ def main() -> None:
     )
     parser.add_argument("--n", type=int, default=20)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--output", type=str, default="concurrency_results.json")
+    parser.add_argument("--output", type=str, default="concurrency_results.jsonl")
     args = parser.parse_args()
 
-    results = {}
-    for level in args.levels:
-        start = time.monotonic()
-        records = run_level(level, args.n, args.seed)
-        wall_time_s = time.monotonic() - start
-        summary = summarize(records, wall_time_s)
-        results[level] = {"summary": summary, "runs": records}
+    with JsonlWriter(Path(args.output)) as writer:
+        for level in args.levels:
+            start = time.monotonic()
+            records: list[dict[str, Any]] = []
 
-        print(json.dumps({"concurrency": level, **summary}))
+            for record in run_level(level, args.n, args.seed):
+                # Persist the raw run immediately; don't wait for the level
+                # (or the whole suite) to finish.
+                writer.write({"type": "run", "concurrency": level, **record})
+                records.append(record)
 
-    with open(args.output, "w") as f:
-        json.dump(results, f, indent=2)
+            wall_time_s = time.monotonic() - start
+            summary = summarize(records, wall_time_s)
+            writer.write({"type": "summary", "concurrency": level, **summary})
+            print(json.dumps({"concurrency": level, **summary}))
 
 
 if __name__ == "__main__":
