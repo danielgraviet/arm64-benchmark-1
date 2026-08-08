@@ -12,4 +12,5 @@ dependencies = [
     "sqlite-fts4",
     "tabulate",
     "pytest",
+    "matplotlib>=3.11.1",
 ]
