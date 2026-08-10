@@ -5,7 +5,7 @@ import time
 from collections.abc import Iterator
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Any, TextIO, Self
+from typing import Any, Self, TextIO
 
 IMAGE = "vera-agent-benchmark"
 

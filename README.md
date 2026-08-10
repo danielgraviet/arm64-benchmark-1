@@ -223,5 +223,4 @@ We vendored `sqlite-utils` (pinned at tag 4.1.1) as the single target repo for t
 | test_extract.py | 15 | Lookup-table extraction/dedup from repeated values |
 | test_upsert.py | 18 | Repeated insert/update cycles keyed on hashed PKs |
 
-uv run scripts/concurrency.py --levels 1 8 22 44 88 176 --n 20 --output mac_arm64_concurrency.json
-uv run scripts/concurrency.py --levels 1 8 22 44 88 176 --n 20 --output ecs_amd64_concurrency.json
+# Using RLP / Daytona

@@ -13,4 +13,6 @@ dependencies = [
     "tabulate",
     "pytest",
     "matplotlib>=3.11.1",
+    "daytona>=0.203.0",
+    "rlp-sdk>=0.3.2",
 ]
