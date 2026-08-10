@@ -34,6 +34,10 @@ Docker (`ghcr.io/astral-sh/uv:python3.13-bookworm-slim`) and install via
 `uv sync --frozen --no-dev`. Rebuild the matching snapshot (and local Docker
 image) before comparing if the workload or base image changed.
 
+## EDA
+# Compare latest data/{docker,daytona,rlp}/*.jsonl → eda_output/*.png
+uv run python eda.py
+
 ## Test
 uv run pytest
 
