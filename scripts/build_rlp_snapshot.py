@@ -27,14 +27,14 @@ from rlp import (
 )
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from harness.rlp_snapshots import (  # noqa: E402
+from harness.paths import ROOT
+from harness.rlp_snapshots import (
     delete_native_snapshot_if_exists,
     wait_for_native_snapshot,
 )
-from harness.paths import ROOT  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from snapshot_common import (  # noqa: E402
+from snapshot_common import (
     BASE_IMAGE,
     SNAPSHOT_NAME,
     build_archive,
