@@ -22,18 +22,23 @@ RUN_ENV = {
 AGENT_CMD = "python -m workload.agent"
 
 
-
 class DaytonaRunner:
     def __init__(
         self,
         *,
         snapshot: str = SNAPSHOT_NAME,
         exec_timeout_s: int = DEFAULT_EXEC_TIMEOUT_S,
+        target: str | None = None,
     ) -> None:
         load_dotenv(ROOT / ".env")
         self._snapshot = snapshot
         self._exec_timeout_s = exec_timeout_s
-        self._client = Daytona(DaytonaConfig(connection_pool_maxsize=None))
+        self._target = target
+        config = DaytonaConfig(connection_pool_maxsize=None)
+        if target:
+            config = DaytonaConfig(connection_pool_maxsize=None, target=target)
+        self._client = Daytona(config)
+        print(f"daytona client: target={target!r}")
 
     def run_one(self, n: int, seed: int) -> dict[str, Any]:
         start = time.monotonic()
@@ -60,6 +65,7 @@ class DaytonaRunner:
                 "latency_ms": (time.monotonic() - start) * 1000,
                 "exit_code": exit_code,
                 "sandbox_id": sandbox.id,
+                "target": self._target,
             }
             if exit_code == 0:
                 try:
@@ -77,6 +83,7 @@ class DaytonaRunner:
                 "latency_ms": (time.monotonic() - start) * 1000,
                 "exit_code": -1,
                 "error": f"{type(exc).__name__}: {exc}",
+                "target": self._target,
             }
         finally:
             if sandbox is not None:

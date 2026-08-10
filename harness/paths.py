@@ -1,4 +1,4 @@
-"""Default JSONL output paths under data/<runner>/."""
+"""Default JSONL output paths under data/<runner>/[target/]."""
 
 from __future__ import annotations
 
@@ -8,6 +8,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def default_output_path(runner: str, n: int) -> Path:
+def default_output_path(
+    runner: str,
+    n: int,
+    *,
+    target: str | None = None,
+) -> Path:
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    return ROOT / "data" / runner / f"concurrency_{stamp}_n{n}.jsonl"
+    base = ROOT / "data" / runner
+    if target:
+        base = base / target
+    return base / f"concurrency_{stamp}_n{n}.jsonl"

@@ -1,10 +1,10 @@
-"""Explore concurrency JSONL results across runners (docker / daytona / rlp).
+"""Explore concurrency JSONL results across runners (docker / daytona / rlp / e2b).
 
 Picks the newest ``data/<runner>/concurrency_*.jsonl`` per runner, prints a
 metrics table, and writes comparison charts to ``eda_output/``.
 
-Note: Daytona/RLP latency includes sandbox create + exec + delete; Docker is
-local ``docker run`` wall time.
+Note: Cloud-sandbox latency includes create + exec + delete; Docker is local
+``docker run`` wall time.
 """
 
 from __future__ import annotations
@@ -19,15 +19,16 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "data"
 OUT_DIR = ROOT / "eda_output"
-RUNNERS = ("docker", "daytona", "rlp")
+RUNNERS = ("docker", "daytona", "rlp", "e2b")
 RUNNER_COLORS = {
     "docker": "#4C78A8",  # blue
     "daytona": "#2CA02C",  # green
     "rlp": "#FF7F0E",  # orange
+    "e2b": "#9467BD",  # purple
 }
 
 LATENCY_NOTE = (
-    "Daytona/RLP latency = create + exec + delete; Docker = local docker run wall time"
+    "Cloud latency = create + exec + delete; Docker = local docker run wall time"
 )
 
 
@@ -144,7 +145,7 @@ def plot_grouped_metric(
         bars = ax.bar(
             x + offset, values, width, label=runner, color=runner_color(runner)
         )
-        ax.bar_label(bars, fmt="%.0f", padding=2, fontsize=7, rotation=90)
+        ax.bar_label(bars, fmt="%.0f", padding=2, fontsize=7)
 
     ax.set_xticks(x, [str(level) for level in levels])
     ax.set_xlabel("Concurrency level")

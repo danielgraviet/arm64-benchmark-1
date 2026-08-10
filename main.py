@@ -3,8 +3,10 @@
 Examples:
   uv run main.py --runner daytona --levels 1 2 8 --n 20
   uv run main.py --runner docker --levels 1 8 --n 20
+  uv run main.py --runner e2b --levels 1 8 --n 20
   uv run main.py --runner ec2 --levels 1 8 --n 20
   uv run main.py --runner rlp --levels 1 --n 20
+  uv run main.py --runner rlp --target arm64-test-1 --levels 1 8 --n 20
 """
 
 from __future__ import annotations
@@ -14,29 +16,7 @@ from pathlib import Path
 
 from harness.common import run_suite
 from harness.paths import default_output_path
-from harness.runners import docker, ec2
-from harness.runners.daytona import DaytonaRunner
-from harness.runners.rlp import RlpRunner
-
-RUNNERS = ("docker", "daytona", "rlp", "ec2")
-
-
-def build_run_one(args: argparse.Namespace):
-    if args.runner == "docker":
-        return docker.run_one
-    if args.runner == "ec2":
-        return ec2.run_one
-    if args.runner == "daytona":
-        return DaytonaRunner(
-            snapshot=args.snapshot,
-            exec_timeout_s=args.exec_timeout,
-        ).run_one
-    if args.runner == "rlp":
-        return RlpRunner(
-            snapshot=args.snapshot,
-            exec_timeout_s=args.exec_timeout,
-        ).run_one
-    raise ValueError(f"Unknown runner: {args.runner}")
+from harness.runners import RUNNERS, build_run_one
 
 
 def main() -> None:
@@ -56,28 +36,51 @@ def main() -> None:
         "--output",
         type=str,
         default=None,
-        help="Override JSONL path (default: data/<runner>/concurrency_<ts>_n<n>.jsonl)",
+        help=(
+            "Override JSONL path (default: data/<runner>/[target/]"
+            "concurrency_<ts>_n<n>.jsonl)"
+        ),
     )
     parser.add_argument(
         "--snapshot",
         type=str,
         default="vera-agent-benchmark",
-        help="Snapshot name for daytona/rlp runners",
+        help="Snapshot/template name for daytona/rlp/e2b runners",
     )
     parser.add_argument(
         "--exec-timeout",
         type=int,
         default=600,
-        help="Seconds allowed for process.exec inside each sandbox (daytona/rlp)",
+        help="Seconds allowed for process.exec inside each sandbox",
+    )
+    parser.add_argument(
+        "--target",
+        type=str,
+        default=None,
+        help=(
+            "Region/target for daytona/rlp (e.g. arm64-test-1). "
+            "RLP maps known targets to the matching toolbox URL."
+        ),
+    )
+    parser.add_argument(
+        "--toolbox-url",
+        type=str,
+        default=None,
+        help="Override RLP toolbox proxy URL (defaults from --target map or env)",
     )
     args = parser.parse_args()
+
+    if args.toolbox_url and args.runner != "rlp":
+        parser.error("--toolbox-url is only valid with --runner rlp")
+    if args.target and args.runner not in ("daytona", "rlp"):
+        parser.error("--target is only valid with --runner daytona or rlp")
 
     output = (
         Path(args.output)
         if args.output
-        else default_output_path(args.runner, args.n)
+        else default_output_path(args.runner, args.n, target=args.target)
     )
-    print(f"runner={args.runner} output={output}")
+    print(f"runner={args.runner} target={args.target!r} output={output}")
 
     run_suite(
         levels=args.levels,

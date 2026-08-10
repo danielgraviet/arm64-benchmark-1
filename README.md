@@ -173,7 +173,7 @@ Results land in `data/<runner>/concurrency_<timestamp>_n<n>.jsonl`.
 
 Suggested arguments:
 
-- `--runner`: `docker` | `daytona` | `rlp` | `ec2`
+- `--runner`: `docker` | `daytona` | `rlp` | `e2b` | `ec2`
 - `--levels`: Concurrency levels to sweep
 - `--n`: Workload volume per run
 - `--seed`: Fixed random seed
