@@ -2,9 +2,10 @@
 
 Requires ``E2B_API_KEY`` in the environment (or ``.env``).
 
-Boot from a prebuilt template (default ``vera-agent-benchmark``), built via:
+Boot from a prebuilt template (per-benchmark artifact name), built via:
 
-    uv run scripts/build_e2b_template.py
+    uv run scripts/build_e2b_template.py --benchmark agent
+    uv run scripts/build_e2b_template.py --benchmark analytics
 """
 
 from __future__ import annotations
@@ -16,36 +17,32 @@ from typing import Any
 from dotenv import load_dotenv
 from e2b import CommandExitException, Sandbox
 
+from harness.benchmarks import AGENT, BenchmarkSpec
 from harness.paths import ROOT
 
-TEMPLATE_NAME = "vera-agent-benchmark"
 APP_DIR = "/home/user/app"
 VENV_PYTHON = f"{APP_DIR}/.venv/bin/python"
 DEFAULT_EXEC_TIMEOUT_S = 600
-RUN_ENV = {
-    "PATH": f"{APP_DIR}/.venv/bin:/usr/local/bin:/usr/bin:/bin",
-    "VIRTUAL_ENV": f"{APP_DIR}/.venv",
-    "PYTHONPATH": f"{APP_DIR}/workload/repos/sqlite-utils",
-    "PYTHONHASHSEED": "0",
-}
-# Absolute venv python — E2B command PATH is not always honored the same way
-# as a login shell, which previously hit system python (no pytest).
-AGENT_CMD = f"{VENV_PYTHON} -m workload.agent"
 
 
 class E2bRunner:
     def __init__(
         self,
         *,
-        template: str = TEMPLATE_NAME,
+        spec: BenchmarkSpec = AGENT,
+        template: str | None = None,
         exec_timeout_s: int = DEFAULT_EXEC_TIMEOUT_S,
     ) -> None:
         load_dotenv(ROOT / ".env")
-        self._template = template
+        self._spec = spec
+        self._template = template or spec.artifact_name
         self._exec_timeout_s = exec_timeout_s
-        # Sandbox lifetime must cover create overhead + agent exec.
         self._sandbox_timeout_s = max(exec_timeout_s + 120, 300)
-        print(f"e2b client: template={template!r}")
+        self._run_env = spec.run_env(APP_DIR)
+        self._agent_cmd = spec.agent_command(python=VENV_PYTHON)
+        print(
+            f"e2b client: template={self._template!r} benchmark={spec.id!r}"
+        )
 
     def run_one(self, n: int, seed: int) -> dict[str, Any]:
         start = time.monotonic()
@@ -55,11 +52,12 @@ class E2bRunner:
                 template=self._template,
                 timeout=self._sandbox_timeout_s,
             )
+            argv = " ".join(self._spec.agent_argv(n, seed))
             try:
                 result = sandbox.commands.run(
-                    f"{AGENT_CMD} --n {n} --seed {seed}",
+                    f"{self._agent_cmd} {argv}",
                     cwd=APP_DIR,
-                    envs=RUN_ENV,
+                    envs=self._run_env,
                     timeout=float(self._exec_timeout_s),
                 )
                 exit_code = int(result.exit_code)
@@ -74,6 +72,7 @@ class E2bRunner:
                 "latency_ms": (time.monotonic() - start) * 1000,
                 "exit_code": exit_code,
                 "sandbox_id": sandbox.sandbox_id,
+                "benchmark": self._spec.id,
             }
             if exit_code == 0:
                 try:
@@ -91,6 +90,7 @@ class E2bRunner:
                 "latency_ms": (time.monotonic() - start) * 1000,
                 "exit_code": -1,
                 "error": f"{type(exc).__name__}: {exc}",
+                "benchmark": self._spec.id,
             }
         finally:
             if sandbox is not None:

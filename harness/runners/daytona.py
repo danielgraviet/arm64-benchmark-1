@@ -9,36 +9,37 @@ from typing import Any
 from daytona import CreateSandboxFromSnapshotParams, Daytona, DaytonaConfig
 from dotenv import load_dotenv
 
+from harness.benchmarks import AGENT, BenchmarkSpec
 from harness.paths import ROOT
 
-SNAPSHOT_NAME = "vera-agent-benchmark"
 APP_DIR = "/home/daytona/app"
 DEFAULT_EXEC_TIMEOUT_S = 600
-RUN_ENV = {
-    "PATH": f"{APP_DIR}/.venv/bin:/usr/local/bin:/usr/bin:/bin",
-    "PYTHONPATH": f"{APP_DIR}/workload/repos/sqlite-utils",
-    "PYTHONHASHSEED": "0",
-}
-AGENT_CMD = "python -m workload.agent"
 
 
 class DaytonaRunner:
     def __init__(
         self,
         *,
-        snapshot: str = SNAPSHOT_NAME,
+        spec: BenchmarkSpec = AGENT,
+        snapshot: str | None = None,
         exec_timeout_s: int = DEFAULT_EXEC_TIMEOUT_S,
         target: str | None = None,
     ) -> None:
         load_dotenv(ROOT / ".env")
-        self._snapshot = snapshot
+        self._spec = spec
+        self._snapshot = snapshot or spec.artifact_name
         self._exec_timeout_s = exec_timeout_s
         self._target = target
+        self._run_env = spec.run_env(APP_DIR)
+        self._agent_cmd = spec.agent_command()
         config = DaytonaConfig(connection_pool_maxsize=None)
         if target:
             config = DaytonaConfig(connection_pool_maxsize=None, target=target)
         self._client = Daytona(config)
-        print(f"daytona client: target={target!r}")
+        print(
+            f"daytona client: target={target!r} snapshot={self._snapshot!r} "
+            f"benchmark={spec.id!r}"
+        )
 
     def run_one(self, n: int, seed: int) -> dict[str, Any]:
         start = time.monotonic()
@@ -52,10 +53,11 @@ class DaytonaRunner:
                 ),
                 timeout=120,
             )
+            argv = " ".join(self._spec.agent_argv(n, seed))
             response = sandbox.process.exec(
-                f"{AGENT_CMD} --n {n} --seed {seed}",
+                f"{self._agent_cmd} {argv}",
                 cwd=APP_DIR,
-                env=RUN_ENV,
+                env=self._run_env,
                 timeout=self._exec_timeout_s,
             )
             exit_code = int(response.exit_code or 0)
@@ -66,6 +68,7 @@ class DaytonaRunner:
                 "exit_code": exit_code,
                 "sandbox_id": sandbox.id,
                 "target": self._target,
+                "benchmark": self._spec.id,
             }
             if exit_code == 0:
                 try:
@@ -84,6 +87,7 @@ class DaytonaRunner:
                 "exit_code": -1,
                 "error": f"{type(exc).__name__}: {exc}",
                 "target": self._target,
+                "benchmark": self._spec.id,
             }
         finally:
             if sandbox is not None:

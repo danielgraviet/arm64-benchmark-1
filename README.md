@@ -18,17 +18,34 @@ The primary outputs are:
 ## Repository Structure
 
 ```text
-vera-agent-benchmark/
-├── Dockerfile
-├── pyproject.toml
-├── uv.lock
-├── main.py              # concurrency harness CLI (--runner …)
-├── harness/             # shared harness + runner backends
-├── workload/
-│   └── agent.py         # single-agent workload (container entrypoint)
-├── data/                # JSONL results (gitignored)
+vera-benchmarks/
+├── Dockerfile                 # B1 agent image
+├── Dockerfile.analytics       # B2 analytics image
+├── main.py                    # --benchmark + --runner harness CLI
+├── harness/                   # shared runners, suite, BenchmarkSpec
+├── workload/                  # B1 repo-agent workload
+├── analytics/                 # B2 Parquet/DuckDB workload
+├── data/<benchmark>/<runner>/ # JSONL results (gitignored)
 └── tests/
 ```
+
+Benchmarks share one harness; select with `--benchmark agent|analytics`.
+
+## Analytics benchmark (B2) — decisions
+
+Goal: memory-bandwidth-heavy agent work (local tabular data), not a TPC suite.
+
+| Choice | Decision |
+|---|---|
+| Engine | **DuckDB + PyArrow** — Parquet in/out + SQL joins/filters/aggs in one local stack |
+| Data | **Generated each run** (not baked into the image) from `--n` / `--seed` |
+| Timed path | **Generate → write Parquet → query** (full agent-style path, not query-only) |
+| Scale (`--n`) | ~`n×2k` customers, `n×10k` orders, `n×30k` items |
+| Correctness | Checksum of **query outputs** (same `(n, seed)` ⇒ same checksum across runners) |
+| Harness | Same `run_one(n, seed)` as agent; results under `data/analytics/<runner>/` |
+| Not measuring | Distributed SQL, GPU/ML, or pre-warmed “query-only” latency |
+
+Use a smaller `--n` than agent (e.g. `--n 5`) — default `20` is heavy for analytics.
 
 ## Container Contract
 
@@ -173,6 +190,7 @@ Results land in `data/<runner>/concurrency_<timestamp>_n<n>.jsonl`.
 
 Suggested arguments:
 
+- `--benchmark`: `agent` | `analytics`
 - `--runner`: `docker` | `daytona` | `rlp` | `e2b` | `ec2`
 - `--levels`: Concurrency levels to sweep
 - `--n`: Workload volume per run

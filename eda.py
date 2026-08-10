@@ -1,7 +1,11 @@
 """Explore concurrency JSONL results across runners (docker / daytona / rlp / e2b).
 
-Picks the newest ``data/<runner>/concurrency_*.jsonl`` per runner, prints a
-metrics table, and writes comparison charts to ``eda_output/``.
+Picks the newest ``data/<benchmark>/<runner>/concurrency_*.jsonl`` per runner,
+prints a metrics table, and writes comparison charts to
+``eda_output/<benchmark>/``.
+
+Benchmark folders under ``data/`` are discovered dynamically (e.g. ``agent``,
+``analytics``, ``rl``).
 
 Note: Cloud-sandbox latency includes create + exec + delete; Docker is local
 ``docker run`` wall time.
@@ -9,6 +13,7 @@ Note: Cloud-sandbox latency includes create + exec + delete; Docker is local
 
 from __future__ import annotations
 
+import argparse
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -36,20 +41,36 @@ def runner_color(runner: str) -> str:
     return RUNNER_COLORS.get(runner, "#7F7F7F")
 
 
-def latest_jsonl(runner: str) -> Path | None:
-    paths = sorted((DATA_DIR / runner).glob("concurrency_*.jsonl"))
-    return paths[-1] if paths else None
+def list_benchmark_dirs() -> list[str]:
+    """Return data/<name>/ directories (agent, analytics, rl, …)."""
+    if not DATA_DIR.is_dir():
+        return []
+    return sorted(p.name for p in DATA_DIR.iterdir() if p.is_dir() and not p.name.startswith("."))
 
 
-def discover_datasets() -> dict[str, Path]:
+def latest_jsonl(benchmark: str, runner: str) -> Path | None:
+    """Newest concurrency_*.jsonl under data/<benchmark>/<runner>/[target/]."""
+    base = DATA_DIR / benchmark / runner
+    if not base.is_dir():
+        return None
+    paths = list(base.glob("concurrency_*.jsonl"))
+    # Target subdirs, e.g. data/agent/rlp/arm64-test-1/
+    paths.extend(base.glob("*/concurrency_*.jsonl"))
+    if not paths:
+        return None
+    return sorted(paths)[-1]
+
+
+def discover_datasets(benchmark: str) -> dict[str, Path]:
     found: dict[str, Path] = {}
     for runner in RUNNERS:
-        path = latest_jsonl(runner)
+        path = latest_jsonl(benchmark, runner)
         if path is not None:
             found[runner] = path
     if not found:
         raise FileNotFoundError(
-            f"No concurrency_*.jsonl files under {DATA_DIR}/{{{','.join(RUNNERS)}}}"
+            f"No concurrency_*.jsonl files under "
+            f"{DATA_DIR}/{benchmark}/{{{','.join(RUNNERS)}}}"
         )
     return found
 
@@ -241,42 +262,68 @@ def plot_latency_boxplots(
 
 
 def main() -> None:
-    sources = discover_datasets()
-    loaded = {runner: load_jsonl(path) for runner, path in sources.items()}
-    OUT_DIR.mkdir(exist_ok=True)
+    available = list_benchmark_dirs()
+    parser = argparse.ArgumentParser(description="Vera concurrency EDA")
+    parser.add_argument(
+        "--benchmark",
+        default="agent",
+        choices=available or None,
+        help=(
+            "Which data/<benchmark>/ folder to chart "
+            f"(found: {', '.join(available) or 'none'})"
+        ),
+    )
+    args = parser.parse_args()
 
+    if args.benchmark not in available:
+        raise SystemExit(
+            f"Unknown benchmark folder {args.benchmark!r}. "
+            f"Expected a directory under {DATA_DIR}/ "
+            f"(found: {', '.join(available) or 'none'})"
+        )
+
+    try:
+        sources = discover_datasets(args.benchmark)
+    except FileNotFoundError as exc:
+        raise SystemExit(str(exc)) from exc
+
+    loaded = {runner: load_jsonl(path) for runner, path in sources.items()}
+    out = OUT_DIR / args.benchmark
+    out.mkdir(parents=True, exist_ok=True)
+
+    print(f"benchmark={args.benchmark}")
     print_summary_table(loaded, sources)
 
     plot_grouped_metric(
         loaded,
-        OUT_DIR,
+        out,
         metric_key="p50_ms",
-        title="p50 latency by concurrency",
+        title=f"{args.benchmark}: p50 latency by concurrency",
         ylabel="p50 latency (ms)",
         filename="p50_latency_bars.png",
     )
     plot_grouped_metric(
         loaded,
-        OUT_DIR,
+        out,
         metric_key="p95_ms",
-        title="p95 latency by concurrency",
+        title=f"{args.benchmark}: p95 latency by concurrency",
         ylabel="p95 latency (ms)",
         filename="p95_latency_bars.png",
     )
     plot_grouped_metric(
         loaded,
-        OUT_DIR,
+        out,
         metric_key=None,
-        title="Mean latency by concurrency",
+        title=f"{args.benchmark}: mean latency by concurrency",
         ylabel="mean latency (ms)",
         filename="mean_latency_bars.png",
         from_runs_mean=True,
     )
-    plot_throughput(loaded, OUT_DIR)
-    plot_latency_boxplots(loaded, OUT_DIR)
+    plot_throughput(loaded, out)
+    plot_latency_boxplots(loaded, out)
 
-    print(f"Wrote charts to {OUT_DIR}/")
-    for path in sorted(OUT_DIR.glob("*.png")):
+    print(f"Wrote charts to {out}/")
+    for path in sorted(out.glob("*.png")):
         print(f"  - {path.name}")
 
 

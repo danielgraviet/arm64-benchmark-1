@@ -1,12 +1,9 @@
 """Central concurrency harness CLI.
 
 Examples:
-  uv run main.py --runner daytona --levels 1 2 8 --n 20
-  uv run main.py --runner docker --levels 1 8 --n 20
-  uv run main.py --runner e2b --levels 1 8 --n 20
-  uv run main.py --runner ec2 --levels 1 8 --n 20
-  uv run main.py --runner rlp --levels 1 --n 20
-  uv run main.py --runner rlp --target arm64-test-1 --levels 1 8 --n 20
+  uv run main.py --benchmark agent --runner daytona --levels 1 8 --n 20
+  uv run main.py --benchmark analytics --runner docker --levels 1 8 --n 5
+  uv run main.py --benchmark agent --runner rlp --target arm64-test-1 --levels 1 8
 """
 
 from __future__ import annotations
@@ -14,6 +11,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from harness.benchmarks import BENCHMARK_IDS, get_benchmark
 from harness.common import run_suite
 from harness.paths import default_output_path
 from harness.runners import RUNNERS, build_run_one
@@ -22,10 +20,16 @@ from harness.runners import RUNNERS, build_run_one
 def main() -> None:
     parser = argparse.ArgumentParser(description="Vera concurrency harness")
     parser.add_argument(
+        "--benchmark",
+        default="agent",
+        choices=BENCHMARK_IDS,
+        help="Workload package (agent=B1, analytics=B2)",
+    )
+    parser.add_argument(
         "--runner",
         required=True,
         choices=RUNNERS,
-        help="Worker backend / result folder under data/",
+        help="Worker backend / result folder under data/<benchmark>/",
     )
     parser.add_argument(
         "--levels", type=int, nargs="+", default=[1, 8, 22, 44, 88, 176]
@@ -37,15 +41,15 @@ def main() -> None:
         type=str,
         default=None,
         help=(
-            "Override JSONL path (default: data/<runner>/[target/]"
-            "concurrency_<ts>_n<n>.jsonl)"
+            "Override JSONL path (default: data/<benchmark>/<runner>/"
+            "[target/]concurrency_<ts>_n<n>.jsonl)"
         ),
     )
     parser.add_argument(
         "--snapshot",
         type=str,
-        default="vera-agent-benchmark",
-        help="Snapshot/template name for daytona/rlp/e2b runners",
+        default=None,
+        help="Override snapshot/template name (default: per-benchmark artifact)",
     )
     parser.add_argument(
         "--exec-timeout",
@@ -75,12 +79,22 @@ def main() -> None:
     if args.target and args.runner not in ("daytona", "rlp"):
         parser.error("--target is only valid with --runner daytona or rlp")
 
+    spec = get_benchmark(args.benchmark)
     output = (
         Path(args.output)
         if args.output
-        else default_output_path(args.runner, args.n, target=args.target)
+        else default_output_path(
+            args.runner,
+            args.n,
+            benchmark=args.benchmark,
+            target=args.target,
+        )
     )
-    print(f"runner={args.runner} target={args.target!r} output={output}")
+    print(
+        f"benchmark={args.benchmark} runner={args.runner} "
+        f"target={args.target!r} artifact={args.snapshot or spec.artifact_name!r} "
+        f"output={output}"
+    )
 
     run_suite(
         levels=args.levels,

@@ -1,18 +1,8 @@
-"""Build vera-agent-benchmark on RLP (rl-platform).
+"""Build a native RLP disk snapshot for a Vera benchmark.
 
-Matches Docker/Daytona: same base image + `uv sync --frozen --no-dev`.
-
-Creates a *native* disk snapshot (``POST /vms/:id/snapshots``). The RLP web UI
-and the harness boot from that snapshot's ``manifest_name`` (``snap-<uuid>``).
-
-Requires in `.env`:
-  RLP_API_KEY, RLP_API_URL
-
-For ARM64, pass ``--target arm64-test-1`` (toolbox URL is mapped automatically).
-Do not rely on a sticky x86 ``RLP_TOOLBOX_URL`` when building for ARM64.
-
-    uv run scripts/build_rlp_snapshot.py
-    uv run scripts/build_rlp_snapshot.py --target arm64-test-1
+    uv run scripts/build_rlp_snapshot.py --benchmark agent
+    uv run scripts/build_rlp_snapshot.py --benchmark analytics
+    uv run scripts/build_rlp_snapshot.py --benchmark analytics --target arm64-test-1
 """
 
 from __future__ import annotations
@@ -26,6 +16,7 @@ from dotenv import load_dotenv
 from rlp import CreateSandboxFromImageParams, Daytona, Resources
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from harness.benchmarks import BENCHMARK_IDS, get_benchmark
 from harness.paths import ROOT
 from harness.regions import check_sandbox_arch, resolve_rlp_client_config
 from harness.rlp_snapshots import (
@@ -36,7 +27,6 @@ from harness.rlp_snapshots import (
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from snapshot_common import (
     BASE_IMAGE,
-    SNAPSHOT_NAME,
     build_archive,
     extract_and_uv_sync,
     smoke_agent,
@@ -46,9 +36,19 @@ from snapshot_common import (
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Build vera-agent-benchmark native snapshot on RLP"
+        description="Build native RLP snapshot for a Vera benchmark"
     )
-    parser.add_argument("--name", default=SNAPSHOT_NAME, help="Snapshot name")
+    parser.add_argument(
+        "--benchmark",
+        default="agent",
+        choices=BENCHMARK_IDS,
+        help="Which benchmark package to bake into the snapshot",
+    )
+    parser.add_argument(
+        "--name",
+        default=None,
+        help="Snapshot name (default: per-benchmark artifact name)",
+    )
     parser.add_argument(
         "--base-image",
         default=BASE_IMAGE,
@@ -69,7 +69,7 @@ def main() -> None:
     parser.add_argument(
         "--skip-smoke",
         action="store_true",
-        help="Skip running workload.agent --n 1 before snapshotting",
+        help="Skip running the workload --n 1 before snapshotting",
     )
     parser.add_argument(
         "--skip-arch-probe",
@@ -77,13 +77,18 @@ def main() -> None:
         help="Skip platform.machine() probe for ARM64 targets",
     )
     args = parser.parse_args()
+    spec = get_benchmark(args.benchmark)
+    name = args.name or spec.artifact_name
 
     load_dotenv(ROOT / ".env")
     config = resolve_rlp_client_config(args.target, args.toolbox_url)
     client = Daytona(config)
-    print(f"rlp client: target={config.target!r} toolbox_url={config.toolbox_url!r}")
+    print(
+        f"rlp client: target={config.target!r} toolbox_url={config.toolbox_url!r} "
+        f"benchmark={spec.id!r}"
+    )
 
-    delete_native_snapshot_if_exists(client, args.name)
+    delete_native_snapshot_if_exists(client, name)
 
     sandbox = None
     try:
@@ -97,45 +102,39 @@ def main() -> None:
         )
         print(f"Sandbox ready: {sandbox.id}")
 
-        # Probe on the builder itself — no spare create (ARM64 capacity is tight).
         if args.target and not args.skip_arch_probe:
             check_sandbox_arch(sandbox, args.target)
 
         with tempfile.TemporaryDirectory() as tmp:
             archive = Path(tmp) / "app.tar.gz"
-            print("Packing workload …")
-            build_archive(archive)
+            print(f"Packing {spec.include_paths} …")
+            build_archive(archive, spec)
             content = archive.read_bytes()
-            # RLP toolbox fs.upload_file returns HTTP 400 on this image; use exec.
             print(f"Uploading archive via exec ({len(content)} bytes) …")
             upload_bytes_via_exec(sandbox, content, "/tmp/app.tar.gz")
 
         extract_and_uv_sync(sandbox)
         if not args.skip_smoke:
-            smoke_agent(sandbox)
+            smoke_agent(sandbox, spec)
 
-        # Native disk snapshot — sandbox must stay running.
-        print(f"Creating native RLP snapshot {args.name!r} …")
-        result = sandbox.create_snapshot(args.name, kind="disk")
+        print(f"Creating native RLP snapshot {name!r} …")
+        result = sandbox.create_snapshot(name, kind="disk")
         print(f"snapshot job started: {result}")
         snap = wait_for_native_snapshot(
             client,
-            args.name,
+            name,
             snapshot_id=result.get("snapshot_id"),
         )
         print(
             f"Ready on RLP: name={snap.get('name')!r} "
             f"manifest={snap.get('manifest_name')!r} "
             f"status={snap.get('status')!r} "
-            f"target={args.target!r}"
+            f"target={args.target!r} benchmark={spec.id!r}"
         )
+        cmd = f"uv run main.py --benchmark {spec.id} --runner rlp --snapshot {name}"
         if args.target:
-            print(
-                "Harness: uv run main.py --runner rlp "
-                f"--target {args.target} --snapshot {args.name}"
-            )
-        else:
-            print("Harness will boot with: --snapshot", args.name)
+            cmd += f" --target {args.target}"
+        print("Harness:", cmd)
     finally:
         if sandbox is not None:
             try:

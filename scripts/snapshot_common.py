@@ -1,4 +1,4 @@
-"""Shared snapshot-build helpers so Daytona / RLP match the Docker image."""
+"""Shared snapshot-build helpers so Daytona / RLP / E2B match Docker images."""
 
 from __future__ import annotations
 
@@ -6,18 +6,17 @@ import base64
 import tarfile
 from pathlib import Path
 
-# Same base as Dockerfile — keep these three in lockstep.
+from harness.benchmarks import AGENT, BenchmarkSpec
+
+# Same base as Dockerfiles — keep in lockstep.
 BASE_IMAGE = "ghcr.io/astral-sh/uv:python3.13-bookworm-slim"
-SNAPSHOT_NAME = "vera-agent-benchmark"
 APP_DIR = "/home/daytona/app"
 
 ROOT = Path(__file__).resolve().parent.parent
 
-INCLUDE_PATHS = (
-    "pyproject.toml",
-    "uv.lock",
-    "workload",
-)
+# Back-compat aliases for older script imports.
+SNAPSHOT_NAME = AGENT.artifact_name
+INCLUDE_PATHS = AGENT.include_paths
 
 SKIP_DIR_NAMES = {
     ".git",
@@ -34,9 +33,9 @@ def should_skip(path: Path) -> bool:
     return any(part in SKIP_DIR_NAMES or part.endswith(".egg-info") for part in path.parts)
 
 
-def build_archive(dest: Path) -> None:
+def build_archive(dest: Path, spec: BenchmarkSpec = AGENT) -> None:
     with tarfile.open(dest, "w:gz") as tar:
-        for rel in INCLUDE_PATHS:
+        for rel in spec.include_paths:
             src = ROOT / rel
             if not src.exists():
                 raise FileNotFoundError(f"Missing required path: {src}")
@@ -61,17 +60,12 @@ def exec_or_raise(sandbox, command: str, *, cwd: str | None = None, timeout: int
 
 
 def upload_bytes_via_exec(sandbox, content: bytes, remote_path: str) -> None:
-    """Write bytes into the sandbox without toolbox fs.upload_file.
-
-    RLP's toolbox ``/files/upload`` returns HTTP 400 on custom images; process.exec
-    works. Base64 keeps the payload shell-safe.
-    """
+    """Write bytes into the sandbox without toolbox fs.upload_file."""
     parent = str(Path(remote_path).parent)
     if parent not in ("", "."):
         exec_or_raise(sandbox, f"mkdir -p {parent}")
 
     b64 = base64.standard_b64encode(content).decode("ascii")
-    # Stay under typical ARG_MAX by chunking large archives into a staging file.
     staging = f"{remote_path}.b64"
     exec_or_raise(sandbox, f"rm -f {staging}")
     chunk_size = 60_000
@@ -108,14 +102,11 @@ def extract_and_uv_sync(sandbox, archive_path: str = "/tmp/app.tar.gz") -> None:
     )
 
 
-def smoke_agent(sandbox) -> None:
-    """Run one agent pass with the same env the workers use."""
-    cmd = (
-        f"cd {APP_DIR} && "
-        f"PATH={APP_DIR}/.venv/bin:$PATH "
-        f"PYTHONPATH={APP_DIR}/workload/repos/sqlite-utils "
-        f"PYTHONHASHSEED=0 "
-        f"python -m workload.agent --n 1 --seed 42"
-    )
-    print("Smoke-testing workload.agent …")
+def smoke_agent(sandbox, spec: BenchmarkSpec = AGENT, *, app_dir: str = APP_DIR) -> None:
+    """Run one workload pass with the same env the workers use."""
+    env = spec.run_env(app_dir)
+    env_prefix = " ".join(f"{k}={v}" for k, v in env.items())
+    argv = " ".join(spec.agent_argv(1, 42))
+    cmd = f"cd {app_dir} && {env_prefix} {spec.agent_command()} {argv}"
+    print(f"Smoke-testing {spec.module} …")
     exec_or_raise(sandbox, cmd, timeout=600)

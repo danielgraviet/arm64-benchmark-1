@@ -1,15 +1,15 @@
 # RUNBOOK
 
 ## Dev
-# Single agent workload (local, no harness):
+# Single-agent workload (local, no harness):
 uv run python -m workload.agent --n 10
+uv run python -m analytics.agent --n 2
 
-# Concurrency harness (writes data/<runner>/[target/]concurrency_<ts>_n<n>.jsonl):
-uv run main.py --runner docker --levels 1 8 22 44 88 176 --n 20
-uv run main.py --runner ec2 --levels 1 8 22 44 88 176 --n 20
-uv run main.py --runner daytona --levels 1 8 22 44 88 176 --n 20
-uv run main.py --runner e2b --levels 1 8 22 --n 20
-uv run main.py --runner rlp --levels 1 --n 20
+# Concurrency harness → data/<benchmark>/<runner>/[target/]concurrency_*.jsonl
+uv run main.py --benchmark agent --runner docker --levels 1 8 22 --n 20
+uv run main.py --benchmark analytics --runner docker --levels 1 8 --n 5
+uv run main.py --benchmark agent --runner e2b --levels 1 8 22 --n 20
+uv run main.py --benchmark agent --runner rlp --levels 1 --n 20
 
 ## Cloud snapshots / templates
 Requires the matching API key in `.env`:
@@ -17,51 +17,47 @@ Requires the matching API key in `.env`:
 - E2B: `E2B_API_KEY`
 - RLP: `RLP_API_KEY` + `RLP_API_URL`
 
-For RLP default-region jobs you may also set `RLP_TOOLBOX_URL`, but **do not**
-leave an x86 toolbox URL sticky when running ARM64 — pass
-`--target arm64-test-1` so the ARM64 toolbox is selected.
+For RLP ARM64, pass `--target arm64-test-1` (do not leave an x86
+`RLP_TOOLBOX_URL` sticky).
 
 ```bash
-# Daytona cloud snapshot (once, or after workload changes)
-uv run scripts/build_daytona_snapshot.py
+# Build per benchmark (artifact names differ)
+uv run scripts/build_daytona_snapshot.py --benchmark agent
+uv run scripts/build_daytona_snapshot.py --benchmark analytics
 
-# E2B template (once, or after workload changes)
-uv run scripts/build_e2b_template.py
+uv run scripts/build_e2b_template.py --benchmark agent
+uv run scripts/build_e2b_template.py --benchmark analytics
 
-# RLP snapshot on the default region
-uv run scripts/build_rlp_snapshot.py
+uv run scripts/build_rlp_snapshot.py --benchmark agent
+uv run scripts/build_rlp_snapshot.py --benchmark analytics
+uv run scripts/build_rlp_snapshot.py --benchmark analytics --target arm64-test-1
 
-# RLP snapshot on ARM64 (Graviton) — rebuild on that region; NFS is per-target
-uv run scripts/build_rlp_snapshot.py --target arm64-test-1
-
-# optional: reproduce declarative Dockerfile snapshot path (eng repro)
-uv run scripts/build_daytona_snapshot_declarative.py
+# Docker images
+docker build -t vera-agent-benchmark .
+docker build -f Dockerfile.analytics -t vera-analytics-benchmark .
 
 # smoke
-uv run main.py --runner daytona --levels 1 --n 20
-uv run main.py --runner e2b --levels 1 --n 20
-uv run main.py --runner rlp --levels 1 --n 20
-
-# ARM64 concurrency (results → data/rlp/arm64-test-1/)
-uv run main.py --runner rlp --target arm64-test-1 --levels 1 8 22 --n 20
+uv run main.py --benchmark agent --runner daytona --levels 1 --n 20
+uv run main.py --benchmark analytics --runner e2b --levels 1 --n 5
 ```
 
-Region is selected by RLP `DaytonaConfig(target=..., toolbox_url=...)`, not by
-image. Known map: `arm64-test-1` →
-`https://toolbox.arm64-test-1.rlp.trydaytona.com/toolbox`. Override with
-`--toolbox-url` if needed. The harness probes `platform.machine()` on the
-builder / first worker (not a spare sandbox) and fails fast if an ARM64 target
-returns `x86_64`. If create fails with `no matching capacity`, the ARM64 pool
-is full — retry later; do not treat that as a bad toolbox URL.
+Region notes (RLP): `arm64-test-1` →
+`https://toolbox.arm64-test-1.rlp.trydaytona.com/toolbox`. Arch is probed on
+the builder / first worker. `no matching capacity` means the ARM64 pool is full.
 
-Each platform has its own snapshot/template store, but builders share the same
-base as Docker (`ghcr.io/astral-sh/uv:python3.13-bookworm-slim`) and install via
-`uv sync --frozen --no-dev`. Rebuild the matching artifact (and local Docker
-image) before comparing if the workload or base image changed.
+## Benchmarks
+- `agent` (B1): repo-agent CPU work (search / AST / edit / pytest / SQL)
+- `analytics` (B2): Parquet write + DuckDB join/filter/agg (memory-bandwidth)
+- `rl_rollout` (B3): planned — mocked multi-step rollout episodes
+
+Shared contract: offline image, `--n`/`--seed`, one JSON line with
+`task` / `iterations` / `duration_ms` / `checksum`. See `harness/benchmarks.py`.
 
 ## EDA
-# Compare latest data/{docker,daytona,rlp,e2b}/*.jsonl → eda_output/*.png
-uv run python eda.py
+# Charts from data/<benchmark>/<runner>/concurrency_*.jsonl → eda_output/<benchmark>/
+uv run python eda.py --benchmark agent
+uv run python eda.py --benchmark analytics
+# uv run python eda.py --benchmark rl   # once B3 results exist
 
 ## Test
 uv run pytest

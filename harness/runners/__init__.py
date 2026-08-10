@@ -5,6 +5,9 @@ callable. Add a new runner by:
 
 1. Implementing ``run_one`` (module function or class method)
 2. Adding a one-line factory in ``RUNNER_FACTORIES``
+
+Benchmarks are selected via ``--benchmark`` and resolved before the runner
+factory runs (see ``harness.benchmarks``).
 """
 
 from __future__ import annotations
@@ -13,34 +16,40 @@ import argparse
 from collections.abc import Callable
 from typing import Any
 
-from harness.runners import docker, ec2
+from harness.benchmarks import get_benchmark
 from harness.runners.daytona import DaytonaRunner
+from harness.runners.docker import DockerRunner
 from harness.runners.e2b import E2bRunner
+from harness.runners.ec2 import make_run_one as ec2_make_run_one
 from harness.runners.rlp import RlpRunner
 
 RunOne = Callable[[int, int], dict[str, Any]]
 RunnerFactory = Callable[[argparse.Namespace], RunOne]
 
 
-def _docker(_args: argparse.Namespace) -> RunOne:
-    return docker.run_one
+def _docker(args: argparse.Namespace) -> RunOne:
+    return DockerRunner(get_benchmark(args.benchmark)).run_one
 
 
-def _ec2(_args: argparse.Namespace) -> RunOne:
-    return ec2.run_one
+def _ec2(args: argparse.Namespace) -> RunOne:
+    return ec2_make_run_one(get_benchmark(args.benchmark))
 
 
 def _daytona(args: argparse.Namespace) -> RunOne:
+    spec = get_benchmark(args.benchmark)
     return DaytonaRunner(
-        snapshot=args.snapshot,
+        spec=spec,
+        snapshot=args.snapshot or spec.artifact_name,
         exec_timeout_s=args.exec_timeout,
         target=args.target,
     ).run_one
 
 
 def _rlp(args: argparse.Namespace) -> RunOne:
+    spec = get_benchmark(args.benchmark)
     return RlpRunner(
-        snapshot=args.snapshot,
+        spec=spec,
+        snapshot=args.snapshot or spec.artifact_name,
         exec_timeout_s=args.exec_timeout,
         target=args.target,
         toolbox_url=args.toolbox_url,
@@ -48,8 +57,10 @@ def _rlp(args: argparse.Namespace) -> RunOne:
 
 
 def _e2b(args: argparse.Namespace) -> RunOne:
+    spec = get_benchmark(args.benchmark)
     return E2bRunner(
-        template=args.snapshot,
+        spec=spec,
+        template=args.snapshot or spec.artifact_name,
         exec_timeout_s=args.exec_timeout,
     ).run_one
 

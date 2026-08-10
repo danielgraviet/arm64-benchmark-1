@@ -4,8 +4,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from harness.runners import docker
+from harness.benchmarks import AGENT, BenchmarkSpec
+from harness.runners.docker import DockerRunner
+
+
+def make_run_one(spec: BenchmarkSpec = AGENT):
+    return DockerRunner(spec).run_one
 
 
 def run_one(n: int, seed: int) -> dict[str, Any]:
-    return docker.run_one(n, seed)
+    return DockerRunner(AGENT).run_one(n, seed)

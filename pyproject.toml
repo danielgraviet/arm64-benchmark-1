@@ -16,6 +16,8 @@ dependencies = [
     "daytona>=0.203.0",
     "rlp-sdk>=0.3.2",
     "e2b>=2.38.0",
+    "duckdb>=1.5.5",
+    "pyarrow>=25.0.1",
 ]
 
 [tool.pytest.ini_options]
