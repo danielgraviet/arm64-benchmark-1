@@ -30,7 +30,7 @@ sandbox create + `process.exec` + delete. Rebuild the snapshot before comparing
 against Docker if the workload changed.
 
 ## Test
-(none yet — no test suite configured)
+uv run pytest
 
 ## Typecheck
 (none yet — no type checker configured)
