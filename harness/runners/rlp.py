@@ -7,14 +7,16 @@ import time
 from typing import Any
 
 from dotenv import load_dotenv
-from rlp import CreateSandboxFromSnapshotParams, Daytona, DaytonaConfig
+from rlp import CreateSandboxFromImageParams, Daytona, DaytonaConfig
 
 from harness.paths import ROOT
+from harness.rlp_snapshots import resolve_boot_image
 
 SNAPSHOT_NAME = "vera-agent-benchmark"
 APP_DIR = "/home/daytona/app"
 DEFAULT_EXEC_TIMEOUT_S = 600
 RUN_ENV = {
+    "PATH": f"{APP_DIR}/.venv/bin:/usr/local/bin:/usr/bin:/bin",
     "PYTHONPATH": f"{APP_DIR}/workload/repos/sqlite-utils",
     "PYTHONHASHSEED": "0",
 }
@@ -33,13 +35,17 @@ class RlpRunner:
         self._exec_timeout_s = exec_timeout_s
         # rlp.DaytonaConfig has no connection_pool_maxsize; uses RLP_API_KEY / RLP_API_URL.
         self._client = Daytona(DaytonaConfig())
+        # Cache friendly-name → snap-<uuid> so we don't re-list on every worker.
+        self._boot_image = resolve_boot_image(self._client, snapshot)
+        print(f"rlp boot image: {snapshot!r} -> {self._boot_image!r}")
 
     def run_one(self, n: int, seed: int) -> dict[str, Any]:
         start = time.monotonic()
         sandbox = None
         try:
+            # Must pass manifest_name (snap-<uuid>), not the friendly UI name.
             sandbox = self._client.create(
-                CreateSandboxFromSnapshotParams(snapshot=self._snapshot),
+                CreateSandboxFromImageParams(image=self._boot_image),
                 timeout=120,
             )
             response = sandbox.process.exec(

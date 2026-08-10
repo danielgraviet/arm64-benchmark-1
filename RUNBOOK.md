@@ -10,27 +10,29 @@ uv run main.py --runner ec2 --levels 1 8 22 44 88 176 --n 20
 uv run main.py --runner daytona --levels 1 8 22 44 88 176 --n 20
 uv run main.py --runner rlp --levels 1 --n 20
 
-## Daytona
-Requires `DAYTONA_API_KEY` in `.env` (optional: `DAYTONA_API_URL`, `DAYTONA_TARGET`).
-RLP runner uses `RLP_API_KEY` / `RLP_API_URL` instead.
+## Daytona / RLP snapshots
+Requires `DAYTONA_API_KEY` in `.env` for Daytona cloud.
+RLP runner needs `RLP_API_KEY`, `RLP_API_URL`, `RLP_TOOLBOX_URL`.
 
 ```bash
-# once (or after workload changes): create sandbox → upload app → snapshot
+# Daytona cloud snapshot (once, or after workload changes)
 uv run scripts/build_daytona_snapshot.py
+
+# RLP snapshot (separate registry/NFS — required for --runner rlp)
+uv run scripts/build_rlp_snapshot.py
 
 # optional: reproduce declarative Dockerfile snapshot path (eng repro)
 uv run scripts/build_daytona_snapshot_declarative.py
 
 # smoke
 uv run main.py --runner daytona --levels 1 --n 20
+uv run main.py --runner rlp --levels 1 --n 20
 ```
 
-The snapshot builder uses a live sandbox (not a remote Dockerfile build): upload
-`workload/`, pip-install runtime deps, smoke-test `workload.agent`, stop, then
-`create_snapshot`. Use `build_daytona_snapshot_declarative.py` only to reproduce
-the remote `Image.from_dockerfile` build path. Latency for daytona/rlp includes
-sandbox create + `process.exec` + delete. Rebuild the snapshot before comparing
-against Docker if the workload changed.
+Each platform has its own snapshot store, but builders share the same base as
+Docker (`ghcr.io/astral-sh/uv:python3.13-bookworm-slim`) and install via
+`uv sync --frozen --no-dev`. Rebuild the matching snapshot (and local Docker
+image) before comparing if the workload or base image changed.
 
 ## Test
 uv run pytest

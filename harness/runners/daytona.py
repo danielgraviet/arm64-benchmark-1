@@ -15,10 +15,12 @@ SNAPSHOT_NAME = "vera-agent-benchmark"
 APP_DIR = "/home/daytona/app"
 DEFAULT_EXEC_TIMEOUT_S = 600
 RUN_ENV = {
+    "PATH": f"{APP_DIR}/.venv/bin:/usr/local/bin:/usr/bin:/bin",
     "PYTHONPATH": f"{APP_DIR}/workload/repos/sqlite-utils",
     "PYTHONHASHSEED": "0",
 }
 AGENT_CMD = "python -m workload.agent"
+
 
 
 class DaytonaRunner:
