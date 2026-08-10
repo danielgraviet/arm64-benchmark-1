@@ -3,7 +3,7 @@
 Flow:
   1. Create a default Python sandbox
   2. Upload this repo's workload into it
-  3. Install runtime deps + smoke-test main.py
+  3. Install runtime deps + smoke-test workload.agent
   4. Stop the sandbox and snapshot the filesystem
   5. Delete the builder sandbox
 
@@ -33,7 +33,6 @@ APP_DIR = "/home/daytona/app"
 
 # Paths to pack into the sandbox (relative to repo root).
 INCLUDE_PATHS = (
-    "main.py",
     "pyproject.toml",
     "uv.lock",
     "workload",
@@ -108,7 +107,7 @@ def main() -> None:
     parser.add_argument(
         "--skip-smoke",
         action="store_true",
-        help="Skip running main.py --n 1 before snapshotting",
+        help="Skip running workload.agent --n 1 before snapshotting",
     )
     args = parser.parse_args()
 
@@ -146,14 +145,14 @@ def main() -> None:
             timeout=600,
         )
 
-        smoke_env = (
+        smoke_cmd = (
             f"PYTHONPATH={APP_DIR}/workload/repos/sqlite-utils "
             f"PYTHONHASHSEED=0 "
-            f"python main.py --n 1 --seed 42"
+            f"python -m workload.agent --n 1 --seed 42"
         )
         if not args.skip_smoke:
-            print("Smoke-testing main.py …")
-            exec_or_raise(sandbox, smoke_env, cwd=APP_DIR, timeout=600)
+            print("Smoke-testing workload.agent …")
+            exec_or_raise(sandbox, smoke_cmd, cwd=APP_DIR, timeout=600)
 
         print("Stopping sandbox for cold snapshot …")
         sandbox.stop(timeout=120)

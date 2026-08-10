@@ -22,8 +22,11 @@ vera-agent-benchmark/
 ├── Dockerfile
 ├── pyproject.toml
 ├── uv.lock
-├── main.py
+├── main.py              # concurrency harness CLI (--runner …)
+├── harness/             # shared harness + runner backends
 ├── workload/
+│   └── agent.py         # single-agent workload (container entrypoint)
+├── data/                # JSONL results (gitignored)
 └── tests/
 ```
 
@@ -64,7 +67,7 @@ COPY . .
 
 ENV PATH="/app/.venv/bin:$PATH"
 
-ENTRYPOINT ["python", "main.py"]
+ENTRYPOINT ["python", "-m", "workload.agent"]
 CMD ["--n", "10"]
 ```
 
@@ -83,7 +86,7 @@ docker run --rm vera-agent-benchmark
 Equivalent command inside the container:
 
 ```bash
-python main.py --n 10
+python -m workload.agent --n 10
 ```
 
 Override the arguments:
@@ -95,7 +98,7 @@ docker run --rm vera-agent-benchmark --n 20
 Equivalent command:
 
 ```bash
-python main.py --n 20
+python -m workload.agent --n 20
 ```
 
 Run with resource limits:
@@ -153,16 +156,28 @@ All repositories, dependencies, and datasets should already exist inside the ima
 
 ## Suggested CLI
 
+Single agent (inside a worker / container):
+
 ```bash
-python main.py   --n 20   --task repo-agent-v1   --seed 42
+python -m workload.agent --n 20 --task repo-agent-v1 --seed 42
 ```
+
+Concurrency harness (host):
+
+```bash
+uv run main.py --runner docker --levels 1 8 22 44 88 176 --n 20
+uv run main.py --runner daytona --levels 1 8 --n 20
+```
+
+Results land in `data/<runner>/concurrency_<timestamp>_n<n>.jsonl`.
 
 Suggested arguments:
 
-- `--n`: Number of workload iterations
-- `--task`: Workload version or scenario
+- `--runner`: `docker` | `daytona` | `rlp` | `ec2`
+- `--levels`: Concurrency levels to sweep
+- `--n`: Workload volume per run
 - `--seed`: Fixed random seed
-- `--output`: Optional output format
+- `--output`: Optional JSONL path override
 
 ## Concurrency Testing
 

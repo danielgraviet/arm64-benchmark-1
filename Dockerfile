@@ -11,5 +11,5 @@ ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH="/app/workload/repos/sqlite-utils"
 ENV PYTHONHASHSEED=0
 
-ENTRYPOINT ["python", "main.py"]
+ENTRYPOINT ["python", "-m", "workload.agent"]
 CMD ["--n", "10"]
