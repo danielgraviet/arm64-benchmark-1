@@ -20,6 +20,12 @@ RLP_TARGET_TOOLBOX: dict[str, str] = {
 ARM64_TARGETS = frozenset({"arm64-test-1"})
 ARM64_MACHINES = frozenset({"aarch64", "arm64"})
 
+# Target → POST /vms cpu_arch (resource-type selector). Required for ARM64
+# capacity routing after eng's jobs.vm.create.<region>.arm64 change.
+RLP_TARGET_CPU_ARCH: dict[str, str] = {
+    "arm64-test-1": "arm64",
+}
+
 
 def resolve_rlp_toolbox_url(target: str | None, toolbox_url: str | None) -> str | None:
     if toolbox_url:
@@ -27,6 +33,13 @@ def resolve_rlp_toolbox_url(target: str | None, toolbox_url: str | None) -> str 
     if target and target in RLP_TARGET_TOOLBOX:
         return RLP_TARGET_TOOLBOX[target]
     return None
+
+
+def resolve_rlp_cpu_arch(target: str | None) -> str | None:
+    """Return ``cpu_arch`` for POST /vms, or None for default-region creates."""
+    if not target:
+        return None
+    return RLP_TARGET_CPU_ARCH.get(target)
 
 
 def resolve_rlp_client_config(
@@ -68,7 +81,8 @@ def check_sandbox_arch(sandbox: Any, target: str | None) -> str:
     if target in ARM64_TARGETS and arch not in ARM64_MACHINES:
         raise RuntimeError(
             f"Expected ARM64 on target {target!r}, got {arch!r}. "
-            "Check DaytonaConfig(target=..., toolbox_url=...) — a missing "
-            "or x86 toolbox URL often schedules the wrong region."
+            "Check DaytonaConfig(target=..., toolbox_url=...) and "
+            "CreateSandbox cpu_arch='arm64' — missing selector often yields "
+            "no matching capacity or the wrong arch."
         )
     return arch

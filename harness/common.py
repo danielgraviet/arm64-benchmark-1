@@ -83,8 +83,11 @@ def run_suite(
     seed: int,
     output: Path,
     run_one: RunOne,
+    meta: dict[str, Any] | None = None,
 ) -> None:
     with JsonlWriter(output) as writer:
+        if meta:
+            writer.write({"type": "meta", **meta})
         for level in levels:
             start = time.monotonic()
             records: list[dict[str, Any]] = []

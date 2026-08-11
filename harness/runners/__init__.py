@@ -49,7 +49,7 @@ def _rlp(args: argparse.Namespace) -> RunOne:
     spec = get_benchmark(args.benchmark)
     return RlpRunner(
         spec=spec,
-        snapshot=args.snapshot or spec.artifact_name,
+        snapshot=args.snapshot or spec.artifact_for_target(args.target),
         exec_timeout_s=args.exec_timeout,
         target=args.target,
         toolbox_url=args.toolbox_url,

@@ -1,14 +1,10 @@
-"""Explore concurrency JSONL results across runners (docker / daytona / rlp / e2b).
+"""Explore concurrency JSONL results across runners / RLP arch series.
 
-Picks the newest ``data/<benchmark>/<runner>/concurrency_*.jsonl`` per runner,
-prints a metrics table, and writes comparison charts to
-``eda_output/<benchmark>/``.
+Picks the newest ``data/<benchmark>/<series>/concurrency_*.jsonl`` per series
+(e.g. ``docker``, ``rlp-x86``, ``rlp-arm64``), prints a metrics table, and
+writes charts to ``eda_output/<benchmark>/``.
 
-Benchmark folders under ``data/`` are discovered dynamically (e.g. ``agent``,
-``analytics``, ``rl``).
-
-Note: Cloud-sandbox latency includes create + exec + delete; Docker is local
-``docker run`` wall time.
+Benchmark folders under ``data/`` are discovered dynamically.
 """
 
 from __future__ import annotations
@@ -24,12 +20,25 @@ import numpy as np
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "data"
 OUT_DIR = ROOT / "eda_output"
-RUNNERS = ("docker", "daytona", "rlp", "e2b")
-RUNNER_COLORS = {
+
+# Preferred chart/table order; any other series dirs are appended.
+SERIES_ORDER = (
+    "docker",
+    "daytona",
+    "e2b",
+    "rlp-x86",
+    "rlp-arm64",
+    "rlp",  # legacy folder name (pre split)
+    "ec2",
+)
+SERIES_COLORS = {
     "docker": "#4C78A8",  # blue
     "daytona": "#2CA02C",  # green
-    "rlp": "#FF7F0E",  # orange
     "e2b": "#9467BD",  # purple
+    "rlp-x86": "#FF7F0E",  # orange
+    "rlp": "#FF7F0E",  # legacy → same as x86
+    "rlp-arm64": "#D62728",  # red
+    "ec2": "#8C564B",  # brown
 }
 
 LATENCY_NOTE = (
@@ -37,8 +46,8 @@ LATENCY_NOTE = (
 )
 
 
-def runner_color(runner: str) -> str:
-    return RUNNER_COLORS.get(runner, "#7F7F7F")
+def series_color(series: str) -> str:
+    return SERIES_COLORS.get(series, "#7F7F7F")
 
 
 def list_benchmark_dirs() -> list[str]:
@@ -48,13 +57,31 @@ def list_benchmark_dirs() -> list[str]:
     return sorted(p.name for p in DATA_DIR.iterdir() if p.is_dir() and not p.name.startswith("."))
 
 
-def latest_jsonl(benchmark: str, runner: str) -> Path | None:
-    """Newest concurrency_*.jsonl under data/<benchmark>/<runner>/[target/]."""
-    base = DATA_DIR / benchmark / runner
+def list_series_dirs(benchmark: str) -> list[str]:
+    """Result series under data/<benchmark>/ that contain concurrency_*.jsonl."""
+    root = DATA_DIR / benchmark
+    if not root.is_dir():
+        return []
+    found: list[str] = []
+    for path in sorted(root.iterdir()):
+        if not path.is_dir() or path.name.startswith("."):
+            continue
+        if any(path.glob("concurrency_*.jsonl")) or any(
+            path.glob("*/concurrency_*.jsonl")
+        ):
+            found.append(path.name)
+    # Stable preferred order, then leftovers.
+    ordered = [name for name in SERIES_ORDER if name in found]
+    ordered.extend(name for name in found if name not in ordered)
+    return ordered
+
+
+def latest_jsonl(benchmark: str, series: str) -> Path | None:
+    """Newest concurrency_*.jsonl under data/<benchmark>/<series>/."""
+    base = DATA_DIR / benchmark / series
     if not base.is_dir():
         return None
     paths = list(base.glob("concurrency_*.jsonl"))
-    # Target subdirs, e.g. data/agent/rlp/arm64-test-1/
     paths.extend(base.glob("*/concurrency_*.jsonl"))
     if not paths:
         return None
@@ -63,14 +90,13 @@ def latest_jsonl(benchmark: str, runner: str) -> Path | None:
 
 def discover_datasets(benchmark: str) -> dict[str, Path]:
     found: dict[str, Path] = {}
-    for runner in RUNNERS:
-        path = latest_jsonl(benchmark, runner)
+    for series in list_series_dirs(benchmark):
+        path = latest_jsonl(benchmark, series)
         if path is not None:
-            found[runner] = path
+            found[series] = path
     if not found:
         raise FileNotFoundError(
-            f"No concurrency_*.jsonl files under "
-            f"{DATA_DIR}/{benchmark}/{{{','.join(RUNNERS)}}}"
+            f"No concurrency_*.jsonl files under {DATA_DIR}/{benchmark}/"
         )
     return found
 
@@ -113,24 +139,24 @@ def print_summary_table(
 ) -> None:
     print(LATENCY_NOTE)
     print()
-    for runner, path in sources.items():
-        print(f"{runner}: {path.relative_to(ROOT)}")
+    for series, path in sources.items():
+        print(f"{series}: {path.relative_to(ROOT)}")
     print()
 
     header = (
-        f"{'runner':<10} {'conc':>5} {'p50_ms':>10} {'mean_ms':>10} "
+        f"{'series':<12} {'conc':>5} {'p50_ms':>10} {'mean_ms':>10} "
         f"{'p95_ms':>10} {'p99_ms':>10} {'max_ms':>10} {'tput/s':>8} "
         f"{'fail':>5} {'checksum':>8}"
     )
     print(header)
     print("-" * len(header))
 
-    for runner, (runs, summaries) in loaded.items():
+    for series, (runs, summaries) in loaded.items():
         for s in summaries:
             level = s["concurrency"]
             mean_ms = mean_latency(runs, level)
             print(
-                f"{runner:<10} {level:5d} "
+                f"{series:<12} {level:5d} "
                 f"{s['p50_ms']:10.1f} {mean_ms:10.1f} "
                 f"{s['p95_ms']:10.1f} {s['p99_ms']:10.1f} "
                 f"{s['max_ms']:10.1f} {s['throughput_per_sec']:8.2f} "
@@ -149,22 +175,22 @@ def plot_grouped_metric(
     filename: str,
     from_runs_mean: bool = False,
 ) -> None:
-    runners = list(loaded.keys())
+    series_list = list(loaded.keys())
     levels = all_levels(loaded)
     x = np.arange(len(levels))
-    width = min(0.8 / max(len(runners), 1), 0.25)
+    width = min(0.8 / max(len(series_list), 1), 0.22)
 
-    fig, ax = plt.subplots(figsize=(11, 5))
-    for i, runner in enumerate(runners):
-        runs, summaries = loaded[runner]
+    fig, ax = plt.subplots(figsize=(12, 5))
+    for i, series in enumerate(series_list):
+        runs, summaries = loaded[series]
         if from_runs_mean:
             values = [mean_latency(runs, level) for level in levels]
         else:
             by_level = {s["concurrency"]: s[metric_key] for s in summaries}
             values = [by_level.get(level, 0) for level in levels]
-        offset = (i - (len(runners) - 1) / 2) * width
+        offset = (i - (len(series_list) - 1) / 2) * width
         bars = ax.bar(
-            x + offset, values, width, label=runner, color=runner_color(runner)
+            x + offset, values, width, label=series, color=series_color(series)
         )
         ax.bar_label(bars, fmt="%.0f", padding=2, fontsize=7)
 
@@ -185,7 +211,7 @@ def plot_throughput(
     loaded: dict[str, tuple[list[dict], list[dict]]], out: Path
 ) -> None:
     fig, ax = plt.subplots(figsize=(9, 5))
-    for runner, (_, summaries) in loaded.items():
+    for series, (_, summaries) in loaded.items():
         levels = [s["concurrency"] for s in summaries]
         tput = [s["throughput_per_sec"] for s in summaries]
         ax.plot(
@@ -193,8 +219,8 @@ def plot_throughput(
             tput,
             marker="o",
             linewidth=2,
-            label=runner,
-            color=runner_color(runner),
+            label=series,
+            color=series_color(series),
         )
         for level, value in zip(levels, tput):
             ax.annotate(
@@ -223,19 +249,21 @@ def plot_latency_boxplots(
     loaded: dict[str, tuple[list[dict], list[dict]]], out: Path
 ) -> None:
     levels = all_levels(loaded)
-    runners = list(loaded.keys())
-    fig, axes = plt.subplots(1, len(runners), figsize=(4.5 * len(runners), 5), sharey=True)
-    if len(runners) == 1:
+    series_list = list(loaded.keys())
+    fig, axes = plt.subplots(
+        1, len(series_list), figsize=(4.5 * len(series_list), 5), sharey=True
+    )
+    if len(series_list) == 1:
         axes = [axes]
 
-    for ax, runner in zip(axes, runners):
-        runs, _ = loaded[runner]
+    for ax, series in zip(axes, series_list):
+        runs, _ = loaded[series]
         by_level: dict[int, list[float]] = defaultdict(list)
         for run in runs:
             by_level[run["concurrency"]].append(float(run["latency_ms"]))
 
         data = [by_level.get(level, []) for level in levels]
-        color = runner_color(runner)
+        color = series_color(series)
         bp = ax.boxplot(
             data,
             tick_labels=[str(level) for level in levels],
@@ -248,7 +276,7 @@ def plot_latency_boxplots(
         for key in ("medians", "whiskers", "caps", "fliers"):
             for artist in bp[key]:
                 artist.set_color(color)
-        ax.set_title(runner)
+        ax.set_title(series)
         ax.set_xlabel("Concurrency level")
         ax.grid(axis="y", alpha=0.3)
 

@@ -41,8 +41,8 @@ def main() -> None:
         type=str,
         default=None,
         help=(
-            "Override JSONL path (default: data/<benchmark>/<runner>/"
-            "[target/]concurrency_<ts>_n<n>.jsonl)"
+            "Override JSONL path (default: data/<benchmark>/<series>/"
+            "concurrency_<ts>_n<n>.jsonl; RLP uses rlp-x86 or rlp-arm64)"
         ),
     )
     parser.add_argument(
@@ -80,6 +80,15 @@ def main() -> None:
         parser.error("--target is only valid with --runner daytona or rlp")
 
     spec = get_benchmark(args.benchmark)
+    artifact = (
+        args.snapshot
+        if args.snapshot
+        else (
+            spec.artifact_for_target(args.target)
+            if args.runner == "rlp"
+            else spec.artifact_name
+        )
+    )
     output = (
         Path(args.output)
         if args.output
@@ -92,7 +101,7 @@ def main() -> None:
     )
     print(
         f"benchmark={args.benchmark} runner={args.runner} "
-        f"target={args.target!r} artifact={args.snapshot or spec.artifact_name!r} "
+        f"target={args.target!r} artifact={artifact!r} "
         f"output={output}"
     )
 
@@ -102,6 +111,14 @@ def main() -> None:
         seed=args.seed,
         output=output,
         run_one=build_run_one(args),
+        meta={
+            "benchmark": args.benchmark,
+            "runner": args.runner,
+            "target": args.target,
+            "artifact": artifact,
+            "seed": args.seed,
+            "n": args.n,
+        },
     )
 
 

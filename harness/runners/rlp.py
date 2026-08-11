@@ -8,11 +8,12 @@ import time
 from typing import Any
 
 from dotenv import load_dotenv
-from rlp import CreateSandboxFromImageParams, Daytona
+from rlp import Daytona
 
 from harness.benchmarks import AGENT, BenchmarkSpec
 from harness.paths import ROOT
 from harness.regions import check_sandbox_arch, resolve_rlp_client_config
+from harness.rlp_create import create_rlp_sandbox
 from harness.rlp_snapshots import resolve_boot_image
 
 APP_DIR = "/home/daytona/app"
@@ -57,9 +58,13 @@ class RlpRunner:
         start = time.monotonic()
         sandbox = None
         try:
-            sandbox = self._client.create(
-                CreateSandboxFromImageParams(image=self._boot_image),
+            # Must pass manifest_name (snap-<uuid>), not the friendly UI name.
+            # ARM64 targets require cpu_arch="arm64" on create (eng resource selector).
+            sandbox = create_rlp_sandbox(
+                self._client,
+                image=self._boot_image,
                 timeout=120,
+                target=self._target,
             )
             if not self._arch_probed:
                 with self._arch_lock:

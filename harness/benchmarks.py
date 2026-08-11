@@ -71,6 +71,19 @@ class BenchmarkSpec:
     def agent_command(self, *, python: str = "python") -> str:
         return f"{python} -m {self.module}"
 
+    def artifact_for_target(self, target: str | None = None) -> str:
+        """Snapshot/template name for an optional region target.
+
+        Default-region builds keep the short artifact name
+        (``vera-analytics-benchmark``). Targeted builds (e.g. ARM64) get a
+        distinct suffix so rebuilds do not delete/overwrite the default-region
+        snapshot of the same benchmark.
+        """
+        if not target:
+            return self.artifact_name
+        safe = target.replace("/", "-")
+        return f"{self.artifact_name}-{safe}"
+
 
 AGENT = BenchmarkSpec(
     id="agent",

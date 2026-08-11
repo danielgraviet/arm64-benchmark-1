@@ -5,11 +5,13 @@
 uv run python -m workload.agent --n 10
 uv run python -m analytics.agent --n 2
 
-# Concurrency harness → data/<benchmark>/<runner>/[target/]concurrency_*.jsonl
+# Concurrency harness → data/<benchmark>/<series>/concurrency_*.jsonl
+# RLP default region → rlp-x86/; RLP --target arm64-test-1 → rlp-arm64/
 uv run main.py --benchmark agent --runner docker --levels 1 8 22 --n 20
 uv run main.py --benchmark analytics --runner docker --levels 1 8 --n 5
 uv run main.py --benchmark agent --runner e2b --levels 1 8 22 --n 20
 uv run main.py --benchmark agent --runner rlp --levels 1 --n 20
+uv run main.py --benchmark analytics --runner rlp --target arm64-test-1 --levels 1 --n 5
 
 ## Cloud snapshots / templates
 Requires the matching API key in `.env`:
@@ -30,7 +32,11 @@ uv run scripts/build_e2b_template.py --benchmark analytics
 
 uv run scripts/build_rlp_snapshot.py --benchmark agent
 uv run scripts/build_rlp_snapshot.py --benchmark analytics
+# ARM64: writes a *new* name (…-arm64-test-1); does not delete default-region
+# vera-agent-benchmark / vera-analytics-benchmark
 uv run scripts/build_rlp_snapshot.py --benchmark analytics --target arm64-test-1
+# → snapshot vera-analytics-benchmark-arm64-test-1
+uv run main.py --benchmark analytics --runner rlp --target arm64-test-1 --levels 1 --n 5
 
 # Docker images
 docker build -t vera-agent-benchmark .
@@ -42,8 +48,9 @@ uv run main.py --benchmark analytics --runner e2b --levels 1 --n 5
 ```
 
 Region notes (RLP): `arm64-test-1` →
-`https://toolbox.arm64-test-1.rlp.trydaytona.com/toolbox`. Arch is probed on
-the builder / first worker. `no matching capacity` means the ARM64 pool is full.
+`https://toolbox.arm64-test-1.rlp.trydaytona.com/toolbox`. Creates also send
+`cpu_arch=arm64` (resource-type selector) so jobs hit the ARM64 queue — without
+it you get `no matching capacity`. Arch is probed on the builder / first worker.
 
 ## Benchmarks
 - `agent` (B1): repo-agent CPU work (search / AST / edit / pytest / SQL)

@@ -13,12 +13,13 @@ import tempfile
 from pathlib import Path
 
 from dotenv import load_dotenv
-from rlp import CreateSandboxFromImageParams, Daytona, Resources
+from rlp import Daytona, Resources
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from harness.benchmarks import BENCHMARK_IDS, get_benchmark
 from harness.paths import ROOT
 from harness.regions import check_sandbox_arch, resolve_rlp_client_config
+from harness.rlp_create import create_rlp_sandbox
 from harness.rlp_snapshots import (
     delete_native_snapshot_if_exists,
     wait_for_native_snapshot,
@@ -78,7 +79,9 @@ def main() -> None:
     )
     args = parser.parse_args()
     spec = get_benchmark(args.benchmark)
-    name = args.name or spec.artifact_name
+    # With --target, default to a distinct name so we never delete/overwrite
+    # default-region snaps like vera-analytics-benchmark / vera-agent-benchmark.
+    name = args.name or spec.artifact_for_target(args.target)
 
     load_dotenv(ROOT / ".env")
     config = resolve_rlp_client_config(args.target, args.toolbox_url)
@@ -87,18 +90,29 @@ def main() -> None:
         f"rlp client: target={config.target!r} toolbox_url={config.toolbox_url!r} "
         f"benchmark={spec.id!r}"
     )
+    print(f"snapshot name: {name!r}")
+    if args.target and name == spec.artifact_name:
+        print(
+            "WARNING: --name matches the default-region artifact; "
+            "rebuild may delete that snapshot if /snapshots is shared."
+        )
+    elif args.target:
+        print(
+            f"(default-region {spec.artifact_name!r} is left alone; "
+            "only this targeted name is replaced if it already exists)"
+        )
 
     delete_native_snapshot_if_exists(client, name)
 
     sandbox = None
     try:
         print(f"Creating RLP builder sandbox from {args.base_image!r} …")
-        sandbox = client.create(
-            CreateSandboxFromImageParams(
-                image=args.base_image,
-                resources=Resources(cpu=1, memory=1),
-            ),
+        sandbox = create_rlp_sandbox(
+            client,
+            image=args.base_image,
+            resources=Resources(cpu=1, memory=1),
             timeout=300,
+            target=args.target,
         )
         print(f"Sandbox ready: {sandbox.id}")
 
