@@ -13,7 +13,7 @@
 
 Current harness `latency_ms` is dominated by sandbox **create → schedule → exec → delete**. Light RL episodes (`--n 64`) are ~10–15 ms of CPU and cannot support a “Vera cores are faster” claim.
 
-At `--n 100_000` on Daytona, in-container **`duration_ms` ≈ 3 s** (~50–60% of wall latency). That is the first useful CPU regime. Mean latency alone is still muddy (~2–3 s create tax). GTC messaging must split **chip quality** (`duration_ms`) from **Daytona product density** (throughput / p99 at 88 sandboxes).
+At `--n 100_000` on Daytona, in-container **`duration_ms` ≈ 3 s** (~50–60% of wall latency). That is the first useful CPU regime. Mean latency alone is still muddy (~2–3 s create tax). GTC messaging must split **Chart A — is the chip faster?** (`duration_ms` only) from **Chart B — does Daytona scale on Vera?** (throughput / p99 at 88 sandboxes).
 
 Do **not** treat today’s `rlp-arm64` (`arm64-test-1`) as a Vera preview for faster silicon — at `n=5000`, ARM64 `duration_ms` was ~slower than Daytona default (~330 ms vs ~170 ms).
 
@@ -29,12 +29,19 @@ Only claim the “X% faster” clause if Vera `duration_ms` beats controls by a 
 
 ## What to measure (priority order)
 
-### A) Chip story — Vera sequential core quality
+### A) Chip story — is the chip itself faster?
+
+**In plain terms:** run the **same heavy RL episode** (big `--n`, same seed) on today’s Daytona region and on Vera. Ignore sandbox create / API / network time. Only compare **`duration_ms`** — how long the work takes *inside* the sandbox.
+
+- If Vera’s `duration_ms` is clearly lower → you can say Vera cores finish the episode faster.
+- If not → don’t claim that.
+
+That’s Chart A: one apples-to-apples CPU timing, Vera vs control.
 
 | Item | Value |
 | --- | --- |
 | Benchmark | `rl` |
-| `--n` | `100000` (validated on Daytona) |
+| `--n` | `100000` (validated on Daytona; `200000` also works — more CPU share) |
 | Levels | `1` and `88` |
 | Metric | **`duration_ms` only** (p50 / p99) — not mean `latency_ms` |
 | Controls | Daytona default region and/or `rlp-x86` |
@@ -42,7 +49,11 @@ Only claim the “X% faster” clause if Vera `duration_ms` beats controls by a 
 
 Headline shape: *“Same mocked rollout episode: ~3 s elsewhere → Xs on Vera.”*
 
-### B) Product story — Daytona concurrency on Vera
+### B) Product story — can Daytona pack a lot of work onto Vera at once?
+
+**In plain terms:** spin up many sandboxes at the same time (up to 88) with a **light** workload, and check whether things stay usable: throughput goes up, p99 latency doesn’t fall apart, and per-episode CPU stays roughly flat.
+
+That’s not “is the chip faster?” — that’s “does Daytona scale on Vera?”
 
 | Item | Value |
 | --- | --- |
@@ -112,8 +123,8 @@ Create/schedule tax remains ~2–3 s even at `n=100000`.
 ## Success criteria for Berlin
 
 - [ ] Vera region access + RL snapshot built (`--benchmark rl --target <vera>`)
-- [ ] Chart A: `duration_ms` @ `n=100000`, c=1 and c=88, Vera vs control (clear gap or we drop chip brag)
-- [ ] Chart B: throughput + p99 @ levels → 88 on Vera (density / Daytona product)
+- [ ] Chart A: same heavy episode on Vera vs control; compare only `duration_ms` (clear gap or we drop chip brag)
+- [ ] Chart B: many concurrent sandboxes on Vera (up to 88, light `--n`); throughput up, usable p99, flat episode CPU
 - [ ] One-sentence customer bottom-line slide locked to whichever gap is real
 - [ ] Checksums match across regions for the same `(n, seed)`
 
@@ -123,4 +134,4 @@ Create/schedule tax remains ~2–3 s even at `n=100000`.
 
 - If **A** shows a clear `duration_ms` win → lead with chip + density.  
 - If **A** is flat/noisy but **B** is strong → lead with **Daytona scales on Vera** (still on-brand; don’t overclaim FLOPs).  
-- Never mix light-`n` create latency into a “Vera cores” headline.
+- Never mix light-`n` create/API latency into a “Vera cores are faster” headline — that is not Chart A.
