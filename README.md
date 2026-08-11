@@ -21,15 +21,17 @@ The primary outputs are:
 vera-benchmarks/
 ├── Dockerfile                 # B1 agent image
 ├── Dockerfile.analytics       # B2 analytics image
+├── Dockerfile.rl              # B3 RL rollout image
 ├── main.py                    # --benchmark + --runner harness CLI
 ├── harness/                   # shared runners, suite, BenchmarkSpec
 ├── workload/                  # B1 repo-agent workload
 ├── analytics/                 # B2 Parquet/DuckDB workload
+├── rl/                        # B3 mocked RL episode workload
 ├── data/<benchmark>/<runner>/ # JSONL results (gitignored)
 └── tests/
 ```
 
-Benchmarks share one harness; select with `--benchmark agent|analytics`.
+Benchmarks share one harness; select with `--benchmark agent|analytics|rl`.
 
 ## Analytics benchmark (B2) — decisions
 
@@ -46,6 +48,22 @@ Goal: memory-bandwidth-heavy agent work (local tabular data), not a TPC suite.
 | Not measuring | Distributed SQL, GPU/ML, or pre-warmed “query-only” latency |
 
 Use a smaller `--n` than agent (e.g. `--n 5`) — default `20` is heavy for analytics.
+
+## RL benchmark (B3) — decisions
+
+Goal: sequential agent/RL control flow (cannot parallelize steps inside one episode) plus concurrent episode throughput — CPU path only.
+
+| Choice | Decision |
+|---|---|
+| Unit of work | **One sandbox = one episode** (`run_one(n, seed)` unchanged) |
+| `--n` | Episode **horizon** (sequential steps); `--levels` = concurrent episodes |
+| Workload | Local `GridEnv` + NumPy mock policy + trajectory buffer (no Gym/network/GPU) |
+| Per-step cost | ~256-d obs; two matmuls + env update + append |
+| Correctness | Checksum of **trajectory summary** (return, action hist, last obs, …) |
+| Results | `data/rl/<series>/…` (same `rlp-x86` / `rlp-arm64` split) |
+| Not measuring | Real inference servers, weight downloads, or sandbox reuse across episodes |
+
+On Vera: emphasize **p99 episode latency at high `--n`** and **throughput near `--levels` 88**.
 
 ## Container Contract
 
@@ -190,7 +208,7 @@ Results land in `data/<runner>/concurrency_<timestamp>_n<n>.jsonl`.
 
 Suggested arguments:
 
-- `--benchmark`: `agent` | `analytics`
+- `--benchmark`: `agent` | `analytics` | `rl`
 - `--runner`: `docker` | `daytona` | `rlp` | `e2b` | `ec2`
 - `--levels`: Concurrency levels to sweep
 - `--n`: Workload volume per run

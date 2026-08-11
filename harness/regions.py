@@ -42,6 +42,22 @@ def resolve_rlp_cpu_arch(target: str | None) -> str | None:
     return RLP_TARGET_CPU_ARCH.get(target)
 
 
+def validate_rlp_target(target: str | None) -> None:
+    """Fail fast on unknown ``--target`` values (typos → opaque HTTP 400)."""
+    if not target:
+        return
+    if target in RLP_TARGET_TOOLBOX:
+        return
+    known = ", ".join(sorted(RLP_TARGET_TOOLBOX)) or "(none)"
+    hint = ""
+    # Common transposition: amr64-test-1 vs arm64-test-1
+    if "amr64" in target and "arm64-test-1" in RLP_TARGET_TOOLBOX:
+        hint = " Did you mean 'arm64-test-1'?"
+    raise ValueError(
+        f"Unknown RLP target {target!r}. Known targets: {known}.{hint}"
+    )
+
+
 def resolve_rlp_client_config(
     target: str | None = None,
     toolbox_url: str | None = None,
@@ -55,6 +71,7 @@ def resolve_rlp_client_config(
     if not target:
         return DaytonaConfig()
 
+    validate_rlp_target(target)
     resolved_toolbox = resolve_rlp_toolbox_url(target, toolbox_url)
     return DaytonaConfig(target=target, toolbox_url=resolved_toolbox)
 

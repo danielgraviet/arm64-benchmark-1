@@ -23,17 +23,12 @@ Today the suite calls a single-shot worker:
 That matches Benchmark 1 (agent) and Benchmark 2 (analytics): one sandbox
 (or container) per unit of work.
 
-## Benchmark 3 (RL rollout) — planned tomorrow
+## Benchmark 3 (RL rollout)
 
-Rollouts are multi-step. Keep the same JSON contract for an **episode**, but
-extend the worker API (harness-side) so one sandbox can run several steps:
-
-    run_episode(steps: int, seed: int) -> dict
-
-or keep ``run_one`` as “one full mocked rollout episode” (steps inside the
-container). Prefer the latter first so runners stay unchanged; only the
-in-container loop grows. A later optimization can reuse one sandbox across
-steps to isolate create/delete cost from step CPU cost.
+One sandbox = one full mocked rollout **episode** (``n`` sequential steps
+inside the container). Harness API stays ``run_one(n, seed)`` — no runner
+changes. Phase 2 may reuse a long-lived sandbox across episodes to strip
+create/delete cost.
 """
 
 from __future__ import annotations
@@ -109,12 +104,22 @@ ANALYTICS = BenchmarkSpec(
     description="Memory-bandwidth heavy Parquet + DuckDB joins/filters/aggs",
 )
 
-# Placeholder for tomorrow — registered when implemented.
-# RL_ROLLOUT = BenchmarkSpec(...)
+RL = BenchmarkSpec(
+    id="rl",
+    task_name="rl-rollout-v1",
+    docker_image="vera-rl-benchmark",
+    artifact_name="vera-rl-benchmark",
+    module="rl.agent",
+    include_paths=("pyproject.toml", "uv.lock", "rl"),
+    pythonpath_extra=None,
+    docker_memory="1g",
+    description="Mocked RL rollout: sequential env/policy steps, no network/GPU",
+)
 
 BENCHMARKS: dict[str, BenchmarkSpec] = {
     AGENT.id: AGENT,
     ANALYTICS.id: ANALYTICS,
+    RL.id: RL,
 }
 
 BENCHMARK_IDS = tuple(BENCHMARKS)

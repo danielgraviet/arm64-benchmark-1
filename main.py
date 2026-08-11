@@ -3,6 +3,7 @@
 Examples:
   uv run main.py --benchmark agent --runner daytona --levels 1 8 --n 20
   uv run main.py --benchmark analytics --runner docker --levels 1 8 --n 5
+  uv run main.py --benchmark rl --runner docker --levels 1 8 22 --n 64
   uv run main.py --benchmark agent --runner rlp --target arm64-test-1 --levels 1 8
 """
 
@@ -23,7 +24,7 @@ def main() -> None:
         "--benchmark",
         default="agent",
         choices=BENCHMARK_IDS,
-        help="Workload package (agent=B1, analytics=B2)",
+        help="Workload package (agent=B1, analytics=B2, rl=B3)",
     )
     parser.add_argument(
         "--runner",
