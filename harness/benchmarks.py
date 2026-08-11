@@ -21,14 +21,14 @@ Today the suite calls a single-shot worker:
     run_one(n: int, seed: int) -> dict  # latency_ms, exit_code, checksum, …
 
 That matches Benchmark 1 (agent) and Benchmark 2 (analytics): one sandbox
-(or container) per unit of work.
+(or container) per unit of work by default (``--episodes-per-sandbox 1``).
 
 ## Benchmark 3 (RL rollout)
 
 One sandbox = one full mocked rollout **episode** (``n`` sequential steps
-inside the container). Harness API stays ``run_one(n, seed)`` — no runner
-changes. Phase 2 may reuse a long-lived sandbox across episodes to strip
-create/delete cost.
+inside the container). With ``--episodes-per-sandbox E`` (Daytona/RLP), the
+harness creates once, runs ``E`` execs, then deletes — stripping create/delete
+from warm episode wall time while ``duration_ms`` stays the chip metric.
 """
 
 from __future__ import annotations
@@ -82,14 +82,14 @@ class BenchmarkSpec:
 
 AGENT = BenchmarkSpec(
     id="agent",
-    task_name="repo-agent-v1",
+    task_name="repo-agent-v2",
     docker_image="vera-agent-benchmark",
     artifact_name="vera-agent-benchmark",
     module="workload.agent",
     include_paths=("pyproject.toml", "uv.lock", "workload"),
     pythonpath_extra="workload/repos/sqlite-utils",
     docker_memory="1g",
-    description="Repo-agent style CPU work: search, AST, edit, pytest, SQL",
+    description="Repo-agent style CPU work: isolated tmp workspace, search/AST/edit/pytest/SQL",
 )
 
 ANALYTICS = BenchmarkSpec(
@@ -106,14 +106,14 @@ ANALYTICS = BenchmarkSpec(
 
 RL = BenchmarkSpec(
     id="rl",
-    task_name="rl-rollout-v1",
+    task_name="rl-rollout-v2",
     docker_image="vera-rl-benchmark",
     artifact_name="vera-rl-benchmark",
     module="rl.agent",
     include_paths=("pyproject.toml", "uv.lock", "rl"),
     pythonpath_extra=None,
     docker_memory="1g",
-    description="Mocked RL rollout: sequential env/policy steps, no network/GPU",
+    description="Mocked RL rollout: batched env/policy steps, no network/GPU",
 )
 
 BENCHMARKS: dict[str, BenchmarkSpec] = {

@@ -1,13 +1,9 @@
 """Runner registry / factory.
 
-Each backend registers a factory that turns CLI args into a ``run_one(n, seed)``
-callable. Add a new runner by:
-
-1. Implementing ``run_one`` (module function or class method)
-2. Adding a one-line factory in ``RUNNER_FACTORIES``
-
-Benchmarks are selected via ``--benchmark`` and resolved before the runner
-factory runs (see ``harness.benchmarks``).
+Each backend registers a factory that turns CLI args into a ``run_worker``
+callable returning ``list[dict]`` (one dict per episode). Single-shot runners
+wrap ``run_one`` as a one-element list. Daytona/RLP support
+``--episodes-per-sandbox`` (sandbox reuse).
 """
 
 from __future__ import annotations
@@ -23,46 +19,59 @@ from harness.runners.e2b import E2bRunner
 from harness.runners.ec2 import make_run_one as ec2_make_run_one
 from harness.runners.rlp import RlpRunner
 
-RunOne = Callable[[int, int], dict[str, Any]]
-RunnerFactory = Callable[[argparse.Namespace], RunOne]
+RunWorker = Callable[[int, int], list[dict[str, Any]]]
+RunnerFactory = Callable[[argparse.Namespace], RunWorker]
 
 
-def _docker(args: argparse.Namespace) -> RunOne:
-    return DockerRunner(get_benchmark(args.benchmark)).run_one
+def _as_worker(run_one: Callable[[int, int], dict[str, Any]]) -> RunWorker:
+    def _worker(n: int, seed: int) -> list[dict[str, Any]]:
+        return [run_one(n, seed)]
+
+    return _worker
 
 
-def _ec2(args: argparse.Namespace) -> RunOne:
-    return ec2_make_run_one(get_benchmark(args.benchmark))
+def _docker(args: argparse.Namespace) -> RunWorker:
+    return _as_worker(DockerRunner(get_benchmark(args.benchmark)).run_one)
 
 
-def _daytona(args: argparse.Namespace) -> RunOne:
+def _ec2(args: argparse.Namespace) -> RunWorker:
+    return _as_worker(ec2_make_run_one(get_benchmark(args.benchmark)))
+
+
+def _daytona(args: argparse.Namespace) -> RunWorker:
     spec = get_benchmark(args.benchmark)
-    return DaytonaRunner(
+    runner = DaytonaRunner(
         spec=spec,
         snapshot=args.snapshot or spec.artifact_name,
         exec_timeout_s=args.exec_timeout,
         target=args.target,
-    ).run_one
+        episodes_per_sandbox=args.episodes_per_sandbox,
+    )
+    return runner.run_episodes
 
 
-def _rlp(args: argparse.Namespace) -> RunOne:
+def _rlp(args: argparse.Namespace) -> RunWorker:
     spec = get_benchmark(args.benchmark)
-    return RlpRunner(
+    runner = RlpRunner(
         spec=spec,
         snapshot=args.snapshot or spec.artifact_for_target(args.target),
         exec_timeout_s=args.exec_timeout,
         target=args.target,
         toolbox_url=args.toolbox_url,
-    ).run_one
+        episodes_per_sandbox=args.episodes_per_sandbox,
+    )
+    return runner.run_episodes
 
 
-def _e2b(args: argparse.Namespace) -> RunOne:
+def _e2b(args: argparse.Namespace) -> RunWorker:
     spec = get_benchmark(args.benchmark)
-    return E2bRunner(
-        spec=spec,
-        template=args.snapshot or spec.artifact_name,
-        exec_timeout_s=args.exec_timeout,
-    ).run_one
+    return _as_worker(
+        E2bRunner(
+            spec=spec,
+            template=args.snapshot or spec.artifact_name,
+            exec_timeout_s=args.exec_timeout,
+        ).run_one
+    )
 
 
 RUNNER_FACTORIES: dict[str, RunnerFactory] = {
@@ -76,9 +85,14 @@ RUNNER_FACTORIES: dict[str, RunnerFactory] = {
 RUNNERS = tuple(RUNNER_FACTORIES)
 
 
-def build_run_one(args: argparse.Namespace) -> RunOne:
+def build_run_one(args: argparse.Namespace) -> RunWorker:
+    """Return a worker that yields one or more episode records per call."""
     try:
         factory = RUNNER_FACTORIES[args.runner]
     except KeyError as exc:
         raise ValueError(f"Unknown runner: {args.runner}") from exc
     return factory(args)
+
+
+# Back-compat name used by main.py
+build_run_worker = build_run_one

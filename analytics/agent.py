@@ -16,7 +16,7 @@ def parse_args() -> argparse.Namespace:
         "--n",
         type=int,
         default=10,
-        help="Scale factor (customers/orders/items grow linearly with n)",
+        help="Scale factor (customers/orders/items grow linearly with n; Chart C uses ~200)",
     )
     parser.add_argument(
         "--task",

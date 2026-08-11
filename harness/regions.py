@@ -13,6 +13,9 @@ from rlp import DaytonaConfig
 # Known-good RLP targets → region-specific toolbox proxy.
 # Do not rely on a sticky global RLP_TOOLBOX_URL for these; pass toolbox_url
 # explicitly so ARM64 jobs cannot accidentally hit the default x86 proxy.
+#
+# When the Vera onsite region name is known, add it here (toolbox URL +
+# cpu_arch) the same way as arm64-test-1 — unknown --target values fail fast.
 RLP_TARGET_TOOLBOX: dict[str, str] = {
     "arm64-test-1": "https://toolbox.arm64-test-1.rlp.trydaytona.com/toolbox",
 }

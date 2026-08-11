@@ -1,167 +1,186 @@
 # Onsite Vera / NVIDIA HQ runbook
 
-**Goal:** Leave HQ with a small set of clean JSONL files that support Chart A (chip) and Chart B (Daytona density). EDA + slides happen after.
+**Goal:** Leave HQ with clean JSONL for Chart A (chip) and Chart B (density). EDA + slides after.
 
 **Related:** `tickets/gtc-berlin-vera-daytona-compelling-data.md`
 
-**Do not** spray every `--n` on every benchmark. Intentional matrix only.
-
----
-
-## Before you start
-
-- [ ] Repo checked out, `uv sync` works
-- [ ] Creds for Daytona / RLP that can hit the Vera region
-- [ ] Know the Vera `--target` name (fill in below once you have it)
-- [ ] Control recipe already validated on Daytona default (`rl` at `n=100000` or `200000`)
-- [ ] Same `--seed` everywhere: **`42`** (unless you deliberately change it and re-run both sides)
-
-**Fill in onsite:**
+**How to use this doc:** every runnable command is on its **own line**. Copy/paste one at a time (or split terminals for snapshot builds). Replace `<vera-region>` everywhere once you know the target name.
 
 | Item | Value |
 | --- | --- |
 | Vera `--target` | `<vera-region>` |
-| Runner for Vera | `rlp` or `daytona` (whichever the node is on) |
-| Control runner | `daytona` (default) and/or `rlp` (no target / x86) |
-| Chart A `--n` | `100000` (or `200000` if time) |
 | Seed | `42` |
+| Chart A RL `--n` | `5000` (hardened batched policy; ~4.6s `duration_ms` on Daytona) |
+| Chart A `-E` | `8` (sandbox reuse — warm episodes) |
+| Chart B RL `--n` | `64` |
+| Chart B agent `--n` | `20` |
+| Chart B `-E` | `1` (fresh sandbox per episode — density) |
+| Chart C analytics `--n` | `200` (optional) |
 
 ---
 
-## Snapshots (do this first)
+## Day overview (3 days)
 
-Build once per (benchmark × region). Same workload image on Vera and control.
+| Day | Focus |
+| --- | --- |
+| **Day 1** | Land, snapshots, smokes, inspect, short reuse smoke |
+| **Day 2** | Chart A chip (`duration_ms`, Vera vs control, `-E 8`) |
+| **Day 3** | Chart B density (`E=1` ladder) + lock Berlin headline |
+
+---
+
+## Before you start (prep / Day 0)
+
+- [ ] Repo synced with hardened workloads (`rl-rollout-v2`, `repo-agent-v2`)
+- [ ] `.env` has RLP / Daytona creds for the new region
+- [ ] `<vera-region>` added to `harness/regions.py` (`RLP_TARGET_TOOLBOX` + `RLP_TARGET_CPU_ARCH`)
+- [ ] You can open 3 terminals in this repo
+
+---
+
+## Day 1 — snapshots + smoke + inspect
+
+### 1a. Build snapshots (parallel — 3 terminals)
 
 ```bash
-# RL (required)
 uv run scripts/build_rlp_snapshot.py --benchmark rl --target <vera-region>
-# also ensure control-region RL snapshot exists
+```
 
-# Agent (Chart B)
+```bash
 uv run scripts/build_rlp_snapshot.py --benchmark agent --target <vera-region>
+```
 
-# Analytics (optional only)
+```bash
 uv run scripts/build_rlp_snapshot.py --benchmark analytics --target <vera-region>
 ```
 
-If using Daytona as the Vera path, build the Daytona snapshot for that region / naming scheme the same way you did for default.
+Wait until all three finish successfully.
 
-Smoke test before the matrix:
+### 1b. Smoke runs on the new region (c=1, sequential)
 
 ```bash
-uv run main.py --benchmark rl --runner rlp --target <vera-region> --levels 1 --n 64 --seed 42
+uv run main.py --benchmark rl --runner rlp --target <vera-region> --levels 1 --n 64 --seed 42 -E 1
 ```
 
-Confirm: exit 0, checksum present, `duration_ms` in the JSONL run row.
+```bash
+uv run main.py --benchmark agent --runner rlp --target <vera-region> --levels 1 --n 20 --seed 42 -E 1
+```
+
+```bash
+uv run main.py --benchmark analytics --runner rlp --target <vera-region> --levels 1 --n 5 --seed 42 -E 1
+```
+
+### 1c. Sandbox-reuse smoke (Chart A plumbing)
+
+```bash
+uv run main.py --benchmark rl --runner rlp --target <vera-region> --levels 1 --n 1000 --seed 42 -E 4
+```
+
+### Task: inspect before Day 2
+
+Open the newest JSONL under `data/<bench>/rlp-*/`.
+
+- [ ] Exit 0 / `failures: 0` / `checksum_ok: true`
+- [ ] Run rows have `duration_ms` > 0
+- [ ] Reuse smoke: `episode_idx` 0…3, only idx 0 has `"cold": true`, checksums match across episodes
+- [ ] Arch probe looks right for Vera
+
+**Stop if anything looks off.** Fix before Day 2.
 
 ---
 
-## Priority order (stick to this)
+## Day 2 — Chart A main evaluation loop (sequential)
 
-### 1) Chart A — is the chip itself faster?
-
-Same heavy RL episode on Vera and control. Compare **`duration_ms` only**.
+Same heavy RL episode. Compare **`duration_ms` only** for the chip claim. `-E 8` warms the sandbox so wall latency on warm episodes tracks compute.
 
 ```bash
-# Vera
-uv run main.py --benchmark rl --runner rlp --target <vera-region> --levels 1 88 --n 100000 --seed 42
-
-# Control (Daytona default example)
-uv run main.py --benchmark rl --runner daytona --levels 1 88 --n 100000 --seed 42
+uv run main.py --benchmark rl --runner rlp --target <vera-region> --levels 1 88 --n 5000 --seed 42 -E 8
 ```
-
-**Pass if:** Vera `duration_ms` p50 is clearly lower (≥20–30%).  
-**Fail / drop chip brag if:** flat, noisy, or Vera slower. Still keep the files.
-
-Checksums for the same `(n, seed)` must match across regions.
-
-### 2) Chart B — can Daytona pack work onto Vera?
-
-Light workload, many sandboxes. Check throughput up, usable p99, episode CPU roughly flat.
 
 ```bash
-# Light RL density
-uv run main.py --benchmark rl --runner rlp --target <vera-region> --levels 1 8 22 44 88 --n 64 --seed 42
-
-# Agent density (customer-shaped)
-uv run main.py --benchmark agent --runner rlp --target <vera-region> --levels 1 8 22 44 88 --n 20 --seed 42
+uv run main.py --benchmark rl --runner daytona --levels 1 88 --n 5000 --seed 42 -E 8
 ```
 
-Optional control for B if you want a side-by-side density slide:
+Optional RLP x86 control:
 
 ```bash
-uv run main.py --benchmark rl --runner daytona --levels 1 8 22 44 88 --n 64 --seed 42
-uv run main.py --benchmark agent --runner daytona --levels 1 8 22 44 88 --n 20 --seed 42
+uv run main.py --benchmark rl --runner rlp --levels 1 88 --n 5000 --seed 42 -E 8
 ```
 
-### 3) Optional — analytics (only if time)
-
-Mid/high `--n`. Keep only if Vera wins on `duration_ms` / throughput; else appendix.
+Optional Chart C (only if time; keep only if Vera wins on `duration_ms`):
 
 ```bash
-uv run main.py --benchmark analytics --runner rlp --target <vera-region> --levels 1 88 --n 20 --seed 42
-# bump --n if duration_ms is still tiny vs create tax
+uv run main.py --benchmark analytics --runner rlp --target <vera-region> --levels 1 88 --n 200 --seed 42 -E 8
 ```
+
+```bash
+uv run main.py --benchmark analytics --runner daytona --levels 1 88 --n 200 --seed 42 -E 8
+```
+
+**Pass if:** Vera `duration_ms` p50 clearly lower (≥20–30%).  
+**Else:** drop chip brag; still keep files for density day.
 
 ---
 
-## What to collect (files)
+## Day 3 — Chart B density + lock slide (sequential)
 
-JSONL lands under `data/<benchmark>/<runner>/` (target suffix dirs for RLP targets).
+Light workloads, full ladder, **`-E 1`** (one create per sandbox — this is density, not reuse).
 
-Minimum leave-with set:
+```bash
+uv run main.py --benchmark rl --runner rlp --target <vera-region> --levels 1 8 22 44 88 --n 64 --seed 42 -E 1
+```
 
-| File role | Benchmark | `--n` | Levels | Regions |
-| --- | --- | --- | --- | --- |
-| Chart A Vera | `rl` | 100000 (or 200000) | 1 88 | Vera |
-| Chart A control | `rl` | same | 1 88 | Daytona default and/or rlp-x86 |
-| Chart B RL | `rl` | 64 | 1 8 22 44 88 | Vera (+ optional control) |
-| Chart B agent | `agent` | 20 | 1 8 22 44 88 | Vera (+ optional control) |
-| Optional C | `analytics` | mid/high | 1 88 | Vera + control |
+```bash
+uv run main.py --benchmark agent --runner rlp --target <vera-region> --levels 1 8 22 44 88 --n 20 --seed 42 -E 1
+```
 
-That’s enough. Do **not** sweep every `n`.
+```bash
+uv run main.py --benchmark rl --runner daytona --levels 1 8 22 44 88 --n 64 --seed 42 -E 1
+```
 
----
+```bash
+uv run main.py --benchmark agent --runner daytona --levels 1 8 22 44 88 --n 20 --seed 42 -E 1
+```
 
-## How to read results onsite (quick)
-
-- **Chart A:** look at run-row `duration_ms` (p50 / p99). Ignore mean wall `latency_ms` for the chip claim.
-- **Chart B:** look at summary `throughput_per_sec` and `p99_ms`; spot-check that `duration_ms` doesn’t explode at 88.
-- Confirm `checksum_ok: true` on summaries.
-
-EDA after the visit (latency/throughput today; `duration_ms` charts may need a quick hand pull from JSONL):
+### After runs — EDA
 
 ```bash
 uv run python eda.py --benchmark rl
+```
+
+```bash
 uv run python eda.py --benchmark agent
 ```
 
----
+```bash
+uv run python eda.py --benchmark analytics
+```
 
-## Decision rule (lock the slide before you leave)
+Charts now include `p50_duration_bars.png` / `duration_boxplots.png` for Chart A.
 
-- [ ] If **A** wins clearly → lead with **chip + density**
-- [ ] If **A** is flat/noisy but **B** is strong → lead with **Daytona scales on Vera** (don’t overclaim FLOPs)
+### Lock the Berlin sentence
+
+- [ ] If Chart A wins clearly → lead with **chip + density**
+- [ ] If A flat/noisy but B strong → lead with **Daytona scales on Vera**
 - [ ] Never headline light-`n` create/API latency as “Vera cores are faster”
-- [ ] Don’t use current `arm64-test-1` / `rlp-arm64` as the Vera chip proof
-
-One sentence to fill in:
+- [ ] Don’t use `arm64-test-1` as Vera chip proof
 
 > On Vera, Daytona runs **88 concurrent** customer rollouts with **stable per-episode CPU**, and those episodes finish **___% faster** than on today’s region *(only if Chart A supports it)*.
 
 ---
 
-## Timebox if you’re short
+## Quick read guide
 
-1. Smoke `rl` c=1 on Vera  
-2. Chart A only (`rl` heavy, c=1 is enough if 88 is slow; add 88 if possible)  
-3. Chart B light `rl` `1→88`  
-4. Skip agent / analytics  
+| Chart | Look at | Ignore for the claim |
+| --- | --- | --- |
+| A (chip) | `duration_ms` p50/p99; warm `p50_warm_ms` as cross-check | cold create `latency_ms` |
+| B (density) | `throughput_per_sec`, `p99_ms`; flat `duration_ms` at 88 | reuse / `-E>1` |
 
 ---
 
 ## Anti-goals
 
-- Don’t up `--n` on every bench “just in case”
-- Don’t collect a ton of exploratory JSONL with no control twin
+- Don’t start Day 2 before Day 1 inspect is green
+- Don’t run Chart B with `-E > 1` and call it density
+- Don’t spray every `--n` on every bench
 - Don’t decide the GTC headline from wall `latency_ms` alone

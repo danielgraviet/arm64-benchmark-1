@@ -11,10 +11,15 @@ uv run python -m rl.agent --n 64
 uv run main.py --benchmark agent --runner docker --levels 1 8 22 --n 20
 uv run main.py --benchmark analytics --runner docker --levels 1 8 --n 5
 uv run main.py --benchmark rl --runner docker --levels 1 8 22 44 88 --n 64
+# Chart A chip (daytona/rlp): heavy RL + sandbox reuse
+uv run main.py --benchmark rl --runner daytona --levels 1 --n 5000 -E 8
+# Chart B density: always -E 1
 uv run main.py --benchmark agent --runner e2b --levels 1 8 22 --n 20
 uv run main.py --benchmark agent --runner rlp --levels 1 --n 20
 uv run main.py --benchmark analytics --runner rlp --target arm64-test-1 --levels 1 --n 5
 uv run main.py --benchmark rl --runner rlp --levels 1 8 22 44 88 --n 64
+# Optional Chart C bandwidth
+uv run main.py --benchmark analytics --runner daytona --levels 1 --n 200 -E 8
 
 ## Cloud snapshots / templates
 Requires the matching API key in `.env`:
@@ -63,9 +68,12 @@ Region notes (RLP): `arm64-test-1` →
 it you get `no matching capacity`. Arch is probed on the builder / first worker.
 
 ## Benchmarks
-- `agent` (B1): repo-agent CPU work (search / AST / edit / pytest / SQL)
-- `analytics` (B2): Parquet write + DuckDB join/filter/agg (memory-bandwidth)
-- `rl` (B3): mocked RL episode (sequential env/policy steps; `--n` = horizon)
+- `agent` (B1): isolated tmp workspace; search / AST / edit / pytest / SQL (`repo-agent-v2`)
+- `analytics` (B2): Parquet write + DuckDB join/filter/agg (Chart C: `--n 200`)
+- `rl` (B3): batched mocked RL episode (`rl-rollout-v2`; Chart A: `--n 5000 -E 8`)
+
+`--episodes-per-sandbox` / `-E` (daytona/rlp): create once, exec E times, delete.
+Chart B density always uses `-E 1`. See `tickets/onsite-vera-gtc-runbook.md`.
 
 Shared contract: offline image, `--n`/`--seed`, one JSON line with
 `task` / `iterations` / `duration_ms` / `checksum`. See `harness/benchmarks.py`.

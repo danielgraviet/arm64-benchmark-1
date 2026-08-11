@@ -4,6 +4,7 @@ Examples:
   uv run main.py --benchmark agent --runner daytona --levels 1 8 --n 20
   uv run main.py --benchmark analytics --runner docker --levels 1 8 --n 5
   uv run main.py --benchmark rl --runner docker --levels 1 8 22 --n 64
+  uv run main.py --benchmark rl --runner daytona --levels 1 --n 5000 -E 8
   uv run main.py --benchmark agent --runner rlp --target arm64-test-1 --levels 1 8
 """
 
@@ -15,7 +16,7 @@ from pathlib import Path
 from harness.benchmarks import BENCHMARK_IDS, get_benchmark
 from harness.common import run_suite
 from harness.paths import default_output_path
-from harness.runners import RUNNERS, build_run_one
+from harness.runners import RUNNERS, build_run_worker
 
 
 def main() -> None:
@@ -37,6 +38,16 @@ def main() -> None:
     )
     parser.add_argument("--n", type=int, default=20)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument(
+        "--episodes-per-sandbox",
+        "-E",
+        type=int,
+        default=1,
+        help=(
+            "Episodes to exec per sandbox before delete (daytona/rlp). "
+            "Default 1 = Chart B density. Use E>=8 for Chart A warm chip runs."
+        ),
+    )
     parser.add_argument(
         "--output",
         type=str,
@@ -79,6 +90,12 @@ def main() -> None:
         parser.error("--toolbox-url is only valid with --runner rlp")
     if args.target and args.runner not in ("daytona", "rlp"):
         parser.error("--target is only valid with --runner daytona or rlp")
+    if args.episodes_per_sandbox < 1:
+        parser.error("--episodes-per-sandbox must be >= 1")
+    if args.episodes_per_sandbox > 1 and args.runner not in ("daytona", "rlp"):
+        parser.error(
+            "--episodes-per-sandbox > 1 is only supported with --runner daytona or rlp"
+        )
 
     spec = get_benchmark(args.benchmark)
     artifact = (
@@ -103,6 +120,7 @@ def main() -> None:
     print(
         f"benchmark={args.benchmark} runner={args.runner} "
         f"target={args.target!r} artifact={artifact!r} "
+        f"episodes_per_sandbox={args.episodes_per_sandbox} "
         f"output={output}"
     )
 
@@ -111,7 +129,7 @@ def main() -> None:
         n=args.n,
         seed=args.seed,
         output=output,
-        run_one=build_run_one(args),
+        run_worker=build_run_worker(args),
         meta={
             "benchmark": args.benchmark,
             "runner": args.runner,
@@ -119,6 +137,7 @@ def main() -> None:
             "artifact": artifact,
             "seed": args.seed,
             "n": args.n,
+            "episodes_per_sandbox": args.episodes_per_sandbox,
         },
     )
 

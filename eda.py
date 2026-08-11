@@ -42,7 +42,11 @@ SERIES_COLORS = {
 }
 
 LATENCY_NOTE = (
-    "Cloud latency = create + exec + delete; Docker = local docker run wall time"
+    "Cloud latency = create + exec (+ delete outside stamp); "
+    "duration_ms = in-container work only (Chart A chip metric)"
+)
+DURATION_NOTE = (
+    "duration_ms is in-sandbox CPU/IO; compare this for chip claims, not wall latency_ms"
 )
 
 
@@ -127,6 +131,32 @@ def mean_latency(runs: list[dict], concurrency: int) -> float:
     return float(np.mean(values)) if values else 0.0
 
 
+def mean_duration(runs: list[dict], concurrency: int) -> float:
+    values = [
+        float(r["duration_ms"])
+        for r in runs
+        if r.get("concurrency") == concurrency and r.get("duration_ms") is not None
+    ]
+    return float(np.mean(values)) if values else 0.0
+
+
+def percentile_duration(runs: list[dict], concurrency: int, pct: float) -> float:
+    values = [
+        float(r["duration_ms"])
+        for r in runs
+        if r.get("concurrency") == concurrency and r.get("duration_ms") is not None
+    ]
+    if not values:
+        return 0.0
+    ordered = sorted(values)
+    k = (len(ordered) - 1) * (pct / 100)
+    f = int(k)
+    c = min(f + 1, len(ordered) - 1)
+    if f == c:
+        return float(ordered[f])
+    return float(ordered[f] + (ordered[c] - ordered[f]) * (k - f))
+
+
 def all_levels(loaded: dict[str, tuple[list[dict], list[dict]]]) -> list[int]:
     return sorted(
         {s["concurrency"] for _, summaries in loaded.values() for s in summaries}
@@ -145,7 +175,7 @@ def print_summary_table(
 
     header = (
         f"{'series':<12} {'conc':>5} {'p50_ms':>10} {'mean_ms':>10} "
-        f"{'p95_ms':>10} {'p99_ms':>10} {'max_ms':>10} {'tput/s':>8} "
+        f"{'p50_dur':>10} {'p99_ms':>10} {'tput/s':>8} "
         f"{'fail':>5} {'checksum':>8}"
     )
     print(header)
@@ -155,11 +185,14 @@ def print_summary_table(
         for s in summaries:
             level = s["concurrency"]
             mean_ms = mean_latency(runs, level)
+            p50_dur = s.get("p50_duration_ms")
+            if p50_dur is None:
+                p50_dur = percentile_duration(runs, level, 50)
             print(
                 f"{series:<12} {level:5d} "
                 f"{s['p50_ms']:10.1f} {mean_ms:10.1f} "
-                f"{s['p95_ms']:10.1f} {s['p99_ms']:10.1f} "
-                f"{s['max_ms']:10.1f} {s['throughput_per_sec']:8.2f} "
+                f"{float(p50_dur):10.1f} {s['p99_ms']:10.1f} "
+                f"{s['throughput_per_sec']:8.2f} "
                 f"{s['failures']:5d} {str(s.get('checksum_ok')):>8}"
             )
         print()
@@ -242,6 +275,98 @@ def plot_throughput(
     fig.tight_layout()
     fig.subplots_adjust(bottom=0.18)
     fig.savefig(out / "throughput_vs_concurrency.png", dpi=150)
+    plt.close(fig)
+
+
+def plot_duration_vs_concurrency(
+    loaded: dict[str, tuple[list[dict], list[dict]]], out: Path
+) -> None:
+    """Chart A helper: in-container duration_ms p50 beside wall latency p50."""
+    series_list = list(loaded.keys())
+    levels = all_levels(loaded)
+    x = np.arange(len(levels))
+    width = min(0.8 / max(len(series_list), 1), 0.22)
+
+    fig, ax = plt.subplots(figsize=(12, 5))
+    for i, series in enumerate(series_list):
+        runs, summaries = loaded[series]
+        by_summary = {s["concurrency"]: s for s in summaries}
+        values = []
+        for level in levels:
+            s = by_summary.get(level, {})
+            dur = s.get("p50_duration_ms")
+            if dur is None:
+                dur = percentile_duration(runs, level, 50)
+            values.append(float(dur or 0))
+        offset = (i - (len(series_list) - 1) / 2) * width
+        bars = ax.bar(
+            x + offset, values, width, label=series, color=series_color(series)
+        )
+        ax.bar_label(bars, fmt="%.0f", padding=2, fontsize=7)
+
+    ax.set_xticks(x, [str(level) for level in levels])
+    ax.set_xlabel("Concurrency level")
+    ax.set_ylabel("p50 duration_ms")
+    ax.set_title("In-container duration_ms vs concurrency (Chart A chip metric)")
+    ax.legend()
+    ax.grid(axis="y", alpha=0.3)
+    fig.text(0.5, 0.01, DURATION_NOTE, ha="center", fontsize=8, style="italic")
+    fig.tight_layout()
+    fig.subplots_adjust(bottom=0.18)
+    fig.savefig(out / "p50_duration_bars.png", dpi=150)
+    plt.close(fig)
+
+
+def plot_duration_boxplots(
+    loaded: dict[str, tuple[list[dict], list[dict]]], out: Path
+) -> None:
+    levels = all_levels(loaded)
+    series_list = list(loaded.keys())
+    has_duration = any(
+        r.get("duration_ms") is not None
+        for runs, _ in loaded.values()
+        for r in runs
+    )
+    if not has_duration:
+        return
+
+    fig, axes = plt.subplots(
+        1, len(series_list), figsize=(4.5 * len(series_list), 5), sharey=True
+    )
+    if len(series_list) == 1:
+        axes = [axes]
+
+    for ax, series in zip(axes, series_list):
+        runs, _ = loaded[series]
+        by_level: dict[int, list[float]] = defaultdict(list)
+        for run in runs:
+            if run.get("duration_ms") is not None:
+                by_level[run["concurrency"]].append(float(run["duration_ms"]))
+
+        data = [by_level.get(level, []) for level in levels]
+        color = series_color(series)
+        bp = ax.boxplot(
+            data,
+            tick_labels=[str(level) for level in levels],
+            showfliers=True,
+            patch_artist=True,
+        )
+        for box in bp["boxes"]:
+            box.set_facecolor(color)
+            box.set_alpha(0.55)
+        for key in ("medians", "whiskers", "caps", "fliers"):
+            for artist in bp[key]:
+                artist.set_color(color)
+        ax.set_title(series)
+        ax.set_xlabel("Concurrency level")
+        ax.grid(axis="y", alpha=0.3)
+
+    axes[0].set_ylabel("duration_ms")
+    fig.suptitle("Raw in-container duration_ms by concurrency")
+    fig.text(0.5, 0.01, DURATION_NOTE, ha="center", fontsize=8, style="italic")
+    fig.tight_layout()
+    fig.subplots_adjust(bottom=0.18)
+    fig.savefig(out / "duration_boxplots.png", dpi=150)
     plt.close(fig)
 
 
@@ -349,6 +474,8 @@ def main() -> None:
     )
     plot_throughput(loaded, out)
     plot_latency_boxplots(loaded, out)
+    plot_duration_vs_concurrency(loaded, out)
+    plot_duration_boxplots(loaded, out)
 
     print(f"Wrote charts to {out}/")
     for path in sorted(out.glob("*.png")):

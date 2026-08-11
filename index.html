@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rollout Lab — learn RL through the Vera benchmark</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Source+Serif+4:opsz,ital,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #14201c;
+      --ink-soft: #2a3d36;
+      --moss: #1f6b4a;
+      --moss-bright: #2a8f62;
+      --sand: #efe8dc;
+      --sand-deep: #e0d5c4;
+      --paper: #f7f2ea;
+      --line: rgba(20, 32, 28, 0.14);
+      --warn: #9a4a1c;
+      --ok: #1f6b4a;
+      --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+      --font-body: "Source Serif 4", Georgia, serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 1.125rem;
+      line-height: 1.55;
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(42, 143, 98, 0.12), transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, rgba(154, 74, 28, 0.08), transparent 50%),
+        linear-gradient(180deg, var(--paper) 0%, var(--sand) 45%, #e9e1d3 100%);
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.35;
+      background-image:
+        linear-gradient(var(--line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,0.45), transparent 70%);
+      z-index: 0;
+    }
+
+    main { position: relative; z-index: 1; }
+
+    .wrap {
+      width: min(1080px, calc(100% - 2.5rem));
+      margin-inline: auto;
+    }
+
+    /* —— Hero —— */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 3rem 0 4.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-visual {
+      position: absolute;
+      inset: 8% 0 auto;
+      height: 52vh;
+      width: 100%;
+      opacity: 0;
+      animation: rise 1.1s 0.15s ease forwards;
+    }
+
+    .hero-visual canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .brand {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: clamp(3.2rem, 9vw, 6.5rem);
+      letter-spacing: -0.04em;
+      line-height: 0.92;
+      margin: 0 0 1rem;
+      opacity: 0;
+      animation: rise 0.9s 0.35s ease forwards;
+    }
+
+    .hero p.lead {
+      max-width: 34rem;
+      font-size: 1.2rem;
+      margin: 0 0 1.75rem;
+      color: var(--ink-soft);
+      opacity: 0;
+      animation: rise 0.9s 0.55s ease forwards;
+    }
+
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1rem;
+      opacity: 0;
+      animation: rise 0.9s 0.7s ease forwards;
+    }
+
+    a.btn, button.btn {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: 0.01em;
+      border: 1.5px solid var(--ink);
+      background: var(--ink);
+      color: var(--paper);
+      padding: 0.7rem 1.15rem;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+    }
+
+    a.btn.ghost, button.btn.ghost {
+      background: transparent;
+      color: var(--ink);
+    }
+
+    a.btn:hover, button.btn:hover {
+      transform: translateY(-2px);
+      background: var(--moss);
+      border-color: var(--moss);
+      color: var(--paper);
+    }
+
+    a.btn.ghost:hover {
+      background: var(--ink);
+      color: var(--paper);
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* —— Sections —— */
+    section {
+      padding: 4.5rem 0;
+      border-top: 1px solid var(--line);
+    }
+
+    section h2 {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: clamp(1.9rem, 4vw, 2.6rem);
+      letter-spacing: -0.03em;
+      margin: 0 0 0.75rem;
+      line-height: 1.1;
+    }
+
+    section .sub {
+      max-width: 38rem;
+      margin: 0 0 2rem;
+      color: var(--ink-soft);
+    }
+
+    .vocab {
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    @media (min-width: 720px) {
+      .vocab { grid-template-columns: 1fr 1fr; gap: 1.5rem 2rem; }
+    }
+
+    .vocab dt {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--moss);
+      margin: 0 0 0.2rem;
+    }
+
+    .vocab dd {
+      margin: 0;
+      color: var(--ink-soft);
+    }
+
+    /* —— Workbench (interaction surface, not decorative cards) —— */
+    .bench {
+      border: 1.5px solid var(--ink);
+      background: rgba(247, 242, 234, 0.72);
+      backdrop-filter: blur(6px);
+      padding: 1.25rem 1.25rem 1.4rem;
+    }
+
+    .bench-title {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin: 0 0 1rem;
+      color: var(--ink-soft);
+    }
+
+    .controls {
+      display: grid;
+      gap: 0.9rem;
+    }
+
+    @media (min-width: 720px) {
+      .controls { grid-template-columns: 1fr 1fr; }
+    }
+
+    label.ctrl {
+      display: grid;
+      gap: 0.35rem;
+      font-size: 0.95rem;
+    }
+
+    label.ctrl span.name {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.82rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    label.ctrl span.hint {
+      font-size: 0.85rem;
+      color: var(--ink-soft);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--moss);
+    }
+
+    .val {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+    }
+
+    @media (min-width: 720px) {
+      .metrics { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    .metric {
+      border-top: 2px solid var(--ink);
+      padding-top: 0.45rem;
+    }
+
+    .metric .k {
+      font-family: var(--font-display);
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+
+    .metric .v {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 1.35rem;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+
+    .metric .v.ok { color: var(--ok); }
+    .metric .v.warn { color: var(--warn); }
+
+    .log {
+      margin-top: 1rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      max-height: 9rem;
+      overflow: auto;
+      border-top: 1px solid var(--line);
+      padding-top: 0.75rem;
+      color: var(--ink-soft);
+      white-space: pre-wrap;
+    }
+
+    .stepper {
+      display: grid;
+      gap: 1rem;
+    }
+
+    @media (min-width: 860px) {
+      .stepper { grid-template-columns: 1.1fr 0.9fr; align-items: start; }
+    }
+
+    .loop-viz {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .loop-viz .node {
+      border: 1.5px solid var(--ink);
+      padding: 0.45rem 0.7rem;
+      background: var(--paper);
+      transition: background 0.25s ease, color 0.25s ease, transform 0.25s ease;
+    }
+
+    .loop-viz .node.active {
+      background: var(--moss);
+      color: var(--paper);
+      transform: scale(1.04);
+    }
+
+    .loop-viz .arrow { color: var(--ink-soft); font-weight: 500; }
+
+    .checklist {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 0.65rem;
+    }
+
+    .checklist li {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.7rem;
+      align-items: start;
+      padding: 0.55rem 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .checklist input {
+      width: 1.15rem;
+      height: 1.15rem;
+      margin-top: 0.2rem;
+      accent-color: var(--moss);
+    }
+
+    .progress {
+      margin-top: 1.5rem;
+      font-family: var(--font-display);
+      font-weight: 700;
+    }
+
+    .progress .bar {
+      height: 6px;
+      background: var(--sand-deep);
+      margin-top: 0.5rem;
+      overflow: hidden;
+    }
+
+    .progress .fill {
+      height: 100%;
+      width: 0%;
+      background: var(--moss);
+      transition: width 0.4s ease;
+    }
+
+    .done-banner {
+      display: none;
+      margin-top: 1.25rem;
+      padding: 1rem 0 0;
+      border-top: 2px solid var(--moss);
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--moss);
+    }
+
+    .done-banner.show { display: block; animation: rise 0.5s ease; }
+
+    .compare {
+      display: grid;
+      gap: 1rem;
+    }
+
+    @media (min-width: 720px) {
+      .compare { grid-template-columns: 1fr 1fr; }
+    }
+
+    .compare .side {
+      border-left: 3px solid var(--moss);
+      padding-left: 1rem;
+    }
+
+    .compare .side.b { border-left-color: var(--warn); }
+
+    .compare h3 {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      margin: 0 0 0.4rem;
+    }
+
+    .footnote {
+      font-size: 0.95rem;
+      color: var(--ink-soft);
+      margin-top: 2rem;
+    }
+
+    footer {
+      padding: 2rem 0 3rem;
+      border-top: 1px solid var(--line);
+      font-size: 0.95rem;
+      color: var(--ink-soft);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="hero wrap">
+      <div class="hero-visual" aria-hidden="true">
+        <canvas id="heroCanvas"></canvas>
+      </div>
+      <h1 class="brand">Rollout Lab</h1>
+      <p class="lead">
+        An interactive walkthrough of the RL ideas behind our Vera / Daytona
+        benchmark — so you can explain every knob we turned, and leave having
+        run real (small-scale) rollout experiments in the browser.
+      </p>
+      <div class="cta-row">
+        <a class="btn" href="#vocab">Start with the words</a>
+        <a class="btn ghost" href="#lab">Jump to the lab</a>
+      </div>
+    </header>
+
+    <section id="vocab">
+      <div class="wrap">
+        <h2>The words you need</h2>
+        <p class="sub">
+          Reinforcement learning is a loop. Memorize these six terms and the
+          rest of the lab will click.
+        </p>
+        <dl class="vocab">
+          <div>
+            <dt>Environment</dt>
+            <dd>The world. Ours is a mocked latent “grid” — a vector that evolves with each action. No game, no network.</dd>
+          </div>
+          <div>
+            <dt>Observation</dt>
+            <dd>What the agent sees each step — a float vector of size <em>obs dim</em> (we use 384 in production).</dd>
+          </div>
+          <div>
+            <dt>Action</dt>
+            <dd>What the agent does. We pick one of 16 discrete actions with <code>argmax</code> over policy logits.</dd>
+          </div>
+          <div>
+            <dt>Reward</dt>
+            <dd>A scalar “how good was that?” signal from the env. We sum a discounted <em>return</em> over the episode.</dd>
+          </div>
+          <div>
+            <dt>Policy</dt>
+            <dd>The brain: observation → logits → action. Ours is a 3-layer NumPy net (no GPU, no training in this bench).</dd>
+          </div>
+          <div>
+            <dt>Episode / horizon <code>n</code></dt>
+            <dd>One rollout = reset, then <code>n</code> sequential steps. Harness flag <code>--n</code> is this horizon.</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section id="loop">
+      <div class="wrap">
+        <h2>One step, slowly</h2>
+        <p class="sub">
+          Press step to walk a single transition. This is the same loop our
+          <code>rl/rollout.py</code> runs <code>n</code> times.
+        </p>
+        <div class="stepper">
+          <div class="bench">
+            <p class="bench-title">Episode loop</p>
+            <div class="loop-viz" id="loopViz" aria-live="polite">
+              <span class="node" data-node="obs">observation</span>
+              <span class="arrow">→</span>
+              <span class="node" data-node="policy">policy</span>
+              <span class="arrow">→</span>
+              <span class="node" data-node="action">action</span>
+              <span class="arrow">→</span>
+              <span class="node" data-node="env">env.step</span>
+              <span class="arrow">→</span>
+              <span class="node" data-node="reward">reward</span>
+            </div>
+            <div style="margin-top: 1.1rem; display: flex; gap: 0.6rem; flex-wrap: wrap;">
+              <button class="btn" type="button" id="btnReset">Reset episode</button>
+              <button class="btn ghost" type="button" id="btnStep">Take one step</button>
+            </div>
+            <div class="metrics">
+              <div class="metric"><div class="k">Step</div><div class="v" id="mStep">0</div></div>
+              <div class="metric"><div class="k">Action</div><div class="v" id="mAction">—</div></div>
+              <div class="metric"><div class="k">Reward</div><div class="v" id="mReward">—</div></div>
+              <div class="metric"><div class="k">Return so far</div><div class="v" id="mReturn">0.00</div></div>
+            </div>
+            <div class="log" id="stepLog">Reset to begin. Seed is fixed so repeats are deterministic.</div>
+          </div>
+          <div>
+            <p class="sub" style="margin: 0;">
+              <strong>Why we mock this.</strong> Real RL customers run env + policy
+              inside sandboxes. Our benchmark copies that <em>compute shape</em>
+              (matmul, tanh, batch) so we can compare chips with
+              <code>duration_ms</code> — without downloading models or calling APIs.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="lab">
+      <div class="wrap">
+        <h2>Experiment lab</h2>
+        <p class="sub">
+          Change the knobs we actually hardened in <code>rl-rollout-v2</code>,
+          then run a full episode in your browser. Same ideas as the harness —
+          smaller so it stays interactive.
+        </p>
+
+        <div class="bench">
+          <p class="bench-title">Your configuration</p>
+          <div class="controls">
+            <label class="ctrl">
+              <span class="name">Horizon n — <span class="val" id="vN">256</span></span>
+              <input type="range" id="n" min="16" max="2000" step="16" value="256" />
+              <span class="hint">Steps per episode. Chart B uses small n; Chart A uses large n.</span>
+            </label>
+            <label class="ctrl">
+              <span class="name">Batch size — <span class="val" id="vBatch">4</span></span>
+              <input type="range" id="batch" min="1" max="16" step="1" value="4" />
+              <span class="hint">Parallel envs per step (we ship 8). More batch ⇒ more FLOPs per step.</span>
+            </label>
+            <label class="ctrl">
+              <span class="name">Obs dim — <span class="val" id="vObs">128</span></span>
+              <input type="range" id="obs" min="32" max="256" step="16" value="128" />
+              <span class="hint">Observation width. Production uses 384. Env transition is O(obs²).</span>
+            </label>
+            <label class="ctrl">
+              <span class="name">Hidden dim — <span class="val" id="vHid">64</span></span>
+              <input type="range" id="hid" min="16" max="192" step="16" value="64" />
+              <span class="hint">Policy width. Production uses 192 with three layers.</span>
+            </label>
+            <label class="ctrl">
+              <span class="name">Simulated create tax (ms) — <span class="val" id="vTax">2000</span></span>
+              <input type="range" id="tax" min="0" max="4000" step="100" value="2000" />
+              <span class="hint">Fake sandbox create/API cost. Chart A needs duration ≫ this.</span>
+            </label>
+            <label class="ctrl">
+              <span class="name">Seed — <span class="val" id="vSeed">42</span></span>
+              <input type="range" id="seed" min="1" max="99" step="1" value="42" />
+              <span class="hint">Same seed ⇒ same checksum-style trajectory. Change it and return shifts.</span>
+            </label>
+          </div>
+
+          <div style="margin-top: 1.2rem; display: flex; flex-wrap: wrap; gap: 0.6rem;">
+            <button class="btn" type="button" id="btnRun">Run episode</button>
+            <button class="btn ghost" type="button" id="btnPresetB">Preset: Chart B light</button>
+            <button class="btn ghost" type="button" id="btnPresetA">Preset: Chart A heavy</button>
+          </div>
+
+          <div class="metrics">
+            <div class="metric"><div class="k">duration_ms</div><div class="v" id="outDur">—</div></div>
+            <div class="metric"><div class="k">Share of wall</div><div class="v" id="outShare">—</div></div>
+            <div class="metric"><div class="k">Est. FLOPs</div><div class="v" id="outFlops">—</div></div>
+            <div class="metric"><div class="k">Episode return</div><div class="v" id="outRet">—</div></div>
+          </div>
+          <div class="log" id="labLog">Pick a preset or tweak knobs, then run. Watch whether duration beats create tax.</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="why">
+      <div class="wrap">
+        <h2>Why we chose what we chose</h2>
+        <p class="sub">Map the lab back to the GTC charts.</p>
+        <div class="compare">
+          <div class="side">
+            <h3>Chart A — is the chip faster?</h3>
+            <p>
+              Heavy episode (<code>--n 5000</code>, batch 8, wide net). Measure
+              only <code>duration_ms</code>. Optionally <code>-E 8</code> so warm
+              wall time ≈ duration (create stripped).
+            </p>
+          </div>
+          <div class="side b">
+            <h3>Chart B — can Daytona pack work?</h3>
+            <p>
+              Light episode (<code>--n 64</code>), many sandboxes, <code>-E 1</code>.
+              Throughput + p99 latency matter; duration should stay flat at 88.
+            </p>
+          </div>
+        </div>
+        <p class="footnote">
+          We also stopped stacking full trajectories at huge n — that was
+          allocator noise, not “customer RL.” Running stats are enough for a
+          checksum.
+        </p>
+      </div>
+    </section>
+
+    <section id="done">
+      <div class="wrap">
+        <h2>Your experiment checklist</h2>
+        <p class="sub">
+          Check these off as you go. When they’re all done, you’ve run a real
+          (small) RL experimental loop — not just read a blog post.
+        </p>
+        <ul class="checklist" id="checks">
+          <li>
+            <input type="checkbox" id="c1" />
+            <label for="c1">Stepped the obs → policy → action → reward loop at least 5 times</label>
+          </li>
+          <li>
+            <input type="checkbox" id="c2" />
+            <label for="c2">Ran Chart B preset and confirmed duration ≪ create tax</label>
+          </li>
+          <li>
+            <input type="checkbox" id="c3" />
+            <label for="c3">Ran Chart A preset and confirmed duration is a large share of wall</label>
+          </li>
+          <li>
+            <input type="checkbox" id="c4" />
+            <label for="c4">Changed seed and saw return / trajectory change</label>
+          </li>
+          <li>
+            <input type="checkbox" id="c5" />
+            <label for="c5">Doubled batch or obs dim and saw duration / FLOPs rise</label>
+          </li>
+          <li>
+            <input type="checkbox" id="c6" />
+            <label for="c6">Can explain in one sentence why Chart A ignores mean latency_ms</label>
+          </li>
+        </ul>
+        <div class="progress">
+          <span id="progLabel">0 / 6 experiments complete</span>
+          <div class="bar"><div class="fill" id="progFill"></div></div>
+        </div>
+        <div class="done-banner" id="doneBanner">
+          You’re done. You can honestly say you’ve run small-scale RL rollout
+          experiments and you understand why Vera Chart A keys off duration_ms.
+        </div>
+      </div>
+    </section>
+
+    <footer class="wrap">
+      Mirrors <code>rl/env.py</code>, <code>rl/policy.py</code>, <code>rl/rollout.py</code>
+      and the GTC Chart A/B split in <code>tickets/gtc-berlin-vera-daytona-compelling-data.md</code>.
+      Open with Live Server / Go Live on this <code>index.html</code>.
+    </footer>
+  </main>
+
+  <script>
+    /* ========== tiny seeded RNG + matmul helpers ========== */
+    function mulberry32(a) {
+      return function () {
+        let t = (a += 0x6d2b79f5);
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function randn(rng) {
+      const u = 1 - rng();
+      const v = 1 - rng();
+      return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+    }
+
+    function zeros(r, c) {
+      return Array.from({ length: r }, () => Array(c).fill(0));
+    }
+
+    function matVec(M, v, b) {
+      const out = new Array(M[0].length);
+      for (let j = 0; j < M[0].length; j++) {
+        let s = b ? b[j] : 0;
+        for (let i = 0; i < v.length; i++) s += v[i] * M[i][j];
+        out[j] = s;
+      }
+      return out;
+    }
+
+    function tanhArr(v) {
+      return v.map(Math.tanh);
+    }
+
+    function argmax(v) {
+      let i = 0;
+      for (let k = 1; k < v.length; k++) if (v[k] > v[i]) i = k;
+      return i;
+    }
+
+    function norm(v) {
+      return Math.sqrt(v.reduce((s, x) => s + x * x, 0));
+    }
+
+    /* ========== toy env + policy (browser-scaled) ========== */
+    function makeEnv(seed, obsDim, batch, actionDim) {
+      const rng = mulberry32(seed >>> 0);
+      const T = zeros(obsDim, obsDim);
+      const scale = 1 / Math.sqrt(obsDim);
+      for (let i = 0; i < obsDim; i++)
+        for (let j = 0; j < obsDim; j++) T[i][j] = randn(rng) * scale;
+      const A = zeros(actionDim, obsDim);
+      const as = 1 / Math.sqrt(actionDim);
+      for (let i = 0; i < actionDim; i++)
+        for (let j = 0; j < obsDim; j++) A[i][j] = randn(rng) * as;
+      let obs = null;
+      return {
+        reset() {
+          obs = Array.from({ length: batch }, () => {
+            const v = Array.from({ length: obsDim }, () => randn(rng));
+            const n = norm(v) + 1e-12;
+            return v.map((x) => x / n);
+          });
+          return obs;
+        },
+        step(actions) {
+          const rewards = [];
+          const next = [];
+          for (let b = 0; b < batch; b++) {
+            const a = actions[b] % actionDim;
+            const drift = A[a];
+            const nxt = new Array(obsDim);
+            for (let j = 0; j < obsDim; j++) {
+              let s = 0.1 * drift[j];
+              for (let i = 0; i < obsDim; i++) s += obs[b][i] * T[i][j];
+              nxt[j] = Math.tanh(s);
+            }
+            let rr = 0;
+            for (let j = 0; j < obsDim; j++) rr += nxt[j] * nxt[j];
+            rewards.push(-rr / obsDim + 0.05 * a);
+            next.push(nxt);
+          }
+          obs = next;
+          return { obs, rewards };
+        },
+      };
+    }
+
+    function makePolicy(seed, obsDim, hid, actionDim) {
+      const rng = mulberry32((seed ^ 0xc0ffee) >>> 0);
+      function layer(inD, outD, s) {
+        const W = zeros(inD, outD);
+        const b = Array.from({ length: outD }, () => randn(rng) * 0.01);
+        for (let i = 0; i < inD; i++)
+          for (let j = 0; j < outD; j++) W[i][j] = randn(rng) * s;
+        return { W, b };
+      }
+      const l1 = layer(obsDim, hid, 1 / Math.sqrt(obsDim));
+      const l2 = layer(hid, hid, 1 / Math.sqrt(hid));
+      const l3 = layer(hid, actionDim, 1 / Math.sqrt(hid));
+      return {
+        act(obsBatch) {
+          const actions = [];
+          const logitsAll = [];
+          for (const o of obsBatch) {
+            const h1 = tanhArr(matVec(l1.W, o, l1.b));
+            const h2 = tanhArr(matVec(l2.W, h1, l2.b));
+            const logits = matVec(l3.W, h2, l3.b);
+            actions.push(argmax(logits));
+            logitsAll.push(logits);
+          }
+          return { actions, logitsAll };
+        },
+      };
+    }
+
+    function estFlops(n, batch, obs, hid, actions) {
+      // rough: env T@obs + 3-layer policy per batch row per step
+      const env = batch * (2 * obs * obs + 2 * obs);
+      const pol =
+        batch *
+        (2 * obs * hid + 2 * hid * hid + 2 * hid * actions + 3 * hid + actions);
+      return n * (env + pol);
+    }
+
+    function fmtFlops(x) {
+      if (x >= 1e9) return (x / 1e9).toFixed(2) + "e9";
+      if (x >= 1e6) return (x / 1e6).toFixed(2) + "e6";
+      if (x >= 1e3) return (x / 1e3).toFixed(1) + "e3";
+      return String(Math.round(x));
+    }
+
+    /* ========== hero canvas ========== */
+    (function hero() {
+      const canvas = document.getElementById("heroCanvas");
+      const ctx = canvas.getContext("2d");
+      let w, h, particles, t = 0;
+      function resize() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        w = canvas.width = Math.floor(rect.width * devicePixelRatio);
+        h = canvas.height = Math.floor(rect.height * devicePixelRatio);
+        particles = Array.from({ length: 48 }, (_, i) => ({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          vx: (Math.random() - 0.5) * 0.4 * devicePixelRatio,
+          vy: (Math.random() - 0.5) * 0.4 * devicePixelRatio,
+          r: (2 + Math.random() * 3) * devicePixelRatio,
+          phase: i,
+        }));
+      }
+      function frame() {
+        t += 0.01;
+        ctx.clearRect(0, 0, w, h);
+        ctx.strokeStyle = "rgba(31, 107, 74, 0.25)";
+        ctx.lineWidth = 1 * devicePixelRatio;
+        for (let i = 0; i < particles.length; i++) {
+          const a = particles[i];
+          a.x += a.vx + Math.sin(t + a.phase) * 0.15;
+          a.y += a.vy + Math.cos(t * 0.8 + a.phase) * 0.15;
+          if (a.x < 0 || a.x > w) a.vx *= -1;
+          if (a.y < 0 || a.y > h) a.vy *= -1;
+          for (let j = i + 1; j < particles.length; j++) {
+            const b = particles[j];
+            const dx = a.x - b.x, dy = a.y - b.y;
+            const d = Math.hypot(dx, dy);
+            if (d < 120 * devicePixelRatio) {
+              ctx.globalAlpha = 1 - d / (120 * devicePixelRatio);
+              ctx.beginPath();
+              ctx.moveTo(a.x, a.y);
+              ctx.lineTo(b.x, b.y);
+              ctx.stroke();
+            }
+          }
+          ctx.globalAlpha = 0.85;
+          ctx.fillStyle = i % 3 === 0 ? "#1f6b4a" : "#14201c";
+          ctx.beginPath();
+          ctx.arc(a.x, a.y, a.r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        requestAnimationFrame(frame);
+      }
+      resize();
+      window.addEventListener("resize", resize);
+      frame();
+    })();
+
+    /* ========== one-step demo ========== */
+    const ACTION_DIM = 8;
+    let demo = null;
+    let demoReturn = 0;
+    let demoStep = 0;
+    let stepsTaken = 0;
+
+    function setActive(name) {
+      document.querySelectorAll("#loopViz .node").forEach((n) => {
+        n.classList.toggle("active", n.dataset.node === name);
+      });
+    }
+
+    function resetDemo() {
+      demo = {
+        env: makeEnv(42, 48, 1, ACTION_DIM),
+        policy: makePolicy(42, 48, 32, ACTION_DIM),
+        obs: null,
+      };
+      demo.obs = demo.env.reset();
+      demoReturn = 0;
+      demoStep = 0;
+      document.getElementById("mStep").textContent = "0";
+      document.getElementById("mAction").textContent = "—";
+      document.getElementById("mReward").textContent = "—";
+      document.getElementById("mReturn").textContent = "0.00";
+      document.getElementById("stepLog").textContent =
+        "Episode reset. Observation is a 48-d unit vector. Ready for step 1.";
+      setActive("obs");
+    }
+
+    document.getElementById("btnReset").addEventListener("click", resetDemo);
+    document.getElementById("btnStep").addEventListener("click", () => {
+      if (!demo) resetDemo();
+      setActive("policy");
+      const { actions, logitsAll } = demo.policy.act(demo.obs);
+      setTimeout(() => {
+        setActive("action");
+        document.getElementById("mAction").textContent = String(actions[0]);
+        setTimeout(() => {
+          setActive("env");
+          const { obs, rewards } = demo.env.step(actions);
+          demo.obs = obs;
+          setTimeout(() => {
+            setActive("reward");
+            demoStep += 1;
+            stepsTaken += 1;
+            demoReturn = rewards[0] + 0.99 * demoReturn; // running approx for display
+            // true cumulative undiscounted for clarity in the demo:
+            const undisc =
+              (Number(document.getElementById("mReturn").dataset.sum || 0) || 0) +
+              rewards[0];
+            document.getElementById("mReturn").dataset.sum = undisc;
+            document.getElementById("mStep").textContent = String(demoStep);
+            document.getElementById("mReward").textContent = rewards[0].toFixed(4);
+            document.getElementById("mReturn").textContent = undisc.toFixed(4);
+            const top = logitsAll[0]
+              .map((x, i) => ({ x, i }))
+              .sort((a, b) => b.x - a.x)
+              .slice(0, 3)
+              .map((o) => `a${o.i}:${o.x.toFixed(2)}`)
+              .join("  ");
+            document.getElementById("stepLog").textContent =
+              `step ${demoStep}: policy logits top ${top}\n` +
+              `chose action ${actions[0]}, reward ${rewards[0].toFixed(4)}, ` +
+              `obs‖ ‖=${norm(demo.obs[0]).toFixed(3)}`;
+            if (stepsTaken >= 5) mark("c1");
+            setTimeout(() => setActive("obs"), 280);
+          }, 180);
+        }, 180);
+      }, 180);
+    });
+
+    resetDemo();
+
+    /* ========== experiment lab ========== */
+    const els = {
+      n: document.getElementById("n"),
+      batch: document.getElementById("batch"),
+      obs: document.getElementById("obs"),
+      hid: document.getElementById("hid"),
+      tax: document.getElementById("tax"),
+      seed: document.getElementById("seed"),
+    };
+
+    function syncLabels() {
+      document.getElementById("vN").textContent = els.n.value;
+      document.getElementById("vBatch").textContent = els.batch.value;
+      document.getElementById("vObs").textContent = els.obs.value;
+      document.getElementById("vHid").textContent = els.hid.value;
+      document.getElementById("vTax").textContent = els.tax.value;
+      document.getElementById("vSeed").textContent = els.seed.value;
+    }
+    Object.values(els).forEach((el) => el.addEventListener("input", syncLabels));
+    syncLabels();
+
+    let lastSeed = 42;
+    let lastBatch = 4;
+    let lastObs = 128;
+
+    function setPreset(kind) {
+      if (kind === "B") {
+        els.n.value = 64;
+        els.batch.value = 2;
+        els.obs.value = 64;
+        els.hid.value = 32;
+        els.tax.value = 2000;
+      } else {
+        els.n.value = 800;
+        els.batch.value = 8;
+        els.obs.value = 192;
+        els.hid.value = 96;
+        els.tax.value = 2000;
+      }
+      syncLabels();
+    }
+
+    document.getElementById("btnPresetB").addEventListener("click", () => setPreset("B"));
+    document.getElementById("btnPresetA").addEventListener("click", () => setPreset("A"));
+
+    document.getElementById("btnRun").addEventListener("click", () => {
+      const n = +els.n.value;
+      const batch = +els.batch.value;
+      const obsDim = +els.obs.value;
+      const hid = +els.hid.value;
+      const tax = +els.tax.value;
+      const seed = +els.seed.value;
+      const actionDim = 16;
+
+      const env = makeEnv(seed, obsDim, batch, actionDim);
+      const policy = makePolicy(seed, obsDim, hid, actionDim);
+      let obs = env.reset();
+      const rewards = [];
+
+      const t0 = performance.now();
+      for (let i = 0; i < n; i++) {
+        const { actions } = policy.act(obs);
+        const out = env.step(actions);
+        obs = out.obs;
+        // mean reward across batch
+        rewards.push(out.rewards.reduce((a, b) => a + b, 0) / batch);
+      }
+      const duration = performance.now() - t0;
+
+      let G = 0;
+      for (let i = rewards.length - 1; i >= 0; i--) G = rewards[i] + 0.99 * G;
+
+      const wall = duration + tax;
+      const share = (100 * duration) / wall;
+      const flops = estFlops(n, batch, obsDim, hid, actionDim);
+
+      const durEl = document.getElementById("outDur");
+      const shareEl = document.getElementById("outShare");
+      durEl.textContent = duration.toFixed(1);
+      shareEl.textContent = share.toFixed(1) + "%";
+      shareEl.className = "v " + (share >= 45 ? "ok" : "warn");
+      document.getElementById("outFlops").textContent = fmtFlops(flops);
+      document.getElementById("outRet").textContent = G.toFixed(4);
+
+      const verdict =
+        share >= 45
+          ? "CPU-useful regime — this is Chart A territory (duration is the signal)."
+          : "Create-dominated — fine for Chart B density, bad for a chip claim.";
+
+      document.getElementById("labLog").textContent =
+        `n=${n} batch=${batch} obs=${obsDim} hid=${hid} seed=${seed}\n` +
+        `duration_ms=${duration.toFixed(1)}  create_tax=${tax}  wall≈${wall.toFixed(1)}\n` +
+        `duration share=${share.toFixed(1)}%  est FLOPs≈${fmtFlops(flops)}\n` +
+        verdict;
+
+      if (n <= 80 && share < 40) mark("c2");
+      if (n >= 400 && share >= 45) mark("c3");
+      if (seed !== lastSeed) mark("c4");
+      if (batch > lastBatch || obsDim > lastObs) mark("c5");
+      lastSeed = seed;
+      lastBatch = Math.max(lastBatch, batch);
+      lastObs = Math.max(lastObs, obsDim);
+    });
+
+    /* ========== checklist ========== */
+    function mark(id) {
+      const el = document.getElementById(id);
+      if (el && !el.checked) {
+        el.checked = true;
+        updateProg();
+      }
+    }
+
+    function updateProg() {
+      const boxes = [...document.querySelectorAll("#checks input")];
+      const done = boxes.filter((b) => b.checked).length;
+      document.getElementById("progLabel").textContent =
+        `${done} / ${boxes.length} experiments complete`;
+      document.getElementById("progFill").style.width =
+        `${(100 * done) / boxes.length}%`;
+      document.getElementById("doneBanner").classList.toggle("show", done === boxes.length);
+      try {
+        localStorage.setItem(
+          "rollout-lab-checks",
+          JSON.stringify(boxes.map((b) => b.checked))
+        );
+      } catch (_) {}
+    }
+
+    document.querySelectorAll("#checks input").forEach((b) => {
+      b.addEventListener("change", () => {
+        if (b.id === "c6" && b.checked) {
+          /* self-attestation */
+        }
+        updateProg();
+      });
+    });
+
+    try {
+      const saved = JSON.parse(localStorage.getItem("rollout-lab-checks") || "null");
+      if (Array.isArray(saved)) {
+        document.querySelectorAll("#checks input").forEach((b, i) => {
+          b.checked = !!saved[i];
+        });
+      }
+    } catch (_) {}
+    updateProg();
+  </script>
+</body>
+</html>

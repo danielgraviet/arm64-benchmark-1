@@ -1,11 +1,8 @@
 """Runner protocol: each backend exposes run_one(n, seed) -> result dict.
 
-The suite actually types this as ``RunOne = Callable[[int, int], dict]`` and
-receives a bound method / function from the factory. Class runners should still
-match this Protocol so they remain drop-in compatible.
-
-B3 (``rl``) uses ``run_one`` as one full mocked episode (``n`` steps inside the
-container). A later ``run_episode`` / sandbox-reuse API is optional Phase 2.
+The suite types this as ``RunOne = Callable[[int, int], dict]`` for single-shot
+backends. Daytona/RLP also expose ``run_episodes(n, seed, episodes)`` for
+sandbox reuse (create once → exec E times → delete once).
 """
 
 from __future__ import annotations

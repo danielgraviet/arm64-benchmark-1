@@ -21,10 +21,13 @@ def test_rl_seed_changes_result() -> None:
 
 
 def test_rl_horizon_scales_step_count() -> None:
+    from rl.env import BATCH_SIZE
+
     small = run_episode(n=8, seed=7)
     large = run_episode(n=32, seed=7)
     assert small["steps"] == 8
     assert large["steps"] == 32
-    assert sum(small["action_histogram"]) == 8
-    assert sum(large["action_histogram"]) == 32
+    assert small["batch_size"] == BATCH_SIZE
+    assert sum(small["action_histogram"]) == 8 * BATCH_SIZE
+    assert sum(large["action_histogram"]) == 32 * BATCH_SIZE
     assert compute_checksum(small) != compute_checksum(large)

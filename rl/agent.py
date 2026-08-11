@@ -21,7 +21,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--task",
         type=str,
-        default="rl-rollout-v1",
+        default="rl-rollout-v2",
         help="Workload scenario name",
     )
     parser.add_argument(

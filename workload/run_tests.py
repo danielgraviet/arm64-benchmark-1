@@ -11,6 +11,11 @@ TEST_FILES = [
     "tests/test_m2m.py",
     "tests/test_extract.py",
     "tests/test_upsert.py",
+    "tests/test_create.py",
+    "tests/test_insert_files.py",
+    "tests/test_query.py",
+    "tests/test_transform.py",
+    "tests/test_utils.py",
 ]
 
 
@@ -25,9 +30,20 @@ class _ResultCollector:
             self.outcomes[report.nodeid] = report.outcome
 
 
-def run(repo_root: Path) -> dict[str, Any]:
+def run(repo_root: Path, n: int = 5) -> dict[str, Any]:
+    """Run a deterministic subset of pytest files; breadth scales with ``n``.
+
+    Chart B light profile (``n=20``) still runs several files; larger ``n``
+    widens the suite up to ``len(TEST_FILES)``.
+    """
+    if n < 1:
+        raise ValueError("n must be >= 1")
+    # At least 1 file; grow with n but cap at available suite.
+    count = max(1, min(len(TEST_FILES), 1 + (n // 5)))
+    selected = TEST_FILES[:count]
+
     collector = _ResultCollector()
-    args = [str(repo_root / f) for f in TEST_FILES] + [
+    args = [str(repo_root / f) for f in selected] + [
         "-q",
         "-p",
         "no:cacheprovider",
@@ -45,6 +61,7 @@ def run(repo_root: Path) -> dict[str, Any]:
 
     return {
         "exit_code": exit_code,
+        "files_selected": selected,
         "total": len(outcomes),
         "passed": len(passed),
         "failed_tests": failed,

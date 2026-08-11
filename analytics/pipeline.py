@@ -5,6 +5,10 @@ Scale knob ``n``:
   orders    ≈ n * 10_000
   items     ≈ n * 30_000
 
+Chart C (optional bandwidth slide): use ``n=200`` so in-container
+``duration_ms`` is multi-second (~2–3s locally) and a clear majority of wall
+at c=1 after create tax. Keep smoke / Chart B-adjacent runs at ``n=5``–``10``.
+
 Flow: generate → write Parquet → DuckDB scan/join/filter/aggregate →
 checksum-friendly result dict.
 """
