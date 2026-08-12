@@ -14,6 +14,7 @@
 | Chart A `-E` | `8` (sandbox reuse — warm episodes) |
 | Chart B RL `--n` | `64` |
 | Chart B agent `--n` | `20` |
+| Chart B evals `--n` | `1` (one TB-style task per sandbox) |
 | Chart B `-E` | `1` (fresh sandbox per episode — density) |
 | Chart C analytics `--n` | `200` (optional) |
 
@@ -40,7 +41,7 @@
 
 ## Day 1 — snapshots + smoke + inspect
 
-### 1a. Build snapshots (parallel — 3 terminals)
+### 1a. Build snapshots (parallel — up to 4 terminals)
 
 ```bash
 uv run scripts/build_rlp_snapshot.py --benchmark rl --target <vera-region>
@@ -54,7 +55,11 @@ uv run scripts/build_rlp_snapshot.py --benchmark agent --target <vera-region>
 uv run scripts/build_rlp_snapshot.py --benchmark analytics --target <vera-region>
 ```
 
-Wait until all three finish successfully.
+```bash
+uv run scripts/build_rlp_snapshot.py --benchmark evals --target <vera-region>
+```
+
+Wait until all four finish successfully.
 
 ### 1b. Smoke runs on the new region (c=1, sequential)
 
@@ -68,6 +73,10 @@ uv run main.py --benchmark agent --runner rlp --target <vera-region> --levels 1 
 
 ```bash
 uv run main.py --benchmark analytics --runner rlp --target <vera-region> --levels 1 --n 5 --seed 42 -E 1
+```
+
+```bash
+uv run main.py --benchmark evals --runner rlp --target <vera-region> --levels 1 --n 1 --seed 42 -E 1
 ```
 
 ### 1c. Sandbox-reuse smoke (Chart A plumbing)
@@ -135,11 +144,19 @@ uv run main.py --benchmark agent --runner rlp --target <vera-region> --levels 1 
 ```
 
 ```bash
+uv run main.py --benchmark evals --runner rlp --target <vera-region> --levels 1 8 22 44 88 --n 1 --seed 42 -E 1
+```
+
+```bash
 uv run main.py --benchmark rl --runner daytona --levels 1 8 22 44 88 --n 64 --seed 42 -E 1
 ```
 
 ```bash
 uv run main.py --benchmark agent --runner daytona --levels 1 8 22 44 88 --n 20 --seed 42 -E 1
+```
+
+```bash
+uv run main.py --benchmark evals --runner daytona --levels 1 8 22 44 88 --n 1 --seed 42 -E 1
 ```
 
 ### After runs — EDA
@@ -154,6 +171,10 @@ uv run python eda.py --benchmark agent
 
 ```bash
 uv run python eda.py --benchmark analytics
+```
+
+```bash
+uv run python eda.py --benchmark evals
 ```
 
 Charts now include `p50_duration_bars.png` / `duration_boxplots.png` for Chart A.

@@ -116,10 +116,23 @@ RL = BenchmarkSpec(
     description="Mocked RL rollout: batched env/policy steps, no network/GPU",
 )
 
+EVALS = BenchmarkSpec(
+    id="evals",
+    task_name="evals-tb-style-v2",
+    docker_image="vera-evals-benchmark",
+    artifact_name="vera-evals-benchmark",
+    module="evals.agent",
+    include_paths=("pyproject.toml", "uv.lock", "evals"),
+    pythonpath_extra=None,
+    docker_memory="1g",
+    description="Terminal-Bench–style evals: multi-second oracle+verify trials (no LLM)",
+)
+
 BENCHMARKS: dict[str, BenchmarkSpec] = {
     AGENT.id: AGENT,
     ANALYTICS.id: ANALYTICS,
     RL.id: RL,
+    EVALS.id: EVALS,
 }
 
 BENCHMARK_IDS = tuple(BENCHMARKS)
