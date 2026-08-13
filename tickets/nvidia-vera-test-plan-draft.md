@@ -29,7 +29,7 @@ Daytona software still owns routing, snapshotting, portability, isolation/securi
 | **P0** | **Sandbox density** (light RL + coding-agent + **evals / TB-style** `--n 1` trials at concurrency 1→88) | Isolates **product density / UX** — more concurrent customer jobs with usable p99. Closest to Terminal-Bench–on-Daytona style load. |
 | **P1** | **Analytics / Parquet + DuckDB** | Memory-bandwidth–heavy tenants; keep if it wins, otherwise appendix. |
 | **P1** | **Cold create / schedule tax** (light workload size) | Separately measure spin-up (API, scheduling, etc.) |
-| **P2** | **Harbor Terminal-Bench oracle subset** (same pack, Vera vs control) | “TB-style evals finish sooner / denser on Vera” — **infra time-to-finish** |
+| **P2** | **Harbor Terminal-Bench oracle** (`uv run main.py --benchmark tbench --runner harbor --levels 32 --n 0`, Vera vs control) | “TB oracle pack finishes sooner / denser on Vera” — **infra time-to-finish** (see `tickets/evals-terminal-bench-style.md`) |
 
 ## What we’d like to confirm with hard numbers
 

@@ -177,7 +177,26 @@ uv run python eda.py --benchmark analytics
 uv run python eda.py --benchmark evals
 ```
 
-Charts now include `p50_duration_bars.png` / `duration_boxplots.png` for Chart A.
+---
+
+## Optional — Harbor TB oracle (Phase 2, after density)
+
+Not Day-1 P0. Requires `uv tool install 'harbor[daytona]'` and `DAYTONA_API_KEY`.
+Do **not** use `--runner docker` for real Terminal-Bench.
+
+```bash
+uv run main.py --benchmark tbench --runner harbor --levels 5 --n 5
+```
+
+```bash
+uv run main.py --benchmark tbench --runner harbor --levels 32 --n 0
+```
+
+```bash
+uv run main.py --benchmark tbench --runner harbor --levels 32 --n 0 --target <vera-region>
+```
+
+Compare wall time-to-finish / JSONL under `data/tbench/harbor/`. Oracle pass rate should be ≈1.0. Details: `tickets/evals-terminal-bench-style.md`.
 
 ### Lock the Berlin sentence
 

@@ -128,14 +128,31 @@ EVALS = BenchmarkSpec(
     description="Terminal-Bench–style evals: multi-second oracle+verify trials (no LLM)",
 )
 
+# Phase 2: real Harbor Terminal-Bench. No local image/module — runner=harbor only.
+TBENCH = BenchmarkSpec(
+    id="tbench",
+    task_name="harbor-terminal-bench-2-oracle",
+    docker_image="",  # unused — Harbor owns task images
+    artifact_name="harbor-terminal-bench-2",
+    module="",  # unused
+    include_paths=(),
+    pythonpath_extra=None,
+    docker_memory="1g",
+    description="Harbor Terminal-Bench 2 oracle pack (infra time-to-finish, not accuracy)",
+)
+
 BENCHMARKS: dict[str, BenchmarkSpec] = {
     AGENT.id: AGENT,
     ANALYTICS.id: ANALYTICS,
     RL.id: RL,
     EVALS.id: EVALS,
+    TBENCH.id: TBENCH,
 }
 
 BENCHMARK_IDS = tuple(BENCHMARKS)
+
+# Snapshot/template builders only apply to in-repo workload packs.
+SNAPSHOT_BENCHMARK_IDS = tuple(b for b in BENCHMARK_IDS if b != TBENCH.id)
 
 
 def get_benchmark(benchmark_id: str) -> BenchmarkSpec:

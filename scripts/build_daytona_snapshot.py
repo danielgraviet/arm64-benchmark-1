@@ -23,7 +23,7 @@ from daytona import (
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from harness.benchmarks import BENCHMARK_IDS, get_benchmark
+from harness.benchmarks import SNAPSHOT_BENCHMARK_IDS, get_benchmark
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from snapshot_common import (  # noqa: E402
@@ -51,7 +51,7 @@ def main() -> None:
     parser.add_argument(
         "--benchmark",
         default="agent",
-        choices=BENCHMARK_IDS,
+        choices=SNAPSHOT_BENCHMARK_IDS,
         help="Which benchmark package to bake into the snapshot",
     )
     parser.add_argument(

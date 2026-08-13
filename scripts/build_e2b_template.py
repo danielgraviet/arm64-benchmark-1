@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 from e2b import Template, default_build_logger
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from harness.benchmarks import BENCHMARK_IDS, BenchmarkSpec, get_benchmark
+from harness.benchmarks import SNAPSHOT_BENCHMARK_IDS, BenchmarkSpec, get_benchmark
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from snapshot_common import BASE_IMAGE, ROOT
@@ -73,7 +73,7 @@ def main() -> None:
     parser.add_argument(
         "--benchmark",
         default="agent",
-        choices=BENCHMARK_IDS,
+        choices=SNAPSHOT_BENCHMARK_IDS,
         help="Which benchmark package to bake into the template",
     )
     parser.add_argument(

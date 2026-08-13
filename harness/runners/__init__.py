@@ -74,12 +74,24 @@ def _e2b(args: argparse.Namespace) -> RunWorker:
     )
 
 
+def _harbor(_args: argparse.Namespace) -> RunWorker:
+    """Harbor uses ``run_harbor_suite``; ThreadPool workers are unsupported."""
+
+    def _worker(_n: int, _seed: int) -> list[dict[str, Any]]:
+        raise RuntimeError(
+            "Harbor runner must use run_harbor_suite (one job per --levels value)."
+        )
+
+    return _worker
+
+
 RUNNER_FACTORIES: dict[str, RunnerFactory] = {
     "docker": _docker,
     "daytona": _daytona,
     "rlp": _rlp,
     "e2b": _e2b,
     "ec2": _ec2,
+    "harbor": _harbor,
 }
 
 RUNNERS = tuple(RUNNER_FACTORIES)

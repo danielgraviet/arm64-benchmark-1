@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 from rlp import Daytona, Resources
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from harness.benchmarks import BENCHMARK_IDS, get_benchmark
+from harness.benchmarks import SNAPSHOT_BENCHMARK_IDS, get_benchmark
 from harness.paths import ROOT
 from harness.regions import check_sandbox_arch, resolve_rlp_client_config
 from harness.rlp_create import create_rlp_sandbox
@@ -42,7 +42,7 @@ def main() -> None:
     parser.add_argument(
         "--benchmark",
         default="agent",
-        choices=BENCHMARK_IDS,
+        choices=SNAPSHOT_BENCHMARK_IDS,
         help="Which benchmark package to bake into the snapshot",
     )
     parser.add_argument(

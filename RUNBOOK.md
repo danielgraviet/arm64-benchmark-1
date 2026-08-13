@@ -23,6 +23,10 @@ uv run main.py --benchmark rl --runner rlp --levels 1 8 22 44 88 --n 64
 uv run main.py --benchmark analytics --runner daytona --levels 1 --n 200 -E 8
 # Chart B evals density (Terminal-Bench–style trials)
 uv run main.py --benchmark evals --runner daytona --levels 1 8 22 44 88 --n 1 -E 1
+# Phase 2: real Harbor TB oracle (not docker). --n = task limit (0=all); --levels = Harbor -n
+# Requires: uv tool install 'harbor[daytona]' + DAYTONA_API_KEY
+uv run main.py --benchmark tbench --runner harbor --levels 5 --n 5
+uv run main.py --benchmark tbench --runner harbor --levels 32 --n 0
 
 ## Cloud snapshots / templates
 Requires the matching API key in `.env`:
@@ -81,6 +85,7 @@ it you get `no matching capacity`. Arch is probed on the builder / first worker.
 - `analytics` (B2): Parquet write + DuckDB join/filter/agg (Chart C: `--n 200`)
 - `rl` (B3): batched mocked RL episode (`rl-rollout-v2`; Chart A: `--n 5000 -E 8`)
 - `evals` (B4): Terminal-Bench–style trials — multi-second oracle + verify, no LLM (density: `--n 1 -E 1`)
+- `tbench` (Phase 2): real Harbor Terminal-Bench **oracle** via `--runner harbor` only (not docker/daytona). `--levels` = Harbor concurrency; `--n` = task limit (`0` = full pack). See `tickets/evals-terminal-bench-style.md`.
 
 `--episodes-per-sandbox` / `-E` (daytona/rlp): create once, exec E times, delete.
 Chart B density always uses `-E 1`. See `tickets/onsite-vera-gtc-runbook.md`.
