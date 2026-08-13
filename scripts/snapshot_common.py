@@ -102,17 +102,50 @@ def extract_and_uv_sync(sandbox, archive_path: str = "/tmp/app.tar.gz") -> None:
     )
 
 
+def ensure_uv(sandbox) -> None:
+    """Install uv if missing (stock VM seeds do not ship the uv image)."""
+    response = sandbox.process.exec("command -v uv", timeout=30)
+    if response.exit_code in (0, None) and (response.result or "").strip():
+        return
+    print("uv not found on sandbox; installing via astral.sh …")
+    exec_or_raise(
+        sandbox,
+        "curl -LsSf https://astral.sh/uv/install.sh | sh",
+        timeout=300,
+    )
+    # Official installer drops into ~/.local/bin; also symlink for non-login shells.
+    exec_or_raise(
+        sandbox,
+        "export PATH=\"$HOME/.local/bin:$PATH\"; "
+        "command -v uv && "
+        "sudo ln -sf \"$(command -v uv)\" /usr/local/bin/uv 2>/dev/null || "
+        "ln -sf \"$HOME/.local/bin/uv\" /usr/local/bin/uv 2>/dev/null || true",
+        timeout=60,
+    )
+
+
 def install_system_packages(sandbox, spec: BenchmarkSpec) -> None:
     """Install apt packages declared on the benchmark (no-op if empty)."""
     if not spec.apt_packages:
         return
     pkgs = " ".join(spec.apt_packages)
-    exec_or_raise(sandbox, "apt-get update", timeout=300)
+    # Prefer sudo (stock VMs); fall back to plain apt (root container images).
+    apt_prefix = (
+        "sudo DEBIAN_FRONTEND=noninteractive apt-get"
+        if _sudo_available(sandbox)
+        else "DEBIAN_FRONTEND=noninteractive apt-get"
+    )
+    exec_or_raise(sandbox, f"{apt_prefix} update", timeout=300)
     exec_or_raise(
         sandbox,
-        f"DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends {pkgs}",
+        f"{apt_prefix} install -y --no-install-recommends {pkgs}",
         timeout=600,
     )
+
+
+def _sudo_available(sandbox) -> bool:
+    response = sandbox.process.exec("command -v sudo >/dev/null && sudo -n true", timeout=30)
+    return response.exit_code in (0, None)
 
 
 def smoke_agent(sandbox, spec: BenchmarkSpec = AGENT, *, app_dir: str = APP_DIR) -> None:

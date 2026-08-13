@@ -104,7 +104,7 @@ def main() -> None:
         "--memory-mb",
         type=int,
         default=None,
-        help="Memory (MB); default 1024 for agent, 2048 for analytics/media",
+        help="Memory (MB); default 1024 for agent, 2048 for analytics/media/disk",
     )
     parser.add_argument(
         "--skip-cache",
@@ -116,7 +116,7 @@ def main() -> None:
     name = args.name or spec.artifact_name
     memory_mb = args.memory_mb
     if memory_mb is None:
-        memory_mb = 2048 if spec.id in ("analytics", "media") else 1024
+        memory_mb = 2048 if spec.id in ("analytics", "media", "disk") else 1024
 
     load_dotenv(ROOT / ".env")
     template = build_template(args.base_image, spec)

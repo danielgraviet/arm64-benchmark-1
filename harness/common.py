@@ -65,6 +65,7 @@ def summarize(records: list[dict[str, Any]], wall_time_s: float) -> dict[str, An
     ]
     checksums = {r["checksum"] for r in records if r.get("checksum")}
     failures = [r for r in records if r.get("exit_code", 0) != 0]
+    runner_ids = {str(r["runner_id"]) for r in records if r.get("runner_id")}
 
     summary: dict[str, Any] = {
         "runs": len(records),
@@ -86,6 +87,8 @@ def summarize(records: list[dict[str, Any]], wall_time_s: float) -> dict[str, An
     if warm_latencies:
         summary["p50_warm_ms"] = round(percentile(warm_latencies, 50), 1)
         summary["p99_warm_ms"] = round(percentile(warm_latencies, 99), 1)
+    if runner_ids:
+        summary["distinct_runners"] = len(runner_ids)
     return summary
 
 

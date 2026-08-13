@@ -18,7 +18,14 @@ from pathlib import Path
 from harness.benchmarks import BENCHMARK_IDS, TBENCH, get_benchmark
 from harness.common import run_suite
 from harness.paths import default_output_path
-from harness.runners import RUNNERS, build_runner, probe_runner_env, runner_as_worker
+from harness.runners import (
+    DAYTONA_FAMILY,
+    RUNNERS,
+    build_runner,
+    probe_runner_env,
+    runner_as_worker,
+)
+from harness.runners.daytona import default_daytona_snapshot
 from harness.runners.harbor import HarborRunner, run_harbor_suite
 
 
@@ -28,7 +35,7 @@ def main() -> None:
         "--benchmark",
         default="agent",
         choices=BENCHMARK_IDS,
-        help="Workload package (agent|analytics|rl|evals|media|tbench)",
+        help="Workload package (agent|analytics|rl|evals|media|disk|tbench)",
     )
     parser.add_argument(
         "--runner",
@@ -55,7 +62,7 @@ def main() -> None:
         type=int,
         default=1,
         help=(
-            "Episodes to exec per sandbox before delete (daytona/rlp). "
+            "Episodes to exec per sandbox before delete (daytona/daytona-vm/rlp). "
             "Default 1 = Chart B density. Use E>=8 for Chart A warm chip runs."
         ),
     )
@@ -85,7 +92,7 @@ def main() -> None:
         type=str,
         default=None,
         help=(
-            "Region/target for daytona/rlp/harbor (e.g. arm64-test-1). "
+            "Region/target for daytona/daytona-vm/rlp/harbor (e.g. arm64-test-1). "
             "Harbor forwards as DAYTONA_TARGET until the region flag is frozen."
         ),
     )
@@ -99,13 +106,17 @@ def main() -> None:
 
     if args.toolbox_url and args.runner != "rlp":
         parser.error("--toolbox-url is only valid with --runner rlp")
-    if args.target and args.runner not in ("daytona", "rlp", "harbor"):
-        parser.error("--target is only valid with --runner daytona, rlp, or harbor")
+    if args.target and args.runner not in (*DAYTONA_FAMILY, "rlp", "harbor"):
+        parser.error(
+            "--target is only valid with --runner daytona, daytona-vm, "
+            "daytona-vm-hot, rlp, or harbor"
+        )
     if args.episodes_per_sandbox < 1:
         parser.error("--episodes-per-sandbox must be >= 1")
-    if args.episodes_per_sandbox > 1 and args.runner not in ("daytona", "rlp"):
+    if args.episodes_per_sandbox > 1 and args.runner not in (*DAYTONA_FAMILY, "rlp"):
         parser.error(
-            "--episodes-per-sandbox > 1 is only supported with --runner daytona or rlp"
+            "--episodes-per-sandbox > 1 is only supported with "
+            "--runner daytona, daytona-vm, daytona-vm-hot, or rlp"
         )
     if args.n < 0:
         parser.error("--n must be >= 0 (0 = no Harbor task limit for tbench)")
@@ -124,15 +135,20 @@ def main() -> None:
         )
 
     spec = get_benchmark(args.benchmark)
-    artifact = (
-        args.snapshot
-        if args.snapshot
-        else (
-            spec.artifact_for_target(args.target)
-            if args.runner == "rlp"
-            else spec.artifact_name
-        )
-    )
+    if args.snapshot:
+        artifact = args.snapshot
+    elif args.runner == "rlp":
+        artifact = spec.artifact_for_target(args.target)
+    elif args.runner in DAYTONA_FAMILY:
+        if args.runner == "daytona-vm-hot":
+            kind, boot = "vm", "hot"
+        elif args.runner == "daytona-vm":
+            kind, boot = "vm", "cold"
+        else:
+            kind, boot = "container", "cold"
+        artifact = default_daytona_snapshot(spec, kind, vm_boot=boot)
+    else:
+        artifact = spec.artifact_name
     output = (
         Path(args.output)
         if args.output

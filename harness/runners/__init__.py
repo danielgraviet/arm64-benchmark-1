@@ -13,13 +13,15 @@ from typing import Any, Protocol
 
 from harness.benchmarks import get_benchmark
 from harness.env_probe import host_env, skipped_env
-from harness.runners.daytona import DaytonaRunner
+from harness.runners.daytona import DaytonaRunner, default_daytona_snapshot
 from harness.runners.docker import DockerRunner
 from harness.runners.e2b import E2bRunner
 from harness.runners.ec2 import Ec2Runner
 from harness.runners.rlp import RlpRunner
 
 RunWorker = Callable[[int, int], list[dict[str, Any]]]
+
+DAYTONA_FAMILY = frozenset({"daytona", "daytona-vm", "daytona-vm-hot"})
 
 
 class SupportsProbeEnv(Protocol):
@@ -40,13 +42,22 @@ def build_runner(args: argparse.Namespace) -> Any:
         return DockerRunner(spec)
     if args.runner == "ec2":
         return Ec2Runner(spec)
-    if args.runner == "daytona":
+    if args.runner in DAYTONA_FAMILY:
+        if args.runner == "daytona":
+            kind, boot = "container", "cold"
+        elif args.runner == "daytona-vm-hot":
+            kind, boot = "vm", "hot"
+        else:
+            kind, boot = "vm", "cold"
         return DaytonaRunner(
             spec=spec,
-            snapshot=args.snapshot or spec.artifact_name,
+            snapshot=args.snapshot
+            or default_daytona_snapshot(spec, kind, vm_boot=boot),
             exec_timeout_s=args.exec_timeout,
             target=args.target,
             episodes_per_sandbox=args.episodes_per_sandbox,
+            sandbox_kind=kind,
+            vm_boot=boot,
         )
     if args.runner == "rlp":
         return RlpRunner(
@@ -69,7 +80,7 @@ def build_runner(args: argparse.Namespace) -> Any:
 
 
 def runner_as_worker(runner: Any, args: argparse.Namespace) -> RunWorker:
-    if args.runner in ("daytona", "rlp"):
+    if args.runner in DAYTONA_FAMILY or args.runner == "rlp":
         return runner.run_episodes
     if args.runner == "harbor":
 
@@ -102,4 +113,13 @@ def build_run_one(args: argparse.Namespace) -> RunWorker:
 # Back-compat name used by main.py
 build_run_worker = build_run_one
 
-RUNNERS = ("docker", "daytona", "rlp", "e2b", "ec2", "harbor")
+RUNNERS = (
+    "docker",
+    "daytona",
+    "daytona-vm",
+    "daytona-vm-hot",
+    "rlp",
+    "e2b",
+    "ec2",
+    "harbor",
+)

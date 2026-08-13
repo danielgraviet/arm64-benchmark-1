@@ -1,9 +1,15 @@
 """Build a reusable Daytona snapshot from a live sandbox.
 
-Matches Docker/RLP: same base image + `uv sync --frozen --no-dev`.
+Container path (default): same base image + ``uv sync --frozen --no-dev``.
 
-    uv run scripts/build_daytona_snapshot.py --benchmark agent
-    uv run scripts/build_daytona_snapshot.py --benchmark analytics
+Linux VM path (``--class linux-vm``): boot stock ``daytona-vm-medium`` in
+``us-west-3``, bake workload, then write cold and/or hot snapshots:
+
+- cold: stop VM → disk snapshot ``vera-*-benchmark-vm`` (default create_snapshot)
+- hot: keep running → memory snapshot ``vera-*-benchmark-vm-hot`` (includeMemory)
+
+    uv run scripts/build_daytona_snapshot.py --benchmark media --class linux-vm
+    uv run scripts/build_daytona_snapshot.py --benchmark media --class linux-vm --vm-snap hot
 """
 
 from __future__ import annotations
@@ -15,6 +21,7 @@ from pathlib import Path
 
 from daytona import (
     CreateSandboxFromImageParams,
+    CreateSandboxFromSnapshotParams,
     Daytona,
     DaytonaConfig,
     DaytonaError,
@@ -24,16 +31,22 @@ from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from harness.benchmarks import SNAPSHOT_BENCHMARK_IDS, get_benchmark
+from harness.daytona_snapshots import create_named_snapshot
+from harness.runners.daytona import DEFAULT_VM_TARGET, default_daytona_snapshot
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from snapshot_common import (  # noqa: E402
     BASE_IMAGE,
     ROOT,
     build_archive,
+    ensure_uv,
     extract_and_uv_sync,
     install_system_packages,
     smoke_agent,
 )
+
+# Stock Linux VM seed (2 GiB) — matches analytics/media/disk docker_memory.
+VM_SEED_SNAPSHOT = "daytona-vm-medium"
 
 
 def delete_snapshot_if_exists(daytona: Daytona, name: str) -> None:
@@ -58,12 +71,38 @@ def main() -> None:
     parser.add_argument(
         "--name",
         default=None,
-        help="Snapshot name (default: per-benchmark artifact name)",
+        help="Override cold snapshot name (default: artifact or artifact-vm)",
+    )
+    parser.add_argument(
+        "--class",
+        dest="sandbox_class",
+        default="container",
+        choices=("container", "linux-vm"),
+        help="container (default) or linux-vm for Daytona VM sandboxes",
+    )
+    parser.add_argument(
+        "--vm-snap",
+        default="both",
+        choices=("cold", "hot", "both"),
+        help="For linux-vm: write cold disk snap, hot memory snap, or both (default)",
+    )
+    parser.add_argument(
+        "--target",
+        default=None,
+        help=(
+            f"Daytona region/target (linux-vm defaults to {DEFAULT_VM_TARGET}; "
+            "stock VM seeds are not in default us)"
+        ),
     )
     parser.add_argument(
         "--base-image",
         default=BASE_IMAGE,
-        help=f"Base image (default: {BASE_IMAGE})",
+        help=f"Container base image (default: {BASE_IMAGE}; ignored for linux-vm)",
+    )
+    parser.add_argument(
+        "--vm-seed",
+        default=VM_SEED_SNAPSHOT,
+        help=f"Stock VM snapshot to provision from (default: {VM_SEED_SNAPSHOT})",
     )
     parser.add_argument(
         "--skip-smoke",
@@ -72,29 +111,58 @@ def main() -> None:
     )
     args = parser.parse_args()
     spec = get_benchmark(args.benchmark)
-    name = args.name or spec.artifact_name
+    kind = "vm" if args.sandbox_class == "linux-vm" else "container"
+    cold_name = args.name or default_daytona_snapshot(spec, kind, vm_boot="cold")
+    hot_name = default_daytona_snapshot(spec, "vm", vm_boot="hot")
+    target = args.target or (DEFAULT_VM_TARGET if kind == "vm" else None)
 
     load_dotenv(ROOT / ".env")
-    daytona = Daytona(DaytonaConfig(connection_pool_maxsize=None))
+    config = DaytonaConfig(connection_pool_maxsize=None)
+    if target:
+        config = DaytonaConfig(connection_pool_maxsize=None, target=target)
+    daytona = Daytona(config)
+    print(f"daytona builder: target={target!r} class={args.sandbox_class}")
 
-    delete_snapshot_if_exists(daytona, name)
+    want_cold = kind == "container" or args.vm_snap in ("cold", "both")
+    want_hot = kind == "vm" and args.vm_snap in ("hot", "both")
+    if want_cold:
+        delete_snapshot_if_exists(daytona, cold_name)
+    if want_hot:
+        delete_snapshot_if_exists(daytona, hot_name)
 
     sandbox = None
     try:
-        print(
-            f"Creating Daytona builder sandbox from {args.base_image!r} "
-            f"(benchmark={spec.id}) …"
-        )
-        sandbox = daytona.create(
-            CreateSandboxFromImageParams(
-                image=args.base_image,
-                language="python",
-                auto_delete_interval=-1,
-                resources=Resources(cpu=1, memory=1),
-            ),
-            timeout=300,
-        )
+        if kind == "vm":
+            print(
+                f"Creating Daytona Linux VM builder from seed {args.vm_seed!r} "
+                f"(benchmark={spec.id}, target={target!r}) …"
+            )
+            sandbox = daytona.create(
+                CreateSandboxFromSnapshotParams(
+                    snapshot=args.vm_seed,
+                    language="python",
+                    auto_delete_interval=-1,
+                ),
+                timeout=300,
+            )
+        else:
+            print(
+                f"Creating Daytona builder sandbox from {args.base_image!r} "
+                f"(benchmark={spec.id}) …"
+            )
+            sandbox = daytona.create(
+                CreateSandboxFromImageParams(
+                    image=args.base_image,
+                    language="python",
+                    auto_delete_interval=-1,
+                    resources=Resources(cpu=1, memory=1),
+                ),
+                timeout=300,
+            )
         print(f"Sandbox ready: {sandbox.id}")
+
+        if kind == "vm":
+            ensure_uv(sandbox)
 
         with tempfile.TemporaryDirectory() as tmp:
             archive = Path(tmp) / "app.tar.gz"
@@ -108,13 +176,35 @@ def main() -> None:
         if not args.skip_smoke:
             smoke_agent(sandbox, spec)
 
-        print("Stopping sandbox for cold snapshot …")
-        sandbox.stop(timeout=120)
+        if want_hot:
+            # Hot memory snap requires STARTED VM (eng: RLP-ish warm boot).
+            print(f"Creating HOT memory snapshot {hot_name!r} (sandbox started) …")
+            create_named_snapshot(
+                sandbox, hot_name, include_memory=True, timeout=600
+            )
+            print(f"Ready hot: {hot_name}")
+            print(
+                f"Harness: uv run main.py --benchmark {spec.id} "
+                f"--runner daytona-vm-hot --target {target}"
+            )
 
-        print(f"Creating snapshot {name!r} …")
-        sandbox.create_snapshot(name, timeout=600)
-        print(f"Ready: {name} (benchmark={spec.id}, base={args.base_image})")
-        print(f"Harness: uv run main.py --benchmark {spec.id} --runner daytona")
+        if want_cold:
+            print("Stopping sandbox for COLD disk snapshot …")
+            sandbox.stop(timeout=120)
+            print(f"Creating COLD disk snapshot {cold_name!r} …")
+            create_named_snapshot(
+                sandbox, cold_name, include_memory=False, timeout=600
+            )
+            print(
+                f"Ready cold: {cold_name} (benchmark={spec.id}, "
+                f"class={args.sandbox_class}, "
+                f"seed={args.vm_seed if kind == 'vm' else args.base_image})"
+            )
+            runner = "daytona-vm" if kind == "vm" else "daytona"
+            cmd = f"uv run main.py --benchmark {spec.id} --runner {runner}"
+            if kind == "vm" and target:
+                cmd += f" --target {target}"
+            print(f"Harness: {cmd}")
     finally:
         if sandbox is not None:
             try:

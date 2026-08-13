@@ -25,6 +25,8 @@ OUT_DIR = ROOT / "eda_output"
 SERIES_ORDER = (
     "docker",
     "daytona",
+    "daytona-vm",
+    "daytona-vm-hot",
     "e2b",
     "rlp-x86",
     "rlp-arm64",
@@ -34,6 +36,8 @@ SERIES_ORDER = (
 SERIES_COLORS = {
     "docker": "#4C78A8",  # blue
     "daytona": "#2CA02C",  # green
+    "daytona-vm": "#17BECF",  # cyan — Linux VM cold boot
+    "daytona-vm-hot": "#D62728",  # red — Linux VM hot/memory snap
     "e2b": "#9467BD",  # purple
     "rlp-x86": "#FF7F0E",  # orange
     "rlp": "#FF7F0E",  # legacy → same as x86
@@ -197,9 +201,9 @@ def print_summary_table(
     print()
 
     header = (
-        f"{'series':<12} {'conc':>5} {'p50_ms':>10} {'mean_ms':>10} "
+        f"{'series':<16} {'conc':>5} {'p50_ms':>10} {'mean_ms':>10} "
         f"{'p50_dur':>10} {'p99_ms':>10} {'tput/s':>8} "
-        f"{'fail':>5} {'checksum':>8}"
+        f"{'fail':>5} {'runners':>7} {'checksum':>8}"
     )
     print(header)
     print("-" * len(header))
@@ -211,12 +215,14 @@ def print_summary_table(
             p50_dur = s.get("p50_duration_ms")
             if p50_dur is None:
                 p50_dur = percentile_duration(runs, level, 50)
+            runners = s.get("distinct_runners")
+            runners_s = f"{int(runners):7d}" if runners is not None else f"{'-':>7}"
             print(
-                f"{series:<12} {level:5d} "
+                f"{series:<16} {level:5d} "
                 f"{s['p50_ms']:10.1f} {mean_ms:10.1f} "
                 f"{float(p50_dur):10.1f} {s['p99_ms']:10.1f} "
                 f"{s['throughput_per_sec']:8.2f} "
-                f"{s['failures']:5d} {str(s.get('checksum_ok')):>8}"
+                f"{s['failures']:5d} {runners_s} {str(s.get('checksum_ok')):>8}"
             )
         print()
 

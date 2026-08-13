@@ -143,6 +143,18 @@ MEDIA = BenchmarkSpec(
     apt_packages=("ffmpeg",),
 )
 
+DISK = BenchmarkSpec(
+    id="disk",
+    task_name="sandbox-disk-v1",
+    docker_image="vera-disk-benchmark",
+    artifact_name="vera-disk-benchmark",
+    module="disk.agent",
+    include_paths=("pyproject.toml", "uv.lock", "disk"),
+    pythonpath_extra=None,
+    docker_memory="2g",
+    description="Sandbox disk I/O: sequential write/fsync/read + small-file storm",
+)
+
 # Phase 2: real Harbor Terminal-Bench. No local image/module — runner=harbor only.
 TBENCH = BenchmarkSpec(
     id="tbench",
@@ -162,6 +174,7 @@ BENCHMARKS: dict[str, BenchmarkSpec] = {
     RL.id: RL,
     EVALS.id: EVALS,
     MEDIA.id: MEDIA,
+    DISK.id: DISK,
     TBENCH.id: TBENCH,
 }
 

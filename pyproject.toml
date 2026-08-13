@@ -24,3 +24,8 @@ dependencies = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = [".", "workload/repos/sqlite-utils"]
+markers = [
+    "e2e: live cloud/network tests (RLP/Daytona/Harbor); excluded by default",
+]
+# Keep `uv run pytest` offline/local. Cloud checks: `uv run pytest -m e2e`.
+addopts = ["-m", "not e2e"]

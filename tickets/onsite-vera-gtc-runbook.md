@@ -18,6 +18,7 @@
 | Chart B `-E` | `1` (fresh sandbox per episode — density) |
 | Chart C analytics `--n` | `200` (optional) |
 | Chart C media `--n` | `40` (optional FFmpeg bandwidth sibling) |
+| Eng disk `--n` | `128` (sandbox FS stress; not Chart C / not media) |
 
 ---
 
@@ -197,6 +198,60 @@ uv run python eda.py --benchmark evals
 ```bash
 uv run python eda.py --benchmark media
 ```
+
+---
+
+## Optional — Daytona Linux VM vs container (us-west-3)
+
+Same workloads. Eng: VM seeds live in **`us-west-3`** (not default `us`).
+Builder writes **cold** (`vera-*-benchmark-vm`) and **hot memory** (`vera-*-benchmark-vm-hot`) snaps.
+
+| Series | Runner | Boot |
+| --- | --- | --- |
+| `daytona` | `--runner daytona` | container |
+| `daytona-vm` | `--runner daytona-vm` | VM cold disk |
+| `daytona-vm-hot` | `--runner daytona-vm-hot` | VM hot/memory (RLP-ish) |
+
+```bash
+uv run scripts/build_daytona_snapshot.py --benchmark media --class linux-vm
+uv run scripts/build_daytona_snapshot.py --benchmark disk --class linux-vm
+```
+
+```bash
+uv run main.py --benchmark media --runner daytona-vm --levels 1 --n 1 --seed 42 -E 1
+```
+
+```bash
+uv run main.py --benchmark media --runner daytona-vm-hot --levels 1 --n 1 --seed 42 -E 1
+```
+
+```bash
+uv run main.py --benchmark media --runner daytona-vm --levels 1 8 22 44 88 --n 40 --seed 42 -E 1
+```
+
+```bash
+uv run main.py --benchmark media --runner daytona-vm-hot --levels 1 8 22 44 88 --n 40 --seed 42 -E 1
+```
+
+Disk axis (sandbox local FS — not media/CPU BW). Eng ladder `--n 128`:
+
+```bash
+uv run main.py --benchmark disk --runner daytona-vm --levels 1 --n 1 --seed 42 -E 1
+```
+
+```bash
+uv run main.py --benchmark disk --runner daytona-vm-hot --levels 1 --n 1 --seed 42 -E 1
+```
+
+```bash
+uv run main.py --benchmark disk --runner daytona-vm --levels 1 8 22 44 88 --n 128 --seed 42 -E 1
+```
+
+```bash
+uv run main.py --benchmark disk --runner daytona-vm-hot --levels 1 8 22 44 88 --n 128 --seed 42 -E 1
+```
+
+Founder line: *Same workloads on Daytona container vs Daytona Linux VM (cold + hot memory snaps in us-west-3).*
 
 ---
 

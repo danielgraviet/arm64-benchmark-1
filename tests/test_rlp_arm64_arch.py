@@ -1,10 +1,9 @@
-"""Integration check: RLP arm64-test-1 sandboxes report an ARM64 machine.
+"""E2E: RLP arm64-test-1 sandboxes report an ARM64 machine.
 
 Requires ``RLP_API_KEY`` / ``RLP_API_URL`` in the environment or ``.env``.
-Skipped automatically when credentials are missing so ``uv run pytest`` stays
-offline-friendly.
+Excluded from default ``uv run pytest`` via the ``e2e`` marker.
 
-    uv run pytest tests/test_rlp_arm64_arch.py -v
+    uv run pytest -m e2e
 """
 
 from __future__ import annotations
@@ -18,6 +17,8 @@ from harness.paths import ROOT
 from harness.regions import ARM64_MACHINES, resolve_rlp_client_config
 from harness.rlp_create import create_rlp_sandbox
 
+pytestmark = pytest.mark.e2e
+
 TARGET = "arm64-test-1"
 IMAGE = "python:3.13-slim"
 
@@ -29,7 +30,7 @@ def rlp_credentials_loaded() -> None:
         pytest.skip("RLP_API_KEY / RLP_API_URL not set")
 
 
-def test_arm64_test_1_platform_machine(rlp_credentials_loaded: None) -> None:
+def test_e2e_arm64_test_1_platform_machine(rlp_credentials_loaded: None) -> None:
     from rlp import Daytona
 
     client = Daytona(resolve_rlp_client_config(TARGET))
