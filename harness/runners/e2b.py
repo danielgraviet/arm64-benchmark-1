@@ -18,6 +18,7 @@ from dotenv import load_dotenv
 from e2b import CommandExitException, Sandbox
 
 from harness.benchmarks import AGENT, BenchmarkSpec
+from harness.env_probe import failed_env, host_env, merge_env, parse_probe_stdout, probe_shell_command
 from harness.paths import ROOT
 
 APP_DIR = "/home/user/app"
@@ -43,6 +44,35 @@ class E2bRunner:
         print(
             f"e2b client: template={self._template!r} benchmark={spec.id!r}"
         )
+
+    def probe_env(self) -> dict[str, Any]:
+        host = host_env()
+        sandbox = None
+        try:
+            sandbox = Sandbox.create(
+                template=self._template,
+                timeout=self._sandbox_timeout_s,
+            )
+            result = sandbox.commands.run(
+                probe_shell_command(VENV_PYTHON),
+                timeout=60.0,
+            )
+            stdout = (result.stdout or "").strip()
+            if int(result.exit_code) != 0:
+                err = (result.stderr or stdout or f"exit {result.exit_code}").strip()
+                print(f"warning: e2b env probe failed: {err[:200]}")
+                return failed_env(host, probe="e2b", error=err[:500])
+            remote = parse_probe_stdout(stdout)
+            return merge_env(host, remote, probe="e2b")
+        except Exception as exc:  # noqa: BLE001
+            print(f"warning: e2b env probe failed: {exc}")
+            return failed_env(host, probe="e2b", error=str(exc))
+        finally:
+            if sandbox is not None:
+                try:
+                    sandbox.kill()
+                except Exception:  # noqa: BLE001, S110
+                    pass
 
     def run_one(self, n: int, seed: int) -> dict[str, Any]:
         start = time.monotonic()

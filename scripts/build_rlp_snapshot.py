@@ -30,6 +30,7 @@ from snapshot_common import (
     BASE_IMAGE,
     build_archive,
     extract_and_uv_sync,
+    install_system_packages,
     smoke_agent,
     upload_bytes_via_exec,
 )
@@ -128,6 +129,7 @@ def main() -> None:
             upload_bytes_via_exec(sandbox, content, "/tmp/app.tar.gz")
 
         extract_and_uv_sync(sandbox)
+        install_system_packages(sandbox, spec)
         if not args.skip_smoke:
             smoke_agent(sandbox, spec)
 

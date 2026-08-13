@@ -1,0 +1,18 @@
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev
+
+COPY media ./media
+
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONHASHSEED=0
+
+ENTRYPOINT ["python", "-m", "media.agent"]
+CMD ["--n", "1"]

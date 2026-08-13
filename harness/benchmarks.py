@@ -49,6 +49,8 @@ class BenchmarkSpec:
     pythonpath_extra: str | None = None
     docker_memory: str = "1g"
     description: str = ""
+    # System packages installed via apt during Docker/snapshot builds (e.g. ffmpeg).
+    apt_packages: tuple[str, ...] = ()
 
     def agent_argv(self, n: int, seed: int) -> list[str]:
         return ["--n", str(n), "--seed", str(seed), "--task", self.task_name]
@@ -128,6 +130,19 @@ EVALS = BenchmarkSpec(
     description="Terminal-Bench–style evals: multi-second oracle+verify trials (no LLM)",
 )
 
+MEDIA = BenchmarkSpec(
+    id="media",
+    task_name="media-transcode-v1",
+    docker_image="vera-media-benchmark",
+    artifact_name="vera-media-benchmark",
+    module="media.agent",
+    include_paths=("pyproject.toml", "uv.lock", "media"),
+    pythonpath_extra=None,
+    docker_memory="2g",
+    description="FFmpeg h.264 transcode of synthetic frames (bandwidth / agent media preprocess)",
+    apt_packages=("ffmpeg",),
+)
+
 # Phase 2: real Harbor Terminal-Bench. No local image/module — runner=harbor only.
 TBENCH = BenchmarkSpec(
     id="tbench",
@@ -146,6 +161,7 @@ BENCHMARKS: dict[str, BenchmarkSpec] = {
     ANALYTICS.id: ANALYTICS,
     RL.id: RL,
     EVALS.id: EVALS,
+    MEDIA.id: MEDIA,
     TBENCH.id: TBENCH,
 }
 

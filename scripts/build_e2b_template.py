@@ -49,6 +49,14 @@ def build_template(base_image: str, spec: BenchmarkSpec):
         .set_workdir(APP_DIR)
     )
 
+    if spec.apt_packages:
+        pkgs = " ".join(spec.apt_packages)
+        builder = builder.run_cmd(
+            "apt-get update && "
+            f"DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends {pkgs} && "
+            "rm -rf /var/lib/apt/lists/*"
+        )
+
     files = [p for p in spec.include_paths if (ROOT / p).is_file()]
     dirs = [p for p in spec.include_paths if (ROOT / p).is_dir()]
     if files:
@@ -96,7 +104,7 @@ def main() -> None:
         "--memory-mb",
         type=int,
         default=None,
-        help="Memory (MB); default 1024 for agent, 2048 for analytics",
+        help="Memory (MB); default 1024 for agent, 2048 for analytics/media",
     )
     parser.add_argument(
         "--skip-cache",
@@ -108,7 +116,7 @@ def main() -> None:
     name = args.name or spec.artifact_name
     memory_mb = args.memory_mb
     if memory_mb is None:
-        memory_mb = 2048 if spec.id == "analytics" else 1024
+        memory_mb = 2048 if spec.id in ("analytics", "media") else 1024
 
     load_dotenv(ROOT / ".env")
     template = build_template(args.base_image, spec)

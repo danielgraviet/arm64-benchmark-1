@@ -23,17 +23,19 @@ vera-benchmarks/
 ├── Dockerfile.analytics       # B2 analytics image
 ├── Dockerfile.rl              # B3 RL rollout image
 ├── Dockerfile.evals           # B4 Terminal-Bench–style evals image
+├── Dockerfile.media           # Chart C FFmpeg media probe image
 ├── main.py                    # --benchmark + --runner harness CLI
 ├── harness/                   # shared runners, suite, BenchmarkSpec
 ├── workload/                  # B1 repo-agent workload
 ├── analytics/                 # B2 Parquet/DuckDB workload
 ├── rl/                        # B3 mocked RL episode workload
 ├── evals/                     # B4 oracle+verify eval trials
+├── media/                     # Chart C FFmpeg transcode probe
 ├── data/<benchmark>/<runner>/ # JSONL results (gitignored)
 └── tests/
 ```
 
-Benchmarks share one harness; select with `--benchmark agent|analytics|rl|evals`.
+Benchmarks share one harness; select with `--benchmark agent|analytics|rl|evals|media`.
 
 ## Analytics benchmark (B2) — decisions
 
@@ -210,7 +212,7 @@ Results land in `data/<runner>/concurrency_<timestamp>_n<n>.jsonl`.
 
 Suggested arguments:
 
-- `--benchmark`: `agent` | `analytics` | `rl` | `evals`
+- `--benchmark`: `agent` | `analytics` | `rl` | `evals` | `media`
 - `--runner`: `docker` | `daytona` | `rlp` | `e2b` | `ec2`
 - `--levels`: Concurrency levels to sweep
 - `--n`: Workload volume per run

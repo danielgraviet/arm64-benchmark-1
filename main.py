@@ -12,12 +12,13 @@ Examples:
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 from harness.benchmarks import BENCHMARK_IDS, TBENCH, get_benchmark
 from harness.common import run_suite
 from harness.paths import default_output_path
-from harness.runners import RUNNERS, build_run_worker
+from harness.runners import RUNNERS, build_runner, probe_runner_env, runner_as_worker
 from harness.runners.harbor import HarborRunner, run_harbor_suite
 
 
@@ -27,7 +28,7 @@ def main() -> None:
         "--benchmark",
         default="agent",
         choices=BENCHMARK_IDS,
-        help="Workload package (agent|analytics|rl|evals|tbench)",
+        help="Workload package (agent|analytics|rl|evals|media|tbench)",
     )
     parser.add_argument(
         "--runner",
@@ -160,6 +161,8 @@ def main() -> None:
     }
 
     if args.runner == "harbor":
+        meta["env"] = probe_runner_env(None, runner_name="harbor")
+        print(f"env={json.dumps(meta['env'], separators=(',', ':'))}")
         run_harbor_suite(
             levels=args.levels,
             task_limit=args.n,
@@ -170,12 +173,16 @@ def main() -> None:
         )
         return
 
+    runner = build_runner(args)
+    meta["env"] = probe_runner_env(runner, runner_name=args.runner)
+    print(f"env={json.dumps(meta['env'], separators=(',', ':'))}")
+
     run_suite(
         levels=args.levels,
         n=args.n,
         seed=args.seed,
         output=output,
-        run_worker=build_run_worker(args),
+        run_worker=runner_as_worker(runner, args),
         meta=meta,
     )
 

@@ -10,6 +10,7 @@ from daytona import CreateSandboxFromSnapshotParams, Daytona, DaytonaConfig
 from dotenv import load_dotenv
 
 from harness.benchmarks import AGENT, BenchmarkSpec
+from harness.env_probe import failed_env, host_env, merge_env, parse_probe_stdout, probe_shell_command
 from harness.paths import ROOT
 
 APP_DIR = "/home/daytona/app"
@@ -44,6 +45,40 @@ class DaytonaRunner:
             f"daytona client: target={target!r} snapshot={self._snapshot!r} "
             f"benchmark={spec.id!r} episodes_per_sandbox={episodes_per_sandbox}"
         )
+
+    def probe_env(self) -> dict[str, Any]:
+        host = host_env()
+        sandbox = None
+        try:
+            sandbox = self._client.create(
+                CreateSandboxFromSnapshotParams(
+                    snapshot=self._snapshot,
+                    ephemeral=True,
+                    language="python",
+                ),
+                timeout=120,
+            )
+            response = sandbox.process.exec(
+                probe_shell_command(),
+                timeout=60,
+            )
+            exit_code = int(response.exit_code or 0)
+            stdout = (response.result or "").strip()
+            if exit_code != 0:
+                err = stdout or f"exit {exit_code}"
+                print(f"warning: daytona env probe failed: {err[:200]}")
+                return failed_env(host, probe="daytona", error=err[:500])
+            remote = parse_probe_stdout(stdout)
+            return merge_env(host, remote, probe="daytona")
+        except Exception as exc:  # noqa: BLE001
+            print(f"warning: daytona env probe failed: {exc}")
+            return failed_env(host, probe="daytona", error=str(exc))
+        finally:
+            if sandbox is not None:
+                try:
+                    self._client.delete(sandbox)
+                except Exception:  # noqa: BLE001, S110
+                    pass
 
     def run_one(self, n: int, seed: int) -> dict[str, Any]:
         return self.run_episodes(n, seed, episodes=1)[0]

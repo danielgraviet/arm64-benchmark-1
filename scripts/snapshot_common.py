@@ -102,6 +102,19 @@ def extract_and_uv_sync(sandbox, archive_path: str = "/tmp/app.tar.gz") -> None:
     )
 
 
+def install_system_packages(sandbox, spec: BenchmarkSpec) -> None:
+    """Install apt packages declared on the benchmark (no-op if empty)."""
+    if not spec.apt_packages:
+        return
+    pkgs = " ".join(spec.apt_packages)
+    exec_or_raise(sandbox, "apt-get update", timeout=300)
+    exec_or_raise(
+        sandbox,
+        f"DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends {pkgs}",
+        timeout=600,
+    )
+
+
 def smoke_agent(sandbox, spec: BenchmarkSpec = AGENT, *, app_dir: str = APP_DIR) -> None:
     """Run one workload pass with the same env the workers use."""
     env = spec.run_env(app_dir)

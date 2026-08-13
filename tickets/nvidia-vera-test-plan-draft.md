@@ -28,6 +28,7 @@ Daytona software still owns routing, snapshotting, portability, isolation/securi
 | **P0** | **RL / agent-style rollout CPU** (heavy in-sandbox episode; compare `duration_ms`) | Isolates **silicon quality** for sequential agent/RL-style work — the claim “Vera cores finish the same episode faster.” |
 | **P0** | **Sandbox density** (light RL + coding-agent + **evals / TB-style** `--n 1` trials at concurrency 1→88) | Isolates **product density / UX** — more concurrent customer jobs with usable p99. Closest to Terminal-Bench–on-Daytona style load. |
 | **P1** | **Analytics / Parquet + DuckDB** | Memory-bandwidth–heavy tenants; keep if it wins, otherwise appendix. |
+| **P1** | **Media / FFmpeg transcode** (`media-transcode-v1`) | Non-Python BW sibling (agent media preprocess); promote if analytics is flat. |
 | **P1** | **Cold create / schedule tax** (light workload size) | Separately measure spin-up (API, scheduling, etc.) |
 | **P2** | **Harbor Terminal-Bench oracle** (`uv run main.py --benchmark tbench --runner harbor --levels 32 --n 0`, Vera vs control) | “TB oracle pack finishes sooner / denser on Vera” — **infra time-to-finish** (see `tickets/evals-terminal-bench-style.md`) |
 

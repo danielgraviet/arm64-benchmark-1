@@ -17,6 +17,7 @@
 | Chart B evals `--n` | `1` (one TB-style task per sandbox) |
 | Chart B `-E` | `1` (fresh sandbox per episode — density) |
 | Chart C analytics `--n` | `200` (optional) |
+| Chart C media `--n` | `40` (optional FFmpeg bandwidth sibling) |
 
 ---
 
@@ -41,7 +42,7 @@
 
 ## Day 1 — snapshots + smoke + inspect
 
-### 1a. Build snapshots (parallel — up to 4 terminals)
+### 1a. Build snapshots (parallel — up to 5 terminals)
 
 ```bash
 uv run scripts/build_rlp_snapshot.py --benchmark rl --target <vera-region>
@@ -59,7 +60,11 @@ uv run scripts/build_rlp_snapshot.py --benchmark analytics --target <vera-region
 uv run scripts/build_rlp_snapshot.py --benchmark evals --target <vera-region>
 ```
 
-Wait until all four finish successfully.
+```bash
+uv run scripts/build_rlp_snapshot.py --benchmark media --target <vera-region>
+```
+
+Wait until all five finish successfully.
 
 ### 1b. Smoke runs on the new region (c=1, sequential)
 
@@ -77,6 +82,10 @@ uv run main.py --benchmark analytics --runner rlp --target <vera-region> --level
 
 ```bash
 uv run main.py --benchmark evals --runner rlp --target <vera-region> --levels 1 --n 1 --seed 42 -E 1
+```
+
+```bash
+uv run main.py --benchmark media --runner rlp --target <vera-region> --levels 1 --n 1 --seed 42 -E 1
 ```
 
 ### 1c. Sandbox-reuse smoke (Chart A plumbing)
@@ -124,6 +133,14 @@ uv run main.py --benchmark analytics --runner rlp --target <vera-region> --level
 
 ```bash
 uv run main.py --benchmark analytics --runner daytona --levels 1 88 --n 200 --seed 42 -E 8
+```
+
+```bash
+uv run main.py --benchmark media --runner rlp --target <vera-region> --levels 1 88 --n 40 --seed 42 -E 8
+```
+
+```bash
+uv run main.py --benchmark media --runner daytona --levels 1 88 --n 40 --seed 42 -E 8
 ```
 
 **Pass if:** Vera `duration_ms` p50 clearly lower (≥20–30%).  
@@ -175,6 +192,10 @@ uv run python eda.py --benchmark analytics
 
 ```bash
 uv run python eda.py --benchmark evals
+```
+
+```bash
+uv run python eda.py --benchmark media
 ```
 
 ---

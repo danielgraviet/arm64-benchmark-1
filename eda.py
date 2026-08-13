@@ -105,7 +105,8 @@ def discover_datasets(benchmark: str) -> dict[str, Path]:
     return found
 
 
-def load_jsonl(path: Path) -> tuple[list[dict], list[dict]]:
+def load_jsonl(path: Path) -> tuple[dict | None, list[dict], list[dict]]:
+    meta: dict | None = None
     runs: list[dict] = []
     summaries: list[dict] = []
     with path.open(encoding="utf-8") as f:
@@ -114,12 +115,14 @@ def load_jsonl(path: Path) -> tuple[list[dict], list[dict]]:
             if not line:
                 continue
             row = json.loads(line)
-            if row["type"] == "run":
+            if row["type"] == "meta":
+                meta = row
+            elif row["type"] == "run":
                 runs.append(row)
             elif row["type"] == "summary":
                 summaries.append(row)
     summaries.sort(key=lambda r: r["concurrency"])
-    return runs, summaries
+    return meta, runs, summaries
 
 
 def mean_latency(runs: list[dict], concurrency: int) -> float:
@@ -163,14 +166,34 @@ def all_levels(loaded: dict[str, tuple[list[dict], list[dict]]]) -> list[int]:
     )
 
 
+def format_env_line(meta: dict | None) -> str | None:
+    if not meta:
+        return None
+    env = meta.get("env")
+    if not isinstance(env, dict):
+        return None
+    parts = [
+        f"arch={env.get('arch')!r}",
+        f"cpu_model={env.get('cpu_model')!r}",
+        f"host_cpu={env.get('host_cpu')!r}",
+        f"probe={env.get('probe')!r}",
+    ]
+    return "  env: " + " ".join(parts)
+
+
 def print_summary_table(
     loaded: dict[str, tuple[list[dict], list[dict]]],
     sources: dict[str, Path],
+    metas: dict[str, dict | None] | None = None,
 ) -> None:
     print(LATENCY_NOTE)
     print()
+    metas = metas or {}
     for series, path in sources.items():
         print(f"{series}: {path.relative_to(ROOT)}")
+        env_line = format_env_line(metas.get(series))
+        if env_line:
+            print(env_line)
     print()
 
     header = (
@@ -207,6 +230,8 @@ def plot_grouped_metric(
     ylabel: str,
     filename: str,
     from_runs_mean: bool = False,
+    from_runs_mean_duration: bool = False,
+    footnote: str = LATENCY_NOTE,
 ) -> None:
     series_list = list(loaded.keys())
     levels = all_levels(loaded)
@@ -216,7 +241,9 @@ def plot_grouped_metric(
     fig, ax = plt.subplots(figsize=(12, 5))
     for i, series in enumerate(series_list):
         runs, summaries = loaded[series]
-        if from_runs_mean:
+        if from_runs_mean_duration:
+            values = [mean_duration(runs, level) for level in levels]
+        elif from_runs_mean:
             values = [mean_latency(runs, level) for level in levels]
         else:
             by_level = {s["concurrency"]: s[metric_key] for s in summaries}
@@ -233,7 +260,7 @@ def plot_grouped_metric(
     ax.set_title(title)
     ax.legend()
     ax.grid(axis="y", alpha=0.3)
-    fig.text(0.5, 0.01, LATENCY_NOTE, ha="center", fontsize=8, style="italic")
+    fig.text(0.5, 0.01, footnote, ha="center", fontsize=8, style="italic")
     fig.tight_layout()
     fig.subplots_adjust(bottom=0.18)
     fig.savefig(out / filename, dpi=150)
@@ -440,12 +467,17 @@ def main() -> None:
     except FileNotFoundError as exc:
         raise SystemExit(str(exc)) from exc
 
-    loaded = {runner: load_jsonl(path) for runner, path in sources.items()}
+    metas: dict[str, dict | None] = {}
+    loaded: dict[str, tuple[list[dict], list[dict]]] = {}
+    for runner, path in sources.items():
+        meta, runs, summaries = load_jsonl(path)
+        metas[runner] = meta
+        loaded[runner] = (runs, summaries)
     out = OUT_DIR / args.benchmark
     out.mkdir(parents=True, exist_ok=True)
 
     print(f"benchmark={args.benchmark}")
-    print_summary_table(loaded, sources)
+    print_summary_table(loaded, sources, metas)
 
     plot_grouped_metric(
         loaded,
@@ -471,6 +503,16 @@ def main() -> None:
         ylabel="mean latency (ms)",
         filename="mean_latency_bars.png",
         from_runs_mean=True,
+    )
+    plot_grouped_metric(
+        loaded,
+        out,
+        metric_key=None,
+        title=f"{args.benchmark}: mean duration_ms by concurrency",
+        ylabel="mean duration_ms",
+        filename="mean_duration_bars.png",
+        from_runs_mean_duration=True,
+        footnote=DURATION_NOTE,
     )
     plot_throughput(loaded, out)
     plot_latency_boxplots(loaded, out)

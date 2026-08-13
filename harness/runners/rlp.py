@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from rlp import Daytona
 
 from harness.benchmarks import AGENT, BenchmarkSpec
+from harness.env_probe import failed_env, host_env, merge_env, parse_probe_stdout, probe_shell_command
 from harness.paths import ROOT
 from harness.regions import check_sandbox_arch, resolve_rlp_client_config
 from harness.rlp_create import create_rlp_sandbox
@@ -57,6 +58,43 @@ class RlpRunner:
 
         self._boot_image = resolve_boot_image(self._client, self._snapshot)
         print(f"rlp boot image: {self._snapshot!r} -> {self._boot_image!r}")
+
+    def probe_env(self) -> dict[str, Any]:
+        host = host_env()
+        sandbox = None
+        try:
+            sandbox = create_rlp_sandbox(
+                self._client,
+                image=self._boot_image,
+                timeout=120,
+                target=self._target,
+            )
+            if not self._arch_probed:
+                with self._arch_lock:
+                    if not self._arch_probed:
+                        self._arch = check_sandbox_arch(sandbox, self._target)
+                        self._arch_probed = True
+            response = sandbox.process.exec(
+                probe_shell_command(),
+                timeout=60,
+            )
+            exit_code = int(response.exit_code or 0)
+            stdout = (response.result or "").strip()
+            if exit_code != 0:
+                err = stdout or f"exit {exit_code}"
+                print(f"warning: rlp env probe failed: {err[:200]}")
+                return failed_env(host, probe="rlp", error=err[:500])
+            remote = parse_probe_stdout(stdout)
+            return merge_env(host, remote, probe="rlp")
+        except Exception as exc:  # noqa: BLE001
+            print(f"warning: rlp env probe failed: {exc}")
+            return failed_env(host, probe="rlp", error=str(exc))
+        finally:
+            if sandbox is not None:
+                try:
+                    self._client.delete(sandbox)
+                except Exception:  # noqa: BLE001, S110
+                    pass
 
     def run_one(self, n: int, seed: int) -> dict[str, Any]:
         return self.run_episodes(n, seed, episodes=1)[0]

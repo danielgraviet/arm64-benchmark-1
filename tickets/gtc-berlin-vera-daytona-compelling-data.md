@@ -76,10 +76,12 @@ Headline shape: *“88 concurrent Daytona sandboxes on Vera with flat episode CP
 
 | Item | Value |
 | --- | --- |
-| Benchmark | `analytics` |
-| `--n` | **`200`** (~2.3 s `duration_ms` locally) |
+| Benchmark | `analytics` (DuckDB) and/or `media` (FFmpeg) |
+| `--n` | analytics **`200`** (~2.3 s local); media **`40`** (multi-second `duration_ms`) |
 | Metric | `duration_ms` / throughput at high concurrency |
-| Use | Only if it beats the control region; else appendix |
+| Use | Bandwidth / 3×-per-core claim; keep whichever wins on Vera, else appendix |
+
+Media is a Chart C sibling (agent-style transcode), not a second AMD-style suite.
 
 ---
 
@@ -107,6 +109,7 @@ Same snapshot workload, same `--seed`, checksum agreement across backends.
 | **RL Chart A** | **5000** | **~4.6 s on Daytona** | Chip story |
 | Agent Chart B | 20 | multi-step tmp workspace | Density / customer shape |
 | Analytics Chart C | 200 | ~2.3 s local | Optional bandwidth |
+| Media Chart C | 40 | multi-second (FFmpeg) | Optional BW sibling |
 
 Create/schedule tax remains ~2–3 s on cold episodes — use `duration_ms` (and warm `-E` latency) for chip claims.
 

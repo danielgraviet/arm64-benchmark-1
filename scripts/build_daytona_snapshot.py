@@ -31,6 +31,7 @@ from snapshot_common import (  # noqa: E402
     ROOT,
     build_archive,
     extract_and_uv_sync,
+    install_system_packages,
     smoke_agent,
 )
 
@@ -103,6 +104,7 @@ def main() -> None:
             sandbox.fs.upload_file(str(archive), "/tmp/app.tar.gz")
 
         extract_and_uv_sync(sandbox)
+        install_system_packages(sandbox, spec)
         if not args.skip_smoke:
             smoke_agent(sandbox, spec)
 
