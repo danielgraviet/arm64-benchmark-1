@@ -44,6 +44,13 @@ Requires the matching API key in `.env`:
 - E2B: `E2B_API_KEY`
 - RLP: `RLP_API_KEY` + `RLP_API_URL`
 
+# Backup gitignored data/ JSONL to S3 (needs AWS creds + bucket)
+# Plain sync (overwrites same keys):
+uv run scripts/upload_data_s3.py --bucket YOUR_BUCKET
+# Point-in-time copy under …/backups/<UTC-stamp>/data/:
+uv run scripts/upload_data_s3.py --bucket YOUR_BUCKET --snapshot
+# Or: VERA_DATA_S3_BUCKET=YOUR_BUCKET in .env
+
 For RLP ARM64, pass `--target arm64-test-1` (do not leave an x86
 `RLP_TOOLBOX_URL` sticky).
 

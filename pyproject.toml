@@ -19,6 +19,8 @@ dependencies = [
     "duckdb>=1.5.5",
     "pyarrow>=25.0.1",
     "numpy>=2.5.1",
+    "boto3>=1.43.72",
+    "botocore[crt]>=1.43.72",
 ]
 
 [tool.pytest.ini_options]
