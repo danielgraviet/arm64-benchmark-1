@@ -1,0 +1,3 @@
+{"type":"meta","benchmark":"rl","runner":"docker","target":null,"artifact":"vera-rl-benchmark","seed":42,"n":64,"episodes_per_sandbox":1,"env":{"arch":"aarch64","cpu_model":"0x010","cpu_count":352,"platform":"Linux-6.17.0-1029-nvidia-64k-aarch64-with-glibc2.36","host_arch":"aarch64","host_cpu":null,"probe":"docker"}}
+{"type":"run","concurrency":1,"latency_ms":949.5310790007352,"exit_code":0,"benchmark":"rl","checksum":"459a876d0e57ca71a077c69973150bea08862deedb9917ddccd29f94bdd09fba","duration_ms":20}
+{"type":"summary","concurrency":1,"runs":1,"failures":0,"distinct_checksums":1,"checksum_ok":true,"p50_ms":949.5,"p95_ms":949.5,"p99_ms":949.5,"max_ms":949.5,"throughput_per_sec":1.05,"p50_duration_ms":20.0,"p99_duration_ms":20.0,"max_duration_ms":20.0}
