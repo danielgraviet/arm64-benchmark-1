@@ -102,6 +102,16 @@ def main() -> None:
         default=None,
         help="Override RLP toolbox proxy URL (defaults from --target map or env)",
     )
+    parser.add_argument(
+        "--host-cpus",
+        type=int,
+        default=None,
+        help=(
+            "Pin Docker/EC2 workers to cpuset 0..(N-1) so high-concurrency "
+            "runs match an N-core control host (e.g. --host-cpus 32). "
+            "Results go under data/<bench>/docker-cN/."
+        ),
+    )
     args = parser.parse_args()
 
     if args.toolbox_url and args.runner != "rlp":
@@ -111,6 +121,10 @@ def main() -> None:
             "--target is only valid with --runner daytona, daytona-vm, "
             "daytona-vm-hot, rlp, or harbor"
         )
+    if args.host_cpus is not None and args.runner not in ("docker", "ec2"):
+        parser.error("--host-cpus is only valid with --runner docker or ec2")
+    if args.host_cpus is not None and args.host_cpus < 1:
+        parser.error("--host-cpus must be >= 1")
     if args.episodes_per_sandbox < 1:
         parser.error("--episodes-per-sandbox must be >= 1")
     if args.episodes_per_sandbox > 1 and args.runner not in (*DAYTONA_FAMILY, "rlp"):
@@ -157,12 +171,14 @@ def main() -> None:
             args.n,
             benchmark=args.benchmark,
             target=args.target,
+            host_cpus=args.host_cpus,
         )
     )
     print(
         f"benchmark={args.benchmark} runner={args.runner} "
         f"target={args.target!r} artifact={artifact!r} "
         f"episodes_per_sandbox={args.episodes_per_sandbox} "
+        f"host_cpus={args.host_cpus!r} "
         f"output={output}"
     )
 
@@ -174,6 +190,7 @@ def main() -> None:
         "seed": args.seed,
         "n": args.n,
         "episodes_per_sandbox": args.episodes_per_sandbox,
+        "host_cpus": args.host_cpus,
     }
 
     if args.runner == "harbor":
@@ -191,6 +208,9 @@ def main() -> None:
 
     runner = build_runner(args)
     meta["env"] = probe_runner_env(runner, runner_name=args.runner)
+    limits = getattr(runner, "docker_limits_meta", None)
+    if callable(limits):
+        meta.update(limits())
     print(f"env={json.dumps(meta['env'], separators=(',', ':'))}")
 
     run_suite(

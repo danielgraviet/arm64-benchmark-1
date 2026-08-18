@@ -1,0 +1,13 @@
+kind,benchmark,n,max_concurrency,p50_duration_ms_at_c1,p50_duration_ms_at_max,throughput_at_max,source
+heavy,media,40,88,15346.0,18686.0,2.59,concurrency_20260818_185631_n40.jsonl
+heavy,evals,3,88,5309.0,6611.5,3.75,concurrency_20260818_184744_n3.jsonl
+heavy,analytics,200,88,3228.0,3895.5,4.16,concurrency_20260818_184647_n200.jsonl
+heavy,rl,5000,88,2665.0,3666.5,4.2,concurrency_20260818_184555_n5000.jsonl
+heavy,disk,512,88,2053.0,150051.0,0.5,concurrency_20260818_184935_n512.jsonl
+heavy,agent,200,88,2727.0,3309.5,4.25,concurrency_20260818_184843_n200.jsonl
+density,media,10,88,4040.0,4680.5,4.16,concurrency_20260818_194208_n10.jsonl
+density,evals,1,88,1335.0,1594.5,4.51,concurrency_20260818_193957_n1.jsonl
+density,analytics,10,88,168.0,209.0,4.62,concurrency_20260818_194044_n10.jsonl
+density,rl,64,176,21.0,26.0,4.6,concurrency_20260818_194311_n64.jsonl
+density,disk,128,88,477.0,967.0,4.48,concurrency_20260818_194126_n128.jsonl
+density,agent,20,176,679.0,905.0,4.49,concurrency_20260818_194432_n20.jsonl

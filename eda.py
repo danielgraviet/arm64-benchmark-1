@@ -24,6 +24,7 @@ OUT_DIR = ROOT / "eda_output"
 # Preferred chart/table order; any other series dirs are appended.
 SERIES_ORDER = (
     "docker",
+    "docker-c32",
     "daytona",
     "daytona-vm",
     "daytona-vm-hot",
@@ -35,6 +36,7 @@ SERIES_ORDER = (
 )
 SERIES_COLORS = {
     "docker": "#4C78A8",  # blue
+    "docker-c32": "#1F4E79",  # darker blue — 32-core cap parity
     "daytona": "#2CA02C",  # green
     "daytona-vm": "#17BECF",  # cyan — Linux VM cold boot
     "daytona-vm-hot": "#D62728",  # red — Linux VM hot/memory snap

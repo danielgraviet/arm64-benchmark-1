@@ -1,7 +1,7 @@
 """Upload local ``data/`` JSONL results to S3 (off-machine backup).
 
 Uses the default AWS credential chain (env keys, ``~/.aws/credentials``,
-``AWS_PROFILE``, etc.). Bucket from ``--bucket`` or ``VERA_DATA_S3_BUCKET``.
+``AWS_PROFILE``, etc.). Bucket from ``--bucket``, ``VERA_DATA_S3_BUCKET``, or ``AWS_BUCKET_NAME``.
 
 Examples::
 
@@ -107,8 +107,9 @@ def main() -> None:
     )
     parser.add_argument(
         "--bucket",
-        default=os.environ.get("VERA_DATA_S3_BUCKET"),
-        help="S3 bucket name (or set VERA_DATA_S3_BUCKET)",
+        default=os.environ.get("VERA_DATA_S3_BUCKET")
+        or os.environ.get("AWS_BUCKET_NAME"),
+        help="S3 bucket name (or VERA_DATA_S3_BUCKET / AWS_BUCKET_NAME)",
     )
     parser.add_argument(
         "--prefix",
@@ -142,7 +143,7 @@ def main() -> None:
 
     if not args.bucket:
         parser.error(
-            "Pass --bucket or set VERA_DATA_S3_BUCKET in the environment / .env"
+            "Pass --bucket or set VERA_DATA_S3_BUCKET / AWS_BUCKET_NAME in .env"
         )
 
     prefix = args.prefix.strip("/")

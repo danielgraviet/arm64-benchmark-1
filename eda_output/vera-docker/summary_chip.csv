@@ -1,0 +1,7 @@
+benchmark,n,passes,median_duration_ms,median_create_ms,median_wall_ms
+media,40,3,15237.0,379.2,15616.2
+evals,3,3,5286.0,384.9,5670.9
+analytics,200,3,3174.0,1046.1,4220.1
+rl,5000,2,2640.0,933.6,3573.6
+disk,512,3,1960.0,370.7,2330.7
+agent,200,3,2717.0,1275.8,4014.7

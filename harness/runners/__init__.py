@@ -38,10 +38,11 @@ def _as_worker(run_one: Callable[[int, int], dict[str, Any]]) -> RunWorker:
 def build_runner(args: argparse.Namespace) -> Any:
     """Construct the backend runner once (shared by env probe + workers)."""
     spec = get_benchmark(args.benchmark)
+    host_cpus = getattr(args, "host_cpus", None)
     if args.runner == "docker":
-        return DockerRunner(spec)
+        return DockerRunner(spec, host_cpus=host_cpus)
     if args.runner == "ec2":
-        return Ec2Runner(spec)
+        return Ec2Runner(spec, host_cpus=host_cpus)
     if args.runner in DAYTONA_FAMILY:
         if args.runner == "daytona":
             kind, boot = "container", "cold"
