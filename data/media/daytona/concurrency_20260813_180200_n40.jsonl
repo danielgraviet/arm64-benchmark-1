@@ -1,0 +1,3 @@
+{"type":"meta","benchmark":"media","runner":"daytona","target":null,"artifact":"vera-media-benchmark","seed":42,"n":40,"episodes_per_sandbox":1}
+{"type":"run","concurrency":1,"latency_ms":27257.70612499764,"exit_code":0,"sandbox_id":"7d7d531c-757a-4f3a-988f-424a1e7279c7","target":null,"benchmark":"media","episode_idx":0,"cold":true,"checksum":"73b8a83468cce99b9813e529c3dca1f85587c3da748ef60ba34b0867f316387e","duration_ms":15580}
+{"type":"summary","concurrency":1,"runs":1,"failures":0,"distinct_checksums":1,"checksum_ok":true,"p50_ms":27257.7,"p95_ms":27257.7,"p99_ms":27257.7,"max_ms":27257.7,"throughput_per_sec":0.04,"p50_duration_ms":15580.0,"p99_duration_ms":15580.0,"max_duration_ms":15580.0}

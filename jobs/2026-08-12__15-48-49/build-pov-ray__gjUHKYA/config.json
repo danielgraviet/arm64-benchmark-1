@@ -1,0 +1,13 @@
+{
+    "task": {
+        "name": "terminal-bench/build-pov-ray",
+        "ref": "sha256:b64f3fd6f47dc8848fdd6ce990fbedce9577d97ea4f7fd1c489c42338229d078",
+        "source": "terminal-bench/terminal-bench-2"
+    },
+    "trial_name": "build-pov-ray__gjUHKYA",
+    "trials_dir": "jobs/2026-08-12__15-48-49",
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "c655e516-091e-439b-bed3-a41cad4f1bb4"
+}

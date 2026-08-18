@@ -1,0 +1,11 @@
+{"type":"run","concurrency":1,"latency_ms":989.241540999501,"exit_code":0,"benchmark":"analytics","checksum":"6fe68745ec0d3c36ce0a3bd629ce083914b6162cea7d8edd4c8ffbd1abd6fc39","duration_ms":115}
+{"type":"summary","concurrency":1,"runs":1,"failures":0,"distinct_checksums":1,"checksum_ok":true,"p50_ms":989.2,"p95_ms":989.2,"p99_ms":989.2,"max_ms":989.2,"throughput_per_sec":1.01}
+{"type":"run","concurrency":8,"latency_ms":1636.2000000008265,"exit_code":0,"benchmark":"analytics","checksum":"6fe68745ec0d3c36ce0a3bd629ce083914b6162cea7d8edd4c8ffbd1abd6fc39","duration_ms":220}
+{"type":"run","concurrency":8,"latency_ms":1642.3372499994002,"exit_code":0,"benchmark":"analytics","checksum":"6fe68745ec0d3c36ce0a3bd629ce083914b6162cea7d8edd4c8ffbd1abd6fc39","duration_ms":293}
+{"type":"run","concurrency":8,"latency_ms":1697.6528749946738,"exit_code":0,"benchmark":"analytics","checksum":"6fe68745ec0d3c36ce0a3bd629ce083914b6162cea7d8edd4c8ffbd1abd6fc39","duration_ms":263}
+{"type":"run","concurrency":8,"latency_ms":1790.1899589996901,"exit_code":0,"benchmark":"analytics","checksum":"6fe68745ec0d3c36ce0a3bd629ce083914b6162cea7d8edd4c8ffbd1abd6fc39","duration_ms":287}
+{"type":"run","concurrency":8,"latency_ms":1821.1670410018996,"exit_code":0,"benchmark":"analytics","checksum":"6fe68745ec0d3c36ce0a3bd629ce083914b6162cea7d8edd4c8ffbd1abd6fc39","duration_ms":288}
+{"type":"run","concurrency":8,"latency_ms":1866.4751659962349,"exit_code":0,"benchmark":"analytics","checksum":"6fe68745ec0d3c36ce0a3bd629ce083914b6162cea7d8edd4c8ffbd1abd6fc39","duration_ms":255}
+{"type":"run","concurrency":8,"latency_ms":1911.733542001457,"exit_code":0,"benchmark":"analytics","checksum":"6fe68745ec0d3c36ce0a3bd629ce083914b6162cea7d8edd4c8ffbd1abd6fc39","duration_ms":241}
+{"type":"run","concurrency":8,"latency_ms":1954.0564580020146,"exit_code":0,"benchmark":"analytics","checksum":"6fe68745ec0d3c36ce0a3bd629ce083914b6162cea7d8edd4c8ffbd1abd6fc39","duration_ms":235}
+{"type":"summary","concurrency":8,"runs":8,"failures":0,"distinct_checksums":1,"checksum_ok":true,"p50_ms":1805.7,"p95_ms":1939.2,"p99_ms":1951.1,"max_ms":1954.1,"throughput_per_sec":4.09}

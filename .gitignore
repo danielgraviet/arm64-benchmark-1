@@ -11,7 +11,3 @@ wheels/
 
 # Local secrets
 .env
-
-# Benchmark results
-data/
-jobs/

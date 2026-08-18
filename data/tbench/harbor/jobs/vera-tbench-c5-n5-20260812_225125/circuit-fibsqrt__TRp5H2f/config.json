@@ -1,0 +1,13 @@
+{
+    "task": {
+        "name": "terminal-bench/circuit-fibsqrt",
+        "ref": "sha256:fe25ab474ba626c4f45f57e757e86f2ad292de80b505e5b7ba0ba76c30d7fcc8",
+        "source": "terminal-bench/terminal-bench-2"
+    },
+    "trial_name": "circuit-fibsqrt__TRp5H2f",
+    "trials_dir": "/Users/danielgraviet/Desktop/projects/arm64-benchmark-1/data/tbench/harbor/jobs/vera-tbench-c5-n5-20260812_225125",
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "effcd222-670d-49d9-ad88-f93988aaa9cd"
+}

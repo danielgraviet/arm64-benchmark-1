@@ -1,0 +1,15 @@
+{
+    "job_name": "vera-tbench-c5-n5-20260812_225125",
+    "jobs_dir": "/Users/danielgraviet/Desktop/projects/arm64-benchmark-1/data/tbench/harbor/jobs",
+    "n_concurrent_trials": 5,
+    "environment": {
+        "type": "daytona"
+    },
+    "datasets": [
+        {
+            "name": "terminal-bench/terminal-bench-2",
+            "ref": "sha256:c6fc2e2382c1dbae99b2d5ecd2f4f4a60c3c01e0d84642d69b4afd92e99d078b",
+            "n_tasks": 5
+        }
+    ]
+}

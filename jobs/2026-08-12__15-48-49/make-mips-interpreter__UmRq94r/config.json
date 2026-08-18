@@ -1,0 +1,13 @@
+{
+    "task": {
+        "name": "terminal-bench/make-mips-interpreter",
+        "ref": "sha256:608e82ecd67ce469824a34181b580cbd0e1096cdfc05fe40edda3e6bfada9773",
+        "source": "terminal-bench/terminal-bench-2"
+    },
+    "trial_name": "make-mips-interpreter__UmRq94r",
+    "trials_dir": "jobs/2026-08-12__15-48-49",
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "c655e516-091e-439b-bed3-a41cad4f1bb4"
+}

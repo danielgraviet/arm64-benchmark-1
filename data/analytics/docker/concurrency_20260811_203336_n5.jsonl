@@ -1,0 +1,3 @@
+{"type":"meta","benchmark":"analytics","runner":"docker","target":null,"artifact":"vera-analytics-benchmark","seed":42,"n":5,"episodes_per_sandbox":1}
+{"type":"run","concurrency":1,"latency_ms":1082.063833000575,"exit_code":0,"benchmark":"analytics","checksum":"6fe68745ec0d3c36ce0a3bd629ce083914b6162cea7d8edd4c8ffbd1abd6fc39","duration_ms":143}
+{"type":"summary","concurrency":1,"runs":1,"failures":0,"distinct_checksums":1,"checksum_ok":true,"p50_ms":1082.1,"p95_ms":1082.1,"p99_ms":1082.1,"max_ms":1082.1,"throughput_per_sec":0.92,"p50_duration_ms":143.0,"p99_duration_ms":143.0,"max_duration_ms":143.0}

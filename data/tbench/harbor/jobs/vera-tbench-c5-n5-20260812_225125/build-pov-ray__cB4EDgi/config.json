@@ -1,0 +1,13 @@
+{
+    "task": {
+        "name": "terminal-bench/build-pov-ray",
+        "ref": "sha256:b64f3fd6f47dc8848fdd6ce990fbedce9577d97ea4f7fd1c489c42338229d078",
+        "source": "terminal-bench/terminal-bench-2"
+    },
+    "trial_name": "build-pov-ray__cB4EDgi",
+    "trials_dir": "/Users/danielgraviet/Desktop/projects/arm64-benchmark-1/data/tbench/harbor/jobs/vera-tbench-c5-n5-20260812_225125",
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "effcd222-670d-49d9-ad88-f93988aaa9cd"
+}

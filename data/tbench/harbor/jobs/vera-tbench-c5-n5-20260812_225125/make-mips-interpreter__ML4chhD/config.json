@@ -1,0 +1,13 @@
+{
+    "task": {
+        "name": "terminal-bench/make-mips-interpreter",
+        "ref": "sha256:608e82ecd67ce469824a34181b580cbd0e1096cdfc05fe40edda3e6bfada9773",
+        "source": "terminal-bench/terminal-bench-2"
+    },
+    "trial_name": "make-mips-interpreter__ML4chhD",
+    "trials_dir": "/Users/danielgraviet/Desktop/projects/arm64-benchmark-1/data/tbench/harbor/jobs/vera-tbench-c5-n5-20260812_225125",
+    "environment": {
+        "type": "daytona"
+    },
+    "job_id": "effcd222-670d-49d9-ad88-f93988aaa9cd"
+}

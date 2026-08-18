@@ -1,0 +1,16 @@
+Selected strategy: _DaytonaDirect
+Creating new AsyncDaytona client
+Using prebuilt image: alexgshaw/video-processing:20251031
+Selected strategy: _DaytonaDirect
+Using prebuilt image: alexgshaw/make-mips-interpreter:20251031
+Selected strategy: _DaytonaDirect
+Using prebuilt image: alexgshaw/build-pov-ray:20251031
+Selected strategy: _DaytonaDirect
+Using prebuilt image: alexgshaw/overfull-hbox:20251031
+Selected strategy: _DaytonaDirect
+Using prebuilt image: alexgshaw/circuit-fibsqrt:20251031
+Collecting main service artifacts
+Collecting main service artifacts
+Collecting main service artifacts
+Collecting main service artifacts
+Collecting main service artifacts
