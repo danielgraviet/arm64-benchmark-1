@@ -26,6 +26,7 @@ def test_result_series_rlp_vera() -> None:
 def test_result_series_daytona_graviton5() -> None:
     assert result_series_name("daytona", "us-east-1-arm") == "daytona-graviton5"
     assert result_series_name("daytona-vm", "us-east-1-arm") == "daytona-graviton5"
+    assert result_series_name("daytona-vm-hot", "us-east-1-arm") == "daytona-graviton5-hot"
     assert result_series_name("daytona", None) == "daytona"
     assert result_series_name("daytona", "us") == "daytona"
 
@@ -40,8 +41,18 @@ def test_vera_cpu_type_mode_arch() -> None:
 
 def test_validate_vera_target() -> None:
     validate_rlp_target("vera")
+    validate_rlp_target("us-phoenix-1")
     with pytest.raises(ValueError, match="Unknown RLP target"):
         validate_rlp_target("vera-typo")
+
+
+def test_resolve_rlp_client_config_phoenix() -> None:
+    cfg = resolve_rlp_client_config("us-phoenix-1")
+    assert cfg.target == "us-phoenix-1"
+    assert cfg.toolbox_url == (
+        "https://toolbox.us-phoenix-1.rlp.trydaytona.com/toolbox"
+    )
+    assert resolve_rlp_cpu_arch("us-phoenix-1") is None
 
 
 def test_resolve_rlp_client_config_vera(monkeypatch: pytest.MonkeyPatch) -> None:

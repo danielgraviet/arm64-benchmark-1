@@ -173,3 +173,85 @@ def smoke_agent(sandbox, spec: BenchmarkSpec = AGENT, *, app_dir: str = APP_DIR)
     cmd = f"cd {app_dir} && {env_prefix} {spec.agent_command()} {argv}"
     print(f"Smoke-testing {spec.module} …")
     exec_or_raise(sandbox, cmd, timeout=600)
+
+
+def start_import_keepalive(
+    sandbox,
+    spec: BenchmarkSpec = AGENT,
+    *,
+    app_dir: str = APP_DIR,
+) -> None:
+    """Import workload deps in a long-lived process so a hot memory snap stays warm.
+
+    ``smoke_agent`` alone is not enough for hot snaps: the exec exits and drops
+    the interpreter. This starts a background Python that imports ``numpy`` plus
+    ``spec.module`` and sleeps, so ``include_memory=True`` captures that RSS.
+
+    Daytona ``process.exec`` waits on the whole process tree, so a shell ``&``
+    never returns — we spawn via ``subprocess.Popen(..., start_new_session=True)``.
+    """
+    env = spec.run_env(app_dir)
+    warm_py = (
+        "import importlib\n"
+        "import sys\n"
+        "import time\n"
+        f"sys.path.insert(0, {app_dir!r})\n"
+        "import numpy  # noqa: F401 — heavy BLAS touch for RL/analytics\n"
+        f"importlib.import_module({spec.module!r})\n"
+        f"importlib.import_module({spec.module.split('.')[0]!r})\n"
+        "print('warm-ok', flush=True)\n"
+        "time.sleep(10**9)\n"
+    )
+    upload_bytes_via_exec(sandbox, warm_py.encode("utf-8"), "/tmp/hot_warm_imports.py")
+
+    env_items = ", ".join(f"{k!r}: {v!r}" for k, v in env.items())
+    venv_python = f"{app_dir}/.venv/bin/python"
+    launcher_py = (
+        "import os, subprocess\n"
+        "from pathlib import Path\n"
+        f"app_dir = {app_dir!r}\n"
+        f"python = {venv_python!r}\n"
+        f"extra = {{{env_items}}}\n"
+        "env = {**os.environ, **extra}\n"
+        "log = open('/tmp/hot_warm_imports.log', 'w')\n"
+        "proc = subprocess.Popen(\n"
+        "    [python, '/tmp/hot_warm_imports.py'],\n"
+        "    cwd=app_dir,\n"
+        "    env=env,\n"
+        "    stdout=log,\n"
+        "    stderr=subprocess.STDOUT,\n"
+        "    start_new_session=True,\n"
+        ")\n"
+        "Path('/tmp/hot_warm_imports.pid').write_text(str(proc.pid))\n"
+        "print(proc.pid, flush=True)\n"
+    )
+    upload_bytes_via_exec(sandbox, launcher_py.encode("utf-8"), "/tmp/start_hot_warm.py")
+    print(f"Starting import keep-alive for {spec.module!r} …")
+    exec_or_raise(sandbox, f"{venv_python} /tmp/start_hot_warm.py", timeout=60)
+    exec_or_raise(
+        sandbox,
+        "for i in $(seq 1 60); do "
+        "grep -q warm-ok /tmp/hot_warm_imports.log 2>/dev/null && exit 0; "
+        "sleep 1; "
+        "done; "
+        "echo 'keep-alive failed to report warm-ok:'; "
+        "cat /tmp/hot_warm_imports.log 2>/dev/null || true; "
+        "exit 1",
+        timeout=120,
+    )
+    pid = exec_or_raise(sandbox, "cat /tmp/hot_warm_imports.pid", timeout=30)
+    print(f"Import keep-alive ready (pid={pid.strip()})")
+
+
+def prepare_hot_memory_snapshot(
+    sandbox,
+    spec: BenchmarkSpec = AGENT,
+    *,
+    app_dir: str = APP_DIR,
+    skip_smoke: bool = False,
+) -> None:
+    """Smoke (optional) + import keep-alive before ``include_memory`` snapshot."""
+    if not skip_smoke:
+        smoke_agent(sandbox, spec, app_dir=app_dir)
+    start_import_keepalive(sandbox, spec, app_dir=app_dir)
+

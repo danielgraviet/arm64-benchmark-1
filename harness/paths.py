@@ -33,12 +33,13 @@ def result_series_name(
         if target and target in ARM64_TARGETS:
             return "rlp-arm64"
         return "rlp-x86"
-    # Graviton5 target is linux-vm–only today; chart under one series name.
-    if (
-        runner in ("daytona", "daytona-vm", "daytona-vm-hot")
-        and target == DAYTONA_GRAVITON5_TARGET
-    ):
-        return "daytona-graviton5"
+    # Graviton5 target is linux-vm–only today.
+    # Cold VM → daytona-graviton5; hot/memory snap → daytona-graviton5-hot.
+    if target == DAYTONA_GRAVITON5_TARGET:
+        if runner == "daytona-vm-hot":
+            return "daytona-graviton5-hot"
+        if runner in ("daytona", "daytona-vm"):
+            return "daytona-graviton5"
     if runner in ("docker", "ec2") and host_cpus is not None:
         return f"{runner}-c{host_cpus}"
     return runner

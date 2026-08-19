@@ -27,6 +27,7 @@ SERIES_ORDER = (
     "docker-c32",
     "daytona",
     "daytona-graviton5",
+    "daytona-graviton5-hot",
     "daytona-vm",
     "daytona-vm-hot",
     "e2b",
@@ -40,7 +41,8 @@ SERIES_COLORS = {
     "docker": "#4C78A8",  # blue
     "docker-c32": "#1F4E79",  # darker blue — 32-core cap parity
     "daytona": "#2CA02C",  # green
-    "daytona-graviton5": "#98DF8A",  # light green — Daytona target us-east-1-arm (Graviton5)
+    "daytona-graviton5": "#98DF8A",  # light green — Graviton5 cold VM
+    "daytona-graviton5-hot": "#2E7D32",  # darker green — Graviton5 hot/memory snap
     "daytona-vm": "#17BECF",  # cyan — Linux VM cold boot
     "daytona-vm-hot": "#D62728",  # red — Linux VM hot/memory snap
     "e2b": "#9467BD",  # purple
@@ -467,9 +469,12 @@ def main() -> None:
     )
     parser.add_argument(
         "--exclude",
-        default="",
+        default="docker,daytona",
         metavar="SERIES[,SERIES...]",
-        help="Comma-separated result series to omit (for example: --exclude docker)",
+        help=(
+            "Comma-separated result series to omit "
+            "(default: docker,daytona; matches exact series names)"
+        ),
     )
     args = parser.parse_args()
 

@@ -6,7 +6,8 @@ Linux VM path (``--class linux-vm``): boot stock ``daytona-vm-medium`` in
 ``us-west-3``, bake workload, then write cold and/or hot snapshots:
 
 - cold: stop VM → disk snapshot ``vera-*-benchmark-vm`` (default create_snapshot)
-- hot: keep running → memory snapshot ``vera-*-benchmark-vm-hot`` (includeMemory)
+- hot: smoke + live import keep-alive → memory snapshot ``…-hot`` (includeMemory)
+
 
 Target ``us-east-1-arm`` (Graviton5) only has linux-vm runners — no container
 class and no stock ``daytona-vm-*`` seeds. The builder registers a public
@@ -50,6 +51,7 @@ from snapshot_common import (  # noqa: E402
     ensure_uv,
     extract_and_uv_sync,
     install_system_packages,
+    prepare_hot_memory_snapshot,
     smoke_agent,
 )
 
@@ -254,11 +256,12 @@ def main() -> None:
 
         extract_and_uv_sync(sandbox)
         install_system_packages(sandbox, spec)
-        if not args.skip_smoke:
-            smoke_agent(sandbox, spec)
-
+        # Cold-only path: one smoke is enough. Hot path warms imports and keeps
+        # a live interpreter so the memory snap is actually "ready to go".
         if want_hot:
-            # Hot memory snap requires STARTED VM (eng: RLP-ish warm boot).
+            prepare_hot_memory_snapshot(
+                sandbox, spec, skip_smoke=args.skip_smoke
+            )
             print(f"Creating HOT memory snapshot {hot_name!r} (sandbox started) …")
             create_named_snapshot(
                 sandbox, hot_name, include_memory=True, timeout=600
@@ -268,6 +271,8 @@ def main() -> None:
                 f"Harness: uv run main.py --benchmark {spec.id} "
                 f"--runner daytona-vm-hot --target {target}"
             )
+        elif not args.skip_smoke:
+            smoke_agent(sandbox, spec)
 
         if want_cold:
             print("Stopping sandbox for COLD disk snapshot …")
