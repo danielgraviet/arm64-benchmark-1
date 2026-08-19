@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Vera benchmark readout across agent, analytics, disk, evals, media, and RL workloads." />
+  <title>Vera benchmark | Team readout</title>
+  <style>
+    :root {
+      --ink: #102a2a;
+      --muted: #52666a;
+      --paper: #f7f8f4;
+      --card: #ffffff;
+      --line: #dbe3df;
+      --vera: #8f1f47;
+      --green: #287c43;
+      --lime: #8fda82;
+      --amber: #b86b11;
+      --blue: #1b6577;
+      --shadow: 0 18px 55px rgba(16, 42, 42, .11);
+    }
+
+    * { box-sizing: border-box; }
+    html { background: #102a2a; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: clamp(14px, 1.5vw, 19px);
+      line-height: 1.45;
+    }
+    button { font: inherit; }
+    .deck { min-height: 100svh; }
+    .slide {
+      display: none;
+      min-height: 100svh;
+      padding: clamp(3.25rem, 7vh, 5.5rem) clamp(1.2rem, 5vw, 6rem) 5.5rem;
+      background:
+        radial-gradient(circle at 86% 8%, rgba(143, 218, 130, .18), transparent 22rem),
+        var(--paper);
+    }
+    .slide.active { display: flex; align-items: center; }
+    .slide-inner { width: min(1440px, 100%); margin: 0 auto; }
+    .eyebrow {
+      margin: 0 0 .55rem;
+      color: var(--vera);
+      font-size: .78em;
+      font-weight: 800;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3, p { margin-top: 0; }
+    h1, h2 { letter-spacing: -.045em; line-height: .98; }
+    h1 { max-width: 14ch; margin-bottom: 1rem; font-size: clamp(3rem, 7vw, 6.5rem); }
+    h2 { margin-bottom: 1.25rem; font-size: clamp(2.35rem, 5.4vw, 4.75rem); }
+    h3 { margin-bottom: .35rem; font-size: 1.07em; }
+    .lead { max-width: 47rem; color: var(--muted); font-size: clamp(1.12rem, 2.15vw, 1.65rem); }
+    .lead strong { color: var(--ink); }
+    .title-layout { display: grid; gap: 2rem; grid-template-columns: minmax(0, 1.25fr) minmax(18rem, .75fr); align-items: end; }
+    .hero-mark {
+      min-height: 19rem;
+      padding: 2rem;
+      color: #fff;
+      background: var(--ink);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .hero-mark .big { color: var(--lime); font-size: clamp(3.8rem, 8vw, 7rem); font-weight: 850; letter-spacing: -.08em; line-height: .8; }
+    .hero-mark p { margin: 0; color: #d5e8e2; }
+    .meta { color: var(--muted); font-size: .87em; }
+    .rule { height: 1px; margin: 1.5rem 0; border: 0; background: var(--line); }
+    .grid { display: grid; gap: 1.1rem; }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .card {
+      min-width: 0;
+      padding: 1.25rem;
+      border: 1px solid var(--line);
+      background: var(--card);
+      box-shadow: 0 6px 18px rgba(16, 42, 42, .045);
+    }
+    .card p:last-child { margin-bottom: 0; }
+    .metric { margin: .25rem 0 .15rem; color: var(--vera); font-size: clamp(2rem, 3vw, 3.2rem); font-weight: 850; letter-spacing: -.06em; line-height: 1; }
+    .metric.green { color: var(--green); }
+    .metric.amber { color: var(--amber); }
+    .metric-label { color: var(--muted); font-size: .84em; }
+    .result-layout { display: grid; gap: 1.4rem; grid-template-columns: minmax(0, 1.34fr) minmax(20rem, .66fr); align-items: start; }
+    figure { margin: 0; }
+    .chart-wrap { padding: .5rem; border: 1px solid var(--line); background: #fff; box-shadow: var(--shadow); }
+    .chart-wrap img { display: block; width: 100%; height: auto; }
+    figcaption { padding: .65rem .5rem .2rem; color: var(--muted); font-size: .77em; }
+    .callout { border-left: .34rem solid var(--vera); }
+    .callout.green { border-left-color: var(--green); }
+    .callout.amber { border-left-color: var(--amber); }
+    .callout.blue { border-left-color: var(--blue); }
+    .bullet-list { margin: .4rem 0 0; padding-left: 1.12rem; }
+    .bullet-list li { margin-bottom: .58rem; }
+    .tag { display: inline-block; margin: 0 .35rem .35rem 0; padding: .22rem .5rem; border-radius: 99px; background: #e8f3e7; color: #17562d; font-size: .72em; font-weight: 750; }
+    .tag.warn { background: #fff1df; color: #87500f; }
+    .tag.derived { background: #e5f1f4; color: #145a6b; }
+    details { margin-top: .8rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .84em; }
+    summary { padding-top: .68rem; color: var(--ink); cursor: pointer; font-weight: 750; }
+    details p { margin: .55rem 0 0; }
+    .recommendations { display: grid; gap: .8rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .recommendation { display: grid; grid-template-columns: 7rem 1fr; gap: .8rem; padding: .95rem 1rem; border: 1px solid var(--line); background: #fff; }
+    .recommendation b { color: var(--vera); }
+    .source-list { margin: .2rem 0 0; padding-left: 1rem; font-size: .82em; }
+    .source-list li { margin-bottom: .25rem; }
+    a { color: #0a6070; }
+    .nav {
+      position: fixed;
+      z-index: 4;
+      right: clamp(1rem, 3vw, 2rem);
+      bottom: clamp(1rem, 3vw, 1.6rem);
+      display: flex;
+      align-items: center;
+      gap: .65rem;
+      padding: .42rem;
+      border: 1px solid rgba(255,255,255,.24);
+      background: rgba(16, 42, 42, .94);
+      box-shadow: 0 10px 28px rgba(0,0,0,.22);
+      color: #fff;
+    }
+    .nav button {
+      width: 2.45rem;
+      height: 2.35rem;
+      border: 1px solid rgba(255,255,255,.24);
+      background: transparent;
+      color: #fff;
+      cursor: pointer;
+      font-size: 1.25rem;
+    }
+    .nav button:hover, .nav button:focus-visible { background: #2b5a55; outline: 2px solid var(--lime); outline-offset: 2px; }
+    .counter { min-width: 3.5rem; text-align: center; font-variant-numeric: tabular-nums; font-size: .78em; }
+    .progress { position: fixed; z-index: 5; top: 0; left: 0; height: .3rem; width: var(--progress, 12.5%); background: var(--vera); transition: width .2s ease; }
+    .skip { position: fixed; top: -5rem; left: 1rem; z-index: 8; padding: .6rem .85rem; background: #fff; color: var(--ink); }
+    .skip:focus { top: 1rem; }
+    @media (max-width: 820px) {
+      .slide { align-items: flex-start !important; min-height: 100svh; padding-top: 4.3rem; }
+      .title-layout, .result-layout, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+      .hero-mark { min-height: 12rem; }
+      .recommendations { grid-template-columns: 1fr; }
+    }
+    @media print {
+      .slide { display: flex !important; min-height: 100vh; page-break-after: always; }
+      .nav, .progress, .skip { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#slide-content">Skip to slide content</a>
+  <div class="progress" aria-hidden="true"></div>
+  <main class="deck" id="slide-content">
+    <section class="slide active" id="title" aria-labelledby="title-heading" data-title="Title">
+      <div class="slide-inner title-layout">
+        <div>
+          <p class="eyebrow">Benchmark team readout · August 2026</p>
+          <h1 id="title-heading">Which sandbox workloads scale with confidence?</h1>
+          <p class="lead">A practical readout of six deterministic workloads across <strong>Vera</strong> and Daytona’s Graviton5 path: agent work, analytics, disk, evals, media, and RL.</p>
+          <hr class="rule" />
+          <p class="meta">Read this as a capacity-planning story: how quickly a job runs, how many jobs finish together, and where high concurrency stops helping.</p>
+        </div>
+        <aside class="hero-mark" aria-label="Benchmark scope">
+          <span class="big">6</span>
+          <p><strong>workload families</strong><br />same seeded work within each comparison</p>
+          <p>Use the arrows, Space, or swipe to advance.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="slide" id="summary" aria-labelledby="summary-heading" data-title="Executive summary">
+      <div class="slide-inner">
+        <p class="eyebrow">Executive summary</p>
+        <h2 id="summary-heading">The useful operating point is usually 88 concurrent sandboxes.</h2>
+        <div class="grid grid-3">
+          <article class="card callout">
+            <p class="metric">2.2×</p>
+            <p class="metric-label">agent throughput at 88: Vera 24.7/s vs G5 11.1/s</p>
+            <p><strong>Customer meaning:</strong> more coding-agent jobs complete in the same time without a large per-job slowdown.</p>
+          </article>
+          <article class="card callout green">
+            <p class="metric green">6×</p>
+            <p class="metric-label">disk throughput at 88: Vera 34.2/s vs G5 5.4/s</p>
+            <p><strong>Customer meaning:</strong> file-heavy sandbox jobs remain responsive while tenants are packed together.</p>
+          </article>
+          <article class="card callout amber">
+            <p class="metric amber">176 ≠ better</p>
+            <p class="metric-label">several ladders create longer queues or show failures at the top level</p>
+            <p><strong>Recommendation:</strong> sell proven operating points, not maximum theoretical concurrency.</p>
+          </article>
+        </div>
+        <div class="grid grid-2" style="margin-top: 1.1rem">
+          <article class="card">
+            <h3>What customers can expect</h3>
+            <p>Vera has its clearest advantage when many short, independent jobs run at once: agent, disk, and RL workloads hold work time flatter than the comparison path.</p>
+          </article>
+          <article class="card">
+            <h3>What we should say carefully</h3>
+            <p>These are soft product comparisons: Vera uses a dedicated RLP cell and Hub image; Graviton5 uses Daytona linux VMs in us-east-1-arm. Results describe these tested configurations, not every customer workload.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" id="agent" aria-labelledby="agent-heading" data-title="Agent">
+      <div class="slide-inner">
+        <p class="eyebrow">1 · Agent work</p>
+        <h2 id="agent-heading">The coding-agent workload is the strongest customer-scale story.</h2>
+        <div class="result-layout">
+          <figure class="chart-wrap">
+            <img src="agent/throughput_vs_concurrency.png" alt="Throughput chart showing Vera peaking at 24.7 agent runs per second at 88 concurrency, versus 11.1 for Daytona Graviton5." />
+            <figcaption>Completed agent episodes per second. Higher is better; the best Vera point is 88 concurrent sandboxes.</figcaption>
+          </figure>
+          <div class="grid">
+            <article class="card callout">
+              <span class="tag">Recommended</span>
+              <p class="metric">24.7/s</p>
+              <p class="metric-label">Vera at 88 concurrent agent sandboxes</p>
+              <p>Vera completes roughly <strong>2.2×</strong> as many jobs as G5 at the same operating point.</p>
+            </article>
+            <article class="card">
+              <h3>Why it matters</h3>
+              <p>At 88, Vera’s median in-sandbox job takes ~2.8 s versus ~7.1 s on G5. A team can run more agents without each agent feeling slow.</p>
+              <details><summary>Technical detail</summary><p><code>repo-agent-v2</code> does search, AST work, edits, pytest, and SQL in a 1 GiB isolated workspace. Each sandbox runs 8 episodes; create time is kept out of <code>duration_ms</code>.</p></details>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" id="analytics-media" aria-labelledby="analytics-media-heading" data-title="Analytics & media">
+      <div class="slide-inner">
+        <p class="eyebrow">2 · Data and media work</p>
+        <h2 id="analytics-media-heading">Vera is faster for analytics; media is a reliable 88-concurrency recommendation.</h2>
+        <div class="grid grid-2">
+          <article class="card">
+            <figure class="chart-wrap">
+              <img src="analytics/throughput_vs_concurrency.png" alt="Analytics throughput chart showing Vera at 18.3 queries per second at 88 concurrency versus 12.3 for Daytona Graviton5." />
+              <figcaption>DuckDB analytics: Vera 18.3/s vs G5 12.3/s at 88.</figcaption>
+            </figure>
+            <p><span class="tag">Analytics</span> Vera is ~18% faster idle and ~25% faster at 88. Recommend <strong>88 × 4 GiB</strong>; 176 adds create/scheduling queue time rather than more throughput.</p>
+          </article>
+          <article class="card">
+            <figure class="chart-wrap">
+              <img src="media/throughput_vs_concurrency.png" alt="Media throughput chart showing Vera at 5.0 transcodes per second at 88 concurrency versus 4.4 for Daytona Graviton5." />
+              <figcaption>FFmpeg media: Vera 5.0/s vs G5 4.4/s at 88.</figcaption>
+            </figure>
+            <p><span class="tag">Media</span> Vera completes each encode about 15% faster. Recommend <strong>88</strong>, not 176: the Vera 176 run had 52 boot/create failures, so its apparent 5.6/s is not a clean scale claim.</p>
+          </article>
+        </div>
+        <details><summary>What is being measured?</summary><p>Analytics generates Parquet then performs a DuckDB scan/join/aggregate inside a 4 GiB sandbox. Media generates frames, H.264 encodes, and decode-verifies inside a 2 GiB sandbox. Longer media jobs naturally produce lower jobs/second; that is not a ladder failure.</p></details>
+      </div>
+    </section>
+
+    <section class="slide" id="disk" aria-labelledby="disk-heading" data-title="Disk">
+      <div class="slide-inner">
+        <p class="eyebrow">3 · Disk and filesystem</p>
+        <h2 id="disk-heading">Disk work stays flat on Vera—but cold creation becomes the limiting factor at the very top.</h2>
+        <div class="result-layout">
+          <figure class="chart-wrap">
+            <img src="disk/p50_duration_bars.png" alt="Disk p50 duration chart showing Vera holding around 426 to 436 milliseconds from concurrency 1 through 352, while Graviton5 becomes much slower." />
+            <figcaption>In-sandbox disk work, lower is better. Vera’s chip time remains essentially flat through 352.</figcaption>
+          </figure>
+          <div class="grid">
+            <article class="card callout green">
+              <p class="metric green">34.2/s</p>
+              <p class="metric-label">Vera at 88; G5 cold is 5.4/s</p>
+              <p>For file-heavy jobs, this is the clearest evidence that tenant contention does not turn into slow work on Vera.</p>
+            </article>
+            <article class="card callout amber">
+              <span class="tag warn">Important caveat</span>
+              <h3>At 176 and 352, wait time wins</h3>
+              <p>The disk test creates a fresh sandbox for every job. Vera’s per-job disk work stays ~430 ms, but queue/create tails pull throughput down after 88.</p>
+              <details><summary>Technical detail</summary><p>The probe writes, fsyncs, reads, and creates many small files. It intentionally uses one episode per sandbox, so it measures cold-create density plus filesystem behavior—not warm reuse.</p></details>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" id="rl" aria-labelledby="rl-heading" data-title="RL">
+      <div class="slide-inner">
+        <p class="eyebrow">4 · RL rollout work</p>
+        <h2 id="rl-heading">RL has the highest clean high-concurrency throughput in this pack.</h2>
+        <div class="result-layout">
+          <figure class="chart-wrap">
+            <img src="rl/throughput_vs_concurrency.png" alt="RL throughput chart showing Vera at 45.3 runs per second at 88 concurrency, higher than all comparison series." />
+            <figcaption>Deterministic RL episodes per second. Vera is highest at 88 concurrent sandboxes.</figcaption>
+          </figure>
+          <div class="grid">
+            <article class="card callout">
+              <p class="metric">45.3/s</p>
+              <p class="metric-label">Vera at 88 concurrent RL episodes</p>
+              <p>Vera keeps median episode work near <strong>0.67 s</strong> across the ladder while completing ~3× Daytona x86 throughput.</p>
+            </article>
+            <article class="card">
+              <h3>Customer meaning</h3>
+              <p>For many independent rollout-like jobs, Vera is a strong fit when the goal is more completed work per unit of shared capacity.</p>
+              <details><summary>Technical detail</summary><p>Each 1-vCPU episode runs a local grid environment, NumPy mock policy, and trajectory buffer—no network, GPU, or inference server. Checksums validate identical seeded work.</p></details>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" id="evals" aria-labelledby="evals-heading" data-title="Evals">
+      <div class="slide-inner">
+        <p class="eyebrow">5 · Terminal-style evals</p>
+        <h2 id="evals-heading">Evals show a throughput advantage for Vera, with a different per-trial latency tradeoff.</h2>
+        <div class="grid grid-2">
+          <article class="card">
+            <figure class="chart-wrap">
+              <img src="evals/throughput_vs_concurrency.png" alt="Evals throughput chart showing Vera at 19.69 trials per second at 88 concurrency, compared with about 10 trials per second for Graviton5 paths." />
+              <figcaption>Derived from the existing evals chart and matching raw benchmark records.</figcaption>
+            </figure>
+            <p><span class="tag derived">Derived result</span> At 88, Vera delivers <strong>19.69 trials/s</strong>, about 1.9× the two G5 series at roughly 10/s.</p>
+          </article>
+          <article class="card">
+            <figure class="chart-wrap">
+              <img src="evals/p50_duration_bars.png" alt="Evals p50 duration chart showing Vera at 2072 milliseconds at 88 concurrency, while Graviton5 is approximately 1636 milliseconds." />
+              <figcaption>In-sandbox duration is a separate metric from total completed trials per second.</figcaption>
+            </figure>
+            <p><span class="tag derived">Tradeoff</span> At 88, the G5 paths have lower p50 in-sandbox trial time (~1.64 s vs Vera ~2.07 s). The deck therefore presents evals as an observed capacity tradeoff—not an unqualified chip-speed win.</p>
+          </article>
+        </div>
+        <details><summary>Technical detail and provenance</summary><p>This workload creates an isolated workspace, performs deterministic oracle terminal work, and verifies the result; it uses no LLM. The benchmark code and the raw JSONL output are the source because an <code>evals/INSIGHTS.md</code> brief is not present.</p></details>
+      </div>
+    </section>
+
+    <section class="slide" id="recommendations" aria-labelledby="recommendations-heading" data-title="Recommendations & method">
+      <div class="slide-inner">
+        <p class="eyebrow">Decision guide</p>
+        <h2 id="recommendations-heading">Use workload-specific promises and test at the customer’s operating point.</h2>
+        <div class="recommendations">
+          <article class="recommendation"><b>Agent</b><span>Lead with <strong>88 concurrent agents</strong>: better completed-work rate and far less in-sandbox slowdown.</span></article>
+          <article class="recommendation"><b>Analytics</b><span>Recommend <strong>88 × 4 GiB</strong>; more sandboxes can add queue time without adding completed queries.</span></article>
+          <article class="recommendation"><b>Disk</b><span>Position strong filesystem stability, while planning cold-create bursts separately from ongoing job execution.</span></article>
+          <article class="recommendation"><b>Media</b><span>Sell faster encode at <strong>88</strong>; resolve/create-test the 176 failure mode before making larger-scale claims.</span></article>
+          <article class="recommendation"><b>RL</b><span>Use as the cleanest density example for many independent CPU-only rollouts.</span></article>
+          <article class="recommendation"><b>Evals</b><span>Validate with representative task mixes: Vera’s throughput lead coexists with slower in-sandbox p50 trial time.</span></article>
+        </div>
+        <div class="grid grid-2" style="margin-top: 1.1rem">
+          <article class="card">
+            <h3>How the benchmark is tested</h3>
+            <ul class="bullet-list">
+              <li>Fixed seed and checksum confirm the same work within each comparison.</li>
+              <li><code>duration_ms</code> measures work inside the sandbox; <code>latency_ms</code> also includes create/exec effects.</li>
+              <li>Concurrency sweeps use independent sandboxes and record every run, including failures.</li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Sources</h3>
+            <ul class="source-list">
+              <li><a href="agent/INSIGHTS.md">Agent insights</a> · <a href="analytics/INSIGHTS.md">Analytics insights</a> · <a href="disk/INSIGHTS.md">Disk insights</a></li>
+              <li><a href="media/INSIGHTS.md">Media insights</a> · <a href="rl/INSIGHTS.md">RL insights</a></li>
+              <li>Evals: existing chart pack plus matching JSONL records in <code>../data/evals/</code>.</li>
+            </ul>
+            <p class="meta" style="margin-top:.75rem">All comparisons are configuration-specific. Re-run the same workload, resource limits, and concurrency ladder before turning these observations into an SLA.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="nav" aria-label="Slide navigation">
+    <button type="button" id="previous" aria-label="Previous slide">←</button>
+    <span class="counter" id="counter" aria-live="polite">1 / 8</span>
+    <button type="button" id="next" aria-label="Next slide">→</button>
+  </nav>
+
+  <script>
+    (() => {
+      const slides = [...document.querySelectorAll('.slide')];
+      const previous = document.querySelector('#previous');
+      const next = document.querySelector('#next');
+      const counter = document.querySelector('#counter');
+      const progress = document.querySelector('.progress');
+      let current = 0;
+
+      function show(index, updateHash = true) {
+        current = (index + slides.length) % slides.length;
+        slides.forEach((slide, i) => {
+          const active = i === current;
+          slide.classList.toggle('active', active);
+          slide.setAttribute('aria-hidden', String(!active));
+        });
+        counter.textContent = `${current + 1} / ${slides.length}`;
+        progress.style.setProperty('--progress', `${((current + 1) / slides.length) * 100}%`);
+        document.title = `${slides[current].dataset.title} | Vera benchmark`;
+        if (updateHash) history.replaceState(null, '', `#${slides[current].id}`);
+        window.scrollTo({ top: 0, behavior: 'auto' });
+      }
+
+      const startingSlide = slides.findIndex(slide => slide.id === location.hash.slice(1));
+      show(startingSlide >= 0 ? startingSlide : 0, false);
+      previous.addEventListener('click', () => show(current - 1));
+      next.addEventListener('click', () => show(current + 1));
+      window.addEventListener('hashchange', () => {
+        const index = slides.findIndex(slide => slide.id === location.hash.slice(1));
+        if (index >= 0 && index !== current) show(index, false);
+      });
+      window.addEventListener('keydown', event => {
+        if (event.target.closest('details, a, button')) return;
+        if (['ArrowRight', ' ', 'PageDown'].includes(event.key)) { event.preventDefault(); show(current + 1); }
+        if (['ArrowLeft', 'PageUp'].includes(event.key)) { event.preventDefault(); show(current - 1); }
+        if (event.key === 'Home') { event.preventDefault(); show(0); }
+        if (event.key === 'End') { event.preventDefault(); show(slides.length - 1); }
+      });
+      let touchStartX = null;
+      window.addEventListener('touchstart', event => { touchStartX = event.changedTouches[0].screenX; }, { passive: true });
+      window.addEventListener('touchend', event => {
+        if (touchStartX === null) return;
+        const difference = event.changedTouches[0].screenX - touchStartX;
+        if (Math.abs(difference) > 50) show(current + (difference < 0 ? 1 : -1));
+        touchStartX = null;
+      }, { passive: true });
+    })();
+  </script>
+</body>
+</html>
