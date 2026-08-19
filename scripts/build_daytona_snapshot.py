@@ -70,6 +70,11 @@ def delete_snapshot_if_exists(daytona: Daytona, name: str) -> None:
     daytona.snapshot.delete(existing)
 
 
+def graviton5_linux_vm_seed_name(target: str, memory_gib: int) -> str:
+    """Per-size seed so a 1GiB evals/RL seed is not reused for 4GiB analytics."""
+    return f"vera-linux-vm-seed-{target}-m{memory_gib}"
+
+
 def ensure_linux_vm_seed(
     daytona: Daytona,
     *,
@@ -80,12 +85,20 @@ def ensure_linux_vm_seed(
     """Ensure a linux-vm snapshot exists on the current client target.
 
     Used when stock ``daytona-vm-*`` seeds are not available (e.g. Graviton5).
+    Reuse only when the existing snap's memory matches ``memory_gib``.
     """
     try:
         existing = daytona.snapshot.get(seed_name)
+        existing_mem = getattr(existing, "mem", None)
+        if existing_mem is not None and int(existing_mem) != int(memory_gib):
+            raise DaytonaError(
+                f"seed {seed_name!r} has mem={existing_mem}GiB, "
+                f"need {memory_gib}GiB"
+            )
         print(
             f"Reusing linux-vm seed {seed_name!r} "
-            f"(regions={getattr(existing, 'region_ids', None)})"
+            f"(mem={existing_mem}GiB, "
+            f"regions={getattr(existing, 'region_ids', None)})"
         )
         return seed_name
     except DaytonaError:
@@ -208,7 +221,9 @@ def main() -> None:
             if target == DAYTONA_GRAVITON5_TARGET and vm_seed == VM_SEED_SNAPSHOT:
                 vm_seed = ensure_linux_vm_seed(
                     daytona,
-                    seed_name=f"vera-linux-vm-seed-{target}",
+                    seed_name=graviton5_linux_vm_seed_name(
+                        target, spec.memory_gib()
+                    ),
                     image=GRAVITON5_VM_SEED_IMAGE,
                     memory_gib=spec.memory_gib(),
                 )
