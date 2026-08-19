@@ -50,10 +50,17 @@ def build_runner(args: argparse.Namespace) -> Any:
             kind, boot = "vm", "hot"
         else:
             kind, boot = "vm", "cold"
+        if args.snapshot:
+            snap = args.snapshot
+        elif args.target:
+            # Per-target snap names (e.g. us-east-1-arm Graviton5 rebuilds).
+            base = spec.artifact_for_target(args.target)
+            snap = f"{base}-hot" if boot == "hot" else base
+        else:
+            snap = default_daytona_snapshot(spec, kind, vm_boot=boot)
         return DaytonaRunner(
             spec=spec,
-            snapshot=args.snapshot
-            or default_daytona_snapshot(spec, kind, vm_boot=boot),
+            snapshot=snap,
             exec_timeout_s=args.exec_timeout,
             target=args.target,
             episodes_per_sandbox=args.episodes_per_sandbox,

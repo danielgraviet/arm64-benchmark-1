@@ -26,6 +26,7 @@ SERIES_ORDER = (
     "docker",
     "docker-c32",
     "daytona",
+    "daytona-graviton5",
     "daytona-vm",
     "daytona-vm-hot",
     "e2b",
@@ -39,6 +40,7 @@ SERIES_COLORS = {
     "docker": "#4C78A8",  # blue
     "docker-c32": "#1F4E79",  # darker blue — 32-core cap parity
     "daytona": "#2CA02C",  # green
+    "daytona-graviton5": "#98DF8A",  # light green — Daytona target us-east-1-arm (Graviton5)
     "daytona-vm": "#17BECF",  # cyan — Linux VM cold boot
     "daytona-vm-hot": "#D62728",  # red — Linux VM hot/memory snap
     "e2b": "#9467BD",  # purple
@@ -463,6 +465,12 @@ def main() -> None:
             f"(found: {', '.join(available) or 'none'})"
         ),
     )
+    parser.add_argument(
+        "--exclude",
+        default="",
+        metavar="SERIES[,SERIES...]",
+        help="Comma-separated result series to omit (for example: --exclude docker)",
+    )
     args = parser.parse_args()
 
     if args.benchmark not in available:
@@ -477,6 +485,16 @@ def main() -> None:
     except FileNotFoundError as exc:
         raise SystemExit(str(exc)) from exc
 
+    excluded = {series.strip() for series in args.exclude.split(",") if series.strip()}
+    sources = {
+        series: path for series, path in sources.items() if series not in excluded
+    }
+    if not sources:
+        raise SystemExit(
+            "No result series remain after exclusion"
+            f" (excluded: {', '.join(sorted(excluded)) or 'none'})."
+        )
+
     metas: dict[str, dict | None] = {}
     loaded: dict[str, tuple[list[dict], list[dict]]] = {}
     for runner, path in sources.items():
@@ -487,6 +505,8 @@ def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
 
     print(f"benchmark={args.benchmark}")
+    if excluded:
+        print(f"excluded={', '.join(sorted(excluded))}")
     print_summary_table(loaded, sources, metas)
 
     plot_grouped_metric(

@@ -26,6 +26,9 @@ RLP_TARGET_TOOLBOX: dict[str, str] = {
 ARM64_TARGETS = frozenset({"arm64-test-1", "vera"})
 ARM64_MACHINES = frozenset({"aarch64", "arm64"})
 
+# Daytona public-cloud ARM target (Graviton5). Series folder: daytona-graviton5.
+DAYTONA_GRAVITON5_TARGET = "us-east-1-arm"
+
 # Target → POST /vms cpu_arch (resource-type selector). Required for ARM64
 # capacity routing after eng's jobs.vm.create.<region>.arm64 change.
 RLP_TARGET_CPU_ARCH: dict[str, str] = {

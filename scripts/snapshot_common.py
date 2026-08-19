@@ -108,6 +108,21 @@ def ensure_uv(sandbox) -> None:
     if response.exit_code in (0, None) and (response.result or "").strip():
         return
     print("uv not found on sandbox; installing via astral.sh …")
+    # Slim seeds (e.g. python:*-slim on Graviton5) often lack curl.
+    curl = sandbox.process.exec("command -v curl", timeout=30)
+    if curl.exit_code not in (0, None) or not (curl.result or "").strip():
+        print("curl missing; installing via apt …")
+        apt_prefix = (
+            "sudo DEBIAN_FRONTEND=noninteractive apt-get"
+            if _sudo_available(sandbox)
+            else "DEBIAN_FRONTEND=noninteractive apt-get"
+        )
+        exec_or_raise(sandbox, f"{apt_prefix} update", timeout=300)
+        exec_or_raise(
+            sandbox,
+            f"{apt_prefix} install -y --no-install-recommends curl ca-certificates",
+            timeout=300,
+        )
     exec_or_raise(
         sandbox,
         "curl -LsSf https://astral.sh/uv/install.sh | sh",
@@ -122,6 +137,8 @@ def ensure_uv(sandbox) -> None:
         "ln -sf \"$HOME/.local/bin/uv\" /usr/local/bin/uv 2>/dev/null || true",
         timeout=60,
     )
+    # Fail hard if uv still missing (silent || true above can hide install issues).
+    exec_or_raise(sandbox, "command -v uv && uv --version", timeout=30)
 
 
 def install_system_packages(sandbox, spec: BenchmarkSpec) -> None:

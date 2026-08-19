@@ -163,7 +163,11 @@ def main() -> None:
             kind, boot = "vm", "cold"
         else:
             kind, boot = "container", "cold"
-        artifact = default_daytona_snapshot(spec, kind, vm_boot=boot)
+        if args.target:
+            base = spec.artifact_for_target(args.target)
+            artifact = f"{base}-hot" if boot == "hot" else base
+        else:
+            artifact = default_daytona_snapshot(spec, kind, vm_boot=boot)
     else:
         artifact = spec.artifact_name
     output = (

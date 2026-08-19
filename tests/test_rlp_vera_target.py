@@ -23,6 +23,13 @@ def test_result_series_rlp_vera() -> None:
     assert result_series_name("rlp", None) == "rlp-x86"
 
 
+def test_result_series_daytona_graviton5() -> None:
+    assert result_series_name("daytona", "us-east-1-arm") == "daytona-graviton5"
+    assert result_series_name("daytona-vm", "us-east-1-arm") == "daytona-graviton5"
+    assert result_series_name("daytona", None) == "daytona"
+    assert result_series_name("daytona", "us") == "daytona"
+
+
 def test_vera_cpu_type_mode_arch() -> None:
     assert resolve_rlp_cpu_arch("vera") == "arm64"
     assert resolve_rlp_cpu_type("vera") == "vera"

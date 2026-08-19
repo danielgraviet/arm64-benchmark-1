@@ -8,8 +8,13 @@ Linux VM path (``--class linux-vm``): boot stock ``daytona-vm-medium`` in
 - cold: stop VM → disk snapshot ``vera-*-benchmark-vm`` (default create_snapshot)
 - hot: keep running → memory snapshot ``vera-*-benchmark-vm-hot`` (includeMemory)
 
+Target ``us-east-1-arm`` (Graviton5) only has linux-vm runners — no container
+class and no stock ``daytona-vm-*`` seeds. The builder registers a public
+pinned image as a linux-vm seed snap, then bakes the workload on top.
+
     uv run scripts/build_daytona_snapshot.py --benchmark media --class linux-vm
     uv run scripts/build_daytona_snapshot.py --benchmark media --class linux-vm --vm-snap hot
+    uv run scripts/build_daytona_snapshot.py --benchmark evals --class linux-vm --target us-east-1-arm --vm-snap cold
 """
 
 from __future__ import annotations
@@ -22,16 +27,19 @@ from pathlib import Path
 from daytona import (
     CreateSandboxFromImageParams,
     CreateSandboxFromSnapshotParams,
+    CreateSnapshotParams,
     Daytona,
     DaytonaConfig,
     DaytonaError,
     Resources,
 )
+from daytona_api_client.models.sandbox_class import SandboxClass
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from harness.benchmarks import SNAPSHOT_BENCHMARK_IDS, get_benchmark
 from harness.daytona_snapshots import create_named_snapshot
+from harness.regions import DAYTONA_GRAVITON5_TARGET
 from harness.runners.daytona import DEFAULT_VM_TARGET, default_daytona_snapshot
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -47,6 +55,8 @@ from snapshot_common import (  # noqa: E402
 
 # Stock Linux VM seed (2 GiB) — matches analytics/media/disk docker_memory.
 VM_SEED_SNAPSHOT = "daytona-vm-medium"
+# Public pinned image for targets without stock VM seeds (no :latest — API rejects it).
+GRAVITON5_VM_SEED_IMAGE = "python:3.13-slim-bookworm"
 
 
 def delete_snapshot_if_exists(daytona: Daytona, name: str) -> None:
@@ -56,6 +66,48 @@ def delete_snapshot_if_exists(daytona: Daytona, name: str) -> None:
         return
     print(f"Deleting existing snapshot {name!r} …")
     daytona.snapshot.delete(existing)
+
+
+def ensure_linux_vm_seed(
+    daytona: Daytona,
+    *,
+    seed_name: str,
+    image: str,
+    memory_gib: int,
+) -> str:
+    """Ensure a linux-vm snapshot exists on the current client target.
+
+    Used when stock ``daytona-vm-*`` seeds are not available (e.g. Graviton5).
+    """
+    try:
+        existing = daytona.snapshot.get(seed_name)
+        print(
+            f"Reusing linux-vm seed {seed_name!r} "
+            f"(regions={getattr(existing, 'region_ids', None)})"
+        )
+        return seed_name
+    except DaytonaError:
+        pass
+    print(
+        f"Registering linux-vm seed {seed_name!r} from image {image!r} "
+        f"(memory={memory_gib}GiB) …"
+    )
+    daytona.snapshot.create(
+        CreateSnapshotParams(
+            name=seed_name,
+            image=image,
+            resources=Resources(
+                cpu=1,
+                memory=memory_gib,
+                disk=max(3, memory_gib),
+            ),
+            sandbox_class=SandboxClass.LINUX_VM,
+        ),
+        on_logs=lambda chunk: print(chunk, end=""),
+        timeout=600,
+    )
+    print()
+    return seed_name
 
 
 def main() -> None:
@@ -111,10 +163,27 @@ def main() -> None:
     )
     args = parser.parse_args()
     spec = get_benchmark(args.benchmark)
+    # Graviton5 target has linux-vm runners only (no container class).
+    if args.target == DAYTONA_GRAVITON5_TARGET and args.sandbox_class == "container":
+        print(
+            f"target {DAYTONA_GRAVITON5_TARGET!r} has no container runners; "
+            "using --class linux-vm"
+        )
+        args.sandbox_class = "linux-vm"
     kind = "vm" if args.sandbox_class == "linux-vm" else "container"
-    cold_name = args.name or default_daytona_snapshot(spec, kind, vm_boot="cold")
-    hot_name = default_daytona_snapshot(spec, "vm", vm_boot="hot")
     target = args.target or (DEFAULT_VM_TARGET if kind == "vm" else None)
+    if args.name:
+        cold_name = args.name
+    elif target:
+        # Keep a distinct snap name per target so default-region snaps stay intact.
+        cold_name = spec.artifact_for_target(target)
+    else:
+        cold_name = default_daytona_snapshot(spec, kind, vm_boot="cold")
+    hot_name = (
+        f"{spec.artifact_for_target(target)}-hot"
+        if target
+        else default_daytona_snapshot(spec, "vm", vm_boot="hot")
+    )
 
     load_dotenv(ROOT / ".env")
     config = DaytonaConfig(connection_pool_maxsize=None)
@@ -133,13 +202,21 @@ def main() -> None:
     sandbox = None
     try:
         if kind == "vm":
+            vm_seed = args.vm_seed
+            if target == DAYTONA_GRAVITON5_TARGET and vm_seed == VM_SEED_SNAPSHOT:
+                vm_seed = ensure_linux_vm_seed(
+                    daytona,
+                    seed_name=f"vera-linux-vm-seed-{target}",
+                    image=GRAVITON5_VM_SEED_IMAGE,
+                    memory_gib=spec.memory_gib(),
+                )
             print(
-                f"Creating Daytona Linux VM builder from seed {args.vm_seed!r} "
+                f"Creating Daytona Linux VM builder from seed {vm_seed!r} "
                 f"(benchmark={spec.id}, target={target!r}) …"
             )
             sandbox = daytona.create(
                 CreateSandboxFromSnapshotParams(
-                    snapshot=args.vm_seed,
+                    snapshot=vm_seed,
                     language="python",
                     auto_delete_interval=-1,
                 ),
@@ -201,12 +278,11 @@ def main() -> None:
             )
             print(
                 f"Ready cold: {cold_name} (benchmark={spec.id}, "
-                f"class={args.sandbox_class}, "
-                f"seed={args.vm_seed if kind == 'vm' else args.base_image})"
+                f"class={args.sandbox_class}, seed={vm_seed if kind == 'vm' else args.base_image})"
             )
             runner = "daytona-vm" if kind == "vm" else "daytona"
             cmd = f"uv run main.py --benchmark {spec.id} --runner {runner}"
-            if kind == "vm" and target:
+            if target:
                 cmd += f" --target {target}"
             print(f"Harness: {cmd}")
     finally:

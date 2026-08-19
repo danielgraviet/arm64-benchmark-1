@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 
-from harness.regions import ARM64_TARGETS
+from harness.regions import ARM64_TARGETS, DAYTONA_GRAVITON5_TARGET
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -21,6 +21,9 @@ def result_series_name(
     RLP default-region, ARM64, and onsite Vera runs are split so EDA can chart
     them as separate series (``rlp-x86`` vs ``rlp-arm64`` vs ``rlp-vera``).
 
+    Daytona ``--target us-east-1-arm`` (Graviton5) writes to ``daytona-graviton5``
+    so it stays separate from default-target ``daytona`` (x86).
+
     Docker with ``--host-cpus N`` writes to ``docker-cN`` so capped runs stay
     separate from full-machine ``docker`` results.
     """
@@ -30,6 +33,12 @@ def result_series_name(
         if target and target in ARM64_TARGETS:
             return "rlp-arm64"
         return "rlp-x86"
+    # Graviton5 target is linux-vm–only today; chart under one series name.
+    if (
+        runner in ("daytona", "daytona-vm", "daytona-vm-hot")
+        and target == DAYTONA_GRAVITON5_TARGET
+    ):
+        return "daytona-graviton5"
     if runner in ("docker", "ec2") and host_cpus is not None:
         return f"{runner}-c{host_cpus}"
     return runner

@@ -12,14 +12,14 @@
 
 ## Hub images (ARM64)
 
-| Pack | `--snapshot` (copy this) | Status |
-| ---- | ------------------------ | ------ |
-| `rl` | `dtgraviet/vera-agent-benchmark-rl:latest` | **Verified** on Vera RLP |
-| `agent` | `dtgraviet/vera-agent-benchmark:latest` | Push arm64 if missing |
-| `analytics` | `dtgraviet/vera-agent-benchmark-analytics:latest` | On Hub (arm64) |
-| `evals` | `dtgraviet/vera-agent-benchmark-evals:latest` | Push before Day 3 |
-| `media` | `dtgraviet/vera-agent-benchmark-media:latest` | Push before Chart C |
-| `disk` | `dtgraviet/vera-agent-benchmark-disk:latest` | Push before disk ladder |
+| Pack | `--snapshot` (copy this) | Hub arm64 |
+| ---- | ------------------------ | --------- |
+| `rl` | `dtgraviet/vera-agent-benchmark-rl:latest` | yes (verified on Vera) |
+| `analytics` | `dtgraviet/vera-agent-benchmark-analytics:latest` | yes (verified on Vera) |
+| `agent` | `dtgraviet/vera-agent-benchmark:latest` | yes |
+| `media` | `dtgraviet/vera-agent-benchmark-media:latest` | yes |
+| `disk` | `dtgraviet/vera-agent-benchmark-disk:latest` | yes |
+| `evals` | `dtgraviet/vera-agent-benchmark-evals:latest` | yes (`:6d21896`) |
 
 Pin a digest/tag (e.g. `:fbcd016`) instead of `:latest` if you need bit-stable reruns.
 
@@ -99,6 +99,48 @@ Harness pins **1 vCPU** and RAM from each benchmark’s `docker_memory`:
 
 **Packs on Vera (all six):** `rl`, `agent`, `analytics`, `evals`, `media`, `disk`
 
+### Graviton-comparable ladders (same shape as yesterday’s RL / analytics)
+
+Use **one primary full ladder** per pack (`--levels 1 8 22 44 88`, `--seed 42`). Match Vera Docker chip `--n` where we already have baselines, so later Graviton5 runs are apples-to-apples on `duration_ms`.
+
+| Pack | Role | Primary ladder (run this) | Why these flags | RAM |
+| ---- | ---- | ------------------------- | --------------- | --- |
+| `rl` | **done** chip | `n=5000 -E 8` | Chart A; warm reuse | 1 GiB |
+| `analytics` | **done** BW | `n=200 -E 8` | Chart C; DuckDB | 4 GiB |
+| `agent` | coding-agent chip | `n=200 -E 8` | Vera Docker chip used n=200 (~2.7 s); density n=20 is too light for chip | 1 GiB |
+| `evals` | TB-style chip | `n=3 -E 8` | Vera Docker heavy n=3 (~5.3 s); Chart B density is n=1 | 1 GiB |
+| `media` | BW / FFmpeg | `n=40 -E 8` | Chart C; Vera Docker ~15 s @ n=40 | 2 GiB |
+| `disk` | FS / eng | `n=512 -E 1` | Vera Docker heavy n=512; **no `-E 8`** (FS reuse muddies the probe) | 2 GiB |
+
+Optional Chart B density (after primary, if time):
+
+| Pack | Density ladder |
+| ---- | -------------- |
+| `agent` | `n=20 -E 1` |
+| `evals` | `n=1 -E 1` |
+| `disk` | `n=128 -E 1` (eng density) |
+| `media` | skip or `n=10 -E 1` (still multi-second) |
+
+Copy/paste primaries (tunnel + eng SDK first):
+
+```bash
+UV_NO_SYNC=1 uv run main.py --benchmark agent --runner rlp --target vera --snapshot dtgraviet/vera-agent-benchmark:latest --levels 1 8 22 44 88 --n 200 --seed 42 -E 8
+```
+
+```bash
+UV_NO_SYNC=1 uv run main.py --benchmark evals --runner rlp --target vera --snapshot dtgraviet/vera-agent-benchmark-evals:latest --levels 1 8 22 44 88 --n 3 --seed 42 -E 8
+```
+
+```bash
+UV_NO_SYNC=1 uv run main.py --benchmark media --runner rlp --target vera --snapshot dtgraviet/vera-agent-benchmark-media:latest --levels 1 8 22 44 88 --n 40 --seed 42 -E 8
+```
+
+```bash
+UV_NO_SYNC=1 uv run main.py --benchmark disk --runner rlp --target vera --snapshot dtgraviet/vera-agent-benchmark-disk:latest --levels 1 8 22 44 88 --n 512 --seed 42 -E 1
+```
+
+Smoke each pack once before its ladder (`--levels 1 -E 1`, small `--n`: agent 20, evals 1, media 1, disk 1).
+
 ---
 
 ## Day overview (3 days)
@@ -130,6 +172,8 @@ ssh -N -L 8088:127.0.0.1:8088 -L 9000:127.0.0.1:9000 daytona@10.96.8.181
 
 ### Terminal 2 — host SDK (once per shell / after `uv sync`)
 
+PyPI `rlp-sdk` lacks `region_routing` / `cpu_type`. Always install eng’s editable SDK, then keep `UV_NO_SYNC=1` on every Vera command (plain `uv sync` / `uv run` without it reverts to PyPI).
+
 ```bash
 cd /Users/danielgraviet/Desktop/projects/arm64-benchmark-1
 ```
@@ -139,12 +183,24 @@ UV_NO_SYNC=1 uv pip install -e ../rlp/clients/python
 ```
 
 ```bash
+UV_NO_SYNC=1 uv run python -c "from rlp import DaytonaConfig; assert 'region_routing' in DaytonaConfig.__dataclass_fields__; print('eng rlp-sdk OK')"
+```
+
+```bash
 curl -m 5 -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8088/
 ```
 
 Expect `401` (API up, unauthenticated health) or `200`. If curl hangs/fails, fix the tunnel before any harness run.
 
-**Prefix every Vera harness command with `UV_NO_SYNC=1`** so `uv run` does not reinstall PyPI `rlp-sdk` (missing `region_routing` / `cpu_type`).
+**If you see** `Installed rlp-sdk lacks DaytonaConfig.region_routing` — re-run the `uv pip install -e` line above, then retry with `UV_NO_SYNC=1`.
+
+Quick wiring smoke (copy/paste after SDK + tunnel):
+
+```bash
+UV_NO_SYNC=1 uv run main.py --benchmark rl --runner rlp --target vera --snapshot dtgraviet/vera-agent-benchmark-rl:latest --levels 1 --n 64 --seed 42 -E 1
+```
+
+**Prefix every Vera harness command with `UV_NO_SYNC=1`.**
 
 ---
 
