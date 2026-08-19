@@ -108,10 +108,13 @@ def main() -> None:
     sandbox = None
     try:
         print(f"Creating RLP builder sandbox from {args.base_image!r} …")
+        mem = spec.memory_gib()
+        disk = max(2, mem)
+        print(f"builder resources: cpu=1 memory={mem}GiB disk={disk}GiB")
         sandbox = create_rlp_sandbox(
             client,
             image=args.base_image,
-            resources=Resources(cpu=1, memory=1),
+            resources=Resources(cpu=1, memory=mem, disk=disk),
             timeout=300,
             target=args.target,
         )

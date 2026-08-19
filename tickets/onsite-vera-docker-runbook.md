@@ -256,45 +256,70 @@ Record `meta.env.cpu_count` / `cpu_model` on the x86 side for the footnote.
 
 ### Tier B — concurrency / density @ **32-core parity** (use this)
 
-Each Docker worker already gets `--cpus=1`. On unrestricted Vera (352 cores), c=88 barely contends. On a **32-core x86**, c=88 oversubscribes.
+Each Docker worker already gets `--cpus=1`. Pin with `--host-cpus 32` → `--cpuset-cpus=0-31`. Results → `data/<bench>/docker-c32/`.
 
-**Fix:** pin Vera (and later x86) with `--host-cpus 32` → Docker `--cpuset-cpus=0-31`. Results land in `data/<bench>/docker-c32/` (separate from full-machine `docker/`).
+**Levels must stay ≤ 32.** Demand ≈ one CPU per concurrent job. Above 32 you oversubscribe the cap and throughput collapses (not a useful chip compare).
 
-Same levels / `--n` / `--seed` on both hosts → fair oversubscription compare.
+Observed on Vera (`rl --n 5000 --host-cpus 32`):
+
+| c | Fit on 32 CPUs? | p50 `duration_ms` | throughput |
+| ---: | --- | ---: | ---: |
+| 22 | yes | ~4.7 s | **~2.7 /s** (peak) |
+| 44 | **no** | ~153 s | **~0.27 /s** (≈ c=1) |
+
+At c=44, wall ≈ 160 s for 44 jobs → tput ≈ 0.27/s; duration ≈ 44× single-job time (near-serial CFS under oversubscription). **Do not use `44 88` for the parity ladder.**
+
+**Parity ladder:** `--levels 1 8 16 24 32` only.
 
 #### Vera now — heavy ladders (32-core cap)
 
 ```bash
-uv run main.py --benchmark rl --runner docker --host-cpus 32 --levels 1 8 22 44 88 --n 5000 --seed 42
-uv run main.py --benchmark analytics --runner docker --host-cpus 32 --levels 1 8 22 44 88 --n 200 --seed 42
-uv run main.py --benchmark evals --runner docker --host-cpus 32 --levels 1 8 22 44 88 --n 3 --seed 42
-uv run main.py --benchmark agent --runner docker --host-cpus 32 --levels 1 8 22 44 88 --n 200 --seed 42
-uv run main.py --benchmark disk --runner docker --host-cpus 32 --levels 1 8 22 44 88 --n 512 --seed 42
-uv run main.py --benchmark media --runner docker --host-cpus 32 --levels 1 8 22 44 88 --n 40 --seed 42
+uv run main.py --benchmark rl --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 5000 --seed 42
+uv run main.py --benchmark analytics --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 200 --seed 42
+uv run main.py --benchmark evals --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 3 --seed 42
+uv run main.py --benchmark agent --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 200 --seed 42
+uv run main.py --benchmark disk --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 512 --seed 42
+uv run main.py --benchmark media --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 40 --seed 42
 ```
 
 #### Vera now — density ladders (32-core cap)
 
 ```bash
-uv run main.py --benchmark rl --runner docker --host-cpus 32 --levels 1 8 22 44 88 --n 64 --seed 42
-uv run main.py --benchmark agent --runner docker --host-cpus 32 --levels 1 8 22 44 88 --n 20 --seed 42
-uv run main.py --benchmark evals --runner docker --host-cpus 32 --levels 1 8 22 44 88 --n 1 --seed 42
-uv run main.py --benchmark analytics --runner docker --host-cpus 32 --levels 1 8 22 44 88 --n 10 --seed 42
-uv run main.py --benchmark disk --runner docker --host-cpus 32 --levels 1 8 22 44 88 --n 128 --seed 42
-uv run main.py --benchmark media --runner docker --host-cpus 32 --levels 1 8 22 44 88 --n 10 --seed 42
+uv run main.py --benchmark rl --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 64 --seed 42
+uv run main.py --benchmark agent --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 20 --seed 42
+uv run main.py --benchmark evals --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 1 --seed 42
+uv run main.py --benchmark analytics --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 10 --seed 42
+uv run main.py --benchmark disk --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 128 --seed 42
+uv run main.py --benchmark media --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 10 --seed 42
 ```
 
-**Pass check:** `meta.host_cpus=32`, `meta.docker_cpuset_cpus=0-31`, path contains `docker-c32`, `failures: 0`.
+**Pass check:** `meta.host_cpus=32`, `meta.docker_cpuset_cpus=0-31`, path contains `docker-c32`, `failures: 0`, levels only `1 8 16 24 32`.
+
+**Optional (not for parity slides):** `--levels 1 8 16 24 32 44 88` only if you want an explicit oversubscription-collapse curve — run the same on x86 and label it “over sub.”
+
+If you already started a run with `44 88`, keep the JSONL as oversubscription evidence; **re-run** the commands above for the clean parity series.
 
 #### Later x86 (32-core machine) — mirror exactly
 
 ```bash
-# same flags; --host-cpus 32 keeps cpuset identical even if the box has SMT quirks
-uv run main.py --benchmark rl --runner docker --host-cpus 32 --levels 1 8 22 44 88 --n 5000 --seed 42
-# … same list as Vera heavy + density above
+uv run main.py --benchmark rl --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 5000 --seed 42
+uv run main.py --benchmark analytics --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 200 --seed 42
+uv run main.py --benchmark evals --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 3 --seed 42
+uv run main.py --benchmark agent --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 200 --seed 42
+uv run main.py --benchmark disk --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 512 --seed 42
+uv run main.py --benchmark media --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 40 --seed 42
 ```
 
-**Still unfair without disclosure:** disk @88 (FS + storage differ). Prefer disk @ c=1 for chip; treat disk ladder as infra.
+```bash
+uv run main.py --benchmark rl --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 64 --seed 42
+uv run main.py --benchmark agent --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 20 --seed 42
+uv run main.py --benchmark evals --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 1 --seed 42
+uv run main.py --benchmark analytics --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 10 --seed 42
+uv run main.py --benchmark disk --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 128 --seed 42
+uv run main.py --benchmark media --runner docker --host-cpus 32 --levels 1 8 16 24 32 --n 10 --seed 42
+```
+
+**Still caveat:** disk ladders mix FS/storage differences — prefer disk @ c=1 for chip; treat disk concurrency as infra.
 
 ### Tier C — product density (Daytona)
 
@@ -304,9 +329,9 @@ Single-host Docker ceiling is **not** the multi-runner product story. After onsi
 
 ## Extra Vera time
 
-1. **Tier B `--host-cpus 32` heavy + density** (above) — highest value now that x86 is 32 cores  
+1. **Tier B `--host-cpus 32` with `--levels 1 8 16 24 32`** (above) — highest value for x86 parity  
 2. More **chip @ c=1** repeats / alt seeds (Tier A; no `--host-cpus` needed)  
-3. Keep full-machine `docker/` P2/P3 as “Vera at full width” story — do **not** mix with `docker-c32` in the same chart without labeling
+3. Keep full-machine `docker/` P2/P3 (`1 8 22 44 88`) as “Vera at full width” — do **not** mix with `docker-c32` without labeling
 
 ---
 
@@ -314,7 +339,7 @@ Single-host Docker ceiling is **not** the multi-runner product story. After onsi
 
 ```bash
 uv run python scripts/eda_vera_docker.py
-uv run python eda.py --benchmark rl   # will pick up docker-c32 series when present
+uv run python eda.py --benchmark rl   # picks up docker-c32 when present
 ```
 
 ---
@@ -324,8 +349,9 @@ uv run python eda.py --benchmark rl   # will pick up docker-c32 series when pres
 | Question | Fair compare | Not fair |
 | --- | --- | --- |
 | Is Vera faster on our workloads? | `duration_ms` @ **c=1**, matched `--n`/`--seed` | wall latency |
-| Concurrency under **32-core parity**? | `docker-c32` vs x86 `--host-cpus 32`, same levels | full `docker/` @88 vs small x86 |
+| Concurrency under **32-core parity**? | `docker-c32` vs x86, levels **`1 8 16 24 32` only** | `docker-c32` @44/88 vs x86; full `docker/` @88 vs 32-core |
+| Oversubscription collapse? | same `--host-cpus 32` + levels including 44/88 on **both** hosts | calling that the parity ladder |
 | Vera full-width packing? | unrestricted `docker/` P2/P3 (Vera-only) | unlabeled vs 32-core x86 |
 | Disk under load? | c=1 chip; or same-cap ladder with FS caveat | ignoring storage differences |
 
-**Don’t** burn Vera time on slides while the node is yours — run Tier B `--host-cpus 32` next.
+**Don’t** burn Vera time on slides — re-run Tier B with `--levels 1 8 16 24 32` (skip 44/88 for parity).

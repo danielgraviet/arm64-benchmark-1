@@ -35,16 +35,34 @@ def get_native_snapshot(client: Daytona, name: str) -> dict[str, Any] | None:
     return (ready or matches)[0]
 
 
+def is_registry_image_ref(name_or_manifest: str) -> bool:
+    """True for Docker Hub / GHCR / digest refs (not native snap names)."""
+    s = name_or_manifest.strip()
+    if not s:
+        return False
+    if s.startswith("snap-"):
+        return False
+    if s.startswith("sha256:"):
+        return True
+    # user/repo, registry.example/…, docker.io/…
+    return "/" in s
+
+
 def resolve_boot_image(client: Daytona, name_or_manifest: str) -> str:
-    """Map a friendly snapshot name to the NFS ``manifest_name`` used by POST /vms."""
-    if name_or_manifest.startswith("snap-"):
+    """Map a friendly snapshot name to the NFS ``manifest_name`` used by POST /vms.
+
+    Registry refs (e.g. ``dtgraviet/vera-agent-benchmark-rl:latest``) pass
+    through unchanged so RLP can pull OCI images without a native snapshot.
+    """
+    if name_or_manifest.startswith("snap-") or is_registry_image_ref(name_or_manifest):
         return name_or_manifest
 
     snap = get_native_snapshot(client, name_or_manifest)
     if snap is None:
         raise DaytonaError(
             f"Native RLP snapshot {name_or_manifest!r} not found on /snapshots. "
-            "Build it with: uv run scripts/build_rlp_snapshot.py"
+            "Build it with: uv run scripts/build_rlp_snapshot.py "
+            "(or pass a registry image as --snapshot, e.g. user/image:tag)"
         )
     if snap.get("status") != "ready":
         raise DaytonaError(

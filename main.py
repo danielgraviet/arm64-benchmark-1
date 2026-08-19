@@ -79,7 +79,10 @@ def main() -> None:
         "--snapshot",
         type=str,
         default=None,
-        help="Override snapshot/template name (default: per-benchmark artifact)",
+        help=(
+            "Override snapshot/template name, or a registry image ref for RLP "
+            "(e.g. dtgraviet/vera-agent-benchmark-rl:latest)"
+        ),
     )
     parser.add_argument(
         "--exec-timeout",

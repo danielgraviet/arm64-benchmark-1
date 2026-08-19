@@ -68,6 +68,18 @@ class BenchmarkSpec:
     def agent_command(self, *, python: str = "python") -> str:
         return f"{python} -m {self.module}"
 
+    def memory_gib(self) -> int:
+        """Parse ``docker_memory`` (e.g. ``2g``) to GiB for RLP ``Resources``."""
+        raw = (self.docker_memory or "1g").strip().lower()
+        if raw.endswith("gi"):
+            return max(1, int(float(raw[:-2])))
+        if raw.endswith("g"):
+            return max(1, int(float(raw[:-1])))
+        if raw.endswith("mi") or raw.endswith("m"):
+            mib = float(raw[:-2] if raw.endswith("mi") else raw[:-1])
+            return max(1, int((mib + 1023) // 1024))
+        return max(1, int(float(raw)))
+
     def artifact_for_target(self, target: str | None = None) -> str:
         """Snapshot/template name for an optional region target.
 
@@ -102,7 +114,7 @@ ANALYTICS = BenchmarkSpec(
     module="analytics.agent",
     include_paths=("pyproject.toml", "uv.lock", "analytics"),
     pythonpath_extra=None,
-    docker_memory="2g",
+    docker_memory="4g",
     description="Memory-bandwidth heavy Parquet + DuckDB joins/filters/aggs",
 )
 

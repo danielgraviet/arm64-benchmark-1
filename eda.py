@@ -31,6 +31,7 @@ SERIES_ORDER = (
     "e2b",
     "rlp-x86",
     "rlp-arm64",
+    "rlp-vera",
     "rlp",  # legacy folder name (pre split)
     "ec2",
 )
@@ -44,6 +45,7 @@ SERIES_COLORS = {
     "rlp-x86": "#FF7F0E",  # orange
     "rlp": "#FF7F0E",  # legacy → same as x86
     "rlp-arm64": "#D62728",  # red
+    "rlp-vera": "#8C1D40",  # dark crimson — onsite Vera RLP cell
     "ec2": "#8C564B",  # brown
 }
 

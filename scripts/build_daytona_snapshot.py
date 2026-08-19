@@ -148,14 +148,18 @@ def main() -> None:
         else:
             print(
                 f"Creating Daytona builder sandbox from {args.base_image!r} "
-                f"(benchmark={spec.id}) …"
+                f"(benchmark={spec.id}, memory={spec.memory_gib()}GiB) …"
             )
             sandbox = daytona.create(
                 CreateSandboxFromImageParams(
                     image=args.base_image,
                     language="python",
                     auto_delete_interval=-1,
-                    resources=Resources(cpu=1, memory=1),
+                    resources=Resources(
+                        cpu=1,
+                        memory=spec.memory_gib(),
+                        disk=max(3, spec.memory_gib()),
+                    ),
                 ),
                 timeout=300,
             )

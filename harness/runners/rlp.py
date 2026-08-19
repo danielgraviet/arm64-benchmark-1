@@ -8,16 +8,19 @@ import time
 from typing import Any
 
 from dotenv import load_dotenv
-from rlp import Daytona
+from rlp import Daytona, Resources
 
 from harness.benchmarks import AGENT, BenchmarkSpec
 from harness.env_probe import failed_env, host_env, merge_env, parse_probe_stdout, probe_shell_command
 from harness.paths import ROOT
 from harness.regions import check_sandbox_arch, resolve_rlp_client_config
 from harness.rlp_create import create_rlp_sandbox
-from harness.rlp_snapshots import resolve_boot_image
+from harness.rlp_snapshots import is_registry_image_ref, resolve_boot_image
 
-APP_DIR = "/home/daytona/app"
+# Native RLP disk snaps bake the app under /home/daytona/app (snapshot_common).
+# Dockerfile.* images use WORKDIR /app — registry boots must match.
+SNAPSHOT_APP_DIR = "/home/daytona/app"
+REGISTRY_APP_DIR = "/app"
 DEFAULT_EXEC_TIMEOUT_S = 600
 
 
@@ -41,13 +44,18 @@ class RlpRunner:
         self._exec_timeout_s = exec_timeout_s
         self._target = target
         self._episodes_per_sandbox = episodes_per_sandbox
-        self._run_env = spec.run_env(APP_DIR)
-        self._agent_cmd = spec.agent_command()
+        mem = spec.memory_gib()
+        # Match Docker mem; give a little disk headroom for parquet spills.
+        self._resources = Resources(cpu=1, memory=mem, disk=max(2, mem))
         config = resolve_rlp_client_config(target, toolbox_url)
         self._client = Daytona(config)
+        routing = getattr(config, "region_routing", None)
         print(
-            f"rlp client: target={config.target!r} toolbox_url={config.toolbox_url!r} "
-            f"benchmark={spec.id!r} episodes_per_sandbox={episodes_per_sandbox}"
+            f"rlp client: target={config.target!r} "
+            f"api_url={config.api_url!r} toolbox_url={config.toolbox_url!r} "
+            f"region_routing={routing!r} "
+            f"benchmark={spec.id!r} episodes_per_sandbox={episodes_per_sandbox} "
+            f"resources=cpu=1,memory={mem}GiB,disk={max(2, mem)}GiB"
         )
 
         # Probed once on the first worker sandbox (avoids a spare create on
@@ -57,7 +65,17 @@ class RlpRunner:
         self._arch_lock = threading.Lock()
 
         self._boot_image = resolve_boot_image(self._client, self._snapshot)
-        print(f"rlp boot image: {self._snapshot!r} -> {self._boot_image!r}")
+        self._app_dir = (
+            REGISTRY_APP_DIR
+            if is_registry_image_ref(self._boot_image)
+            else SNAPSHOT_APP_DIR
+        )
+        self._run_env = spec.run_env(self._app_dir)
+        self._agent_cmd = spec.agent_command()
+        print(
+            f"rlp boot image: {self._snapshot!r} -> {self._boot_image!r} "
+            f"(app_dir={self._app_dir})"
+        )
 
     def probe_env(self) -> dict[str, Any]:
         host = host_env()
@@ -66,6 +84,7 @@ class RlpRunner:
             sandbox = create_rlp_sandbox(
                 self._client,
                 image=self._boot_image,
+                resources=self._resources,
                 timeout=120,
                 target=self._target,
             )
@@ -118,6 +137,7 @@ class RlpRunner:
             sandbox = create_rlp_sandbox(
                 self._client,
                 image=self._boot_image,
+                resources=self._resources,
                 timeout=120,
                 target=self._target,
             )
@@ -136,7 +156,7 @@ class RlpRunner:
                 try:
                     response = sandbox.process.exec(
                         cmd,
-                        cwd=APP_DIR,
+                        cwd=self._app_dir,
                         env=self._run_env,
                         timeout=self._exec_timeout_s,
                     )

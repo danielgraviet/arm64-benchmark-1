@@ -31,3 +31,7 @@ markers = [
 ]
 # Keep `uv run pytest` offline/local. Cloud checks: `uv run pytest -m e2e`.
 addopts = ["-m", "not e2e"]
+
+# Do NOT add [tool.uv.sources] path overrides for rlp-sdk here — sandbox/Docker
+# `uv sync --frozen` cannot see ../rlp/clients/python. For local Vera harness
+# with eng's SDK: `uv pip install -e ../rlp/clients/python` (see tickets/vera-rlp-smoke.md).

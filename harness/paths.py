@@ -18,13 +18,15 @@ def result_series_name(
 ) -> str:
     """Map CLI runner (+ optional RLP target / Docker CPU cap) to a results folder.
 
-    RLP default-region and ARM64 runs are split so EDA can chart them as
-    separate series (``rlp-x86`` vs ``rlp-arm64``).
+    RLP default-region, ARM64, and onsite Vera runs are split so EDA can chart
+    them as separate series (``rlp-x86`` vs ``rlp-arm64`` vs ``rlp-vera``).
 
     Docker with ``--host-cpus N`` writes to ``docker-cN`` so capped runs stay
     separate from full-machine ``docker`` results.
     """
     if runner == "rlp":
+        if target == "vera":
+            return "rlp-vera"
         if target and target in ARM64_TARGETS:
             return "rlp-arm64"
         return "rlp-x86"
