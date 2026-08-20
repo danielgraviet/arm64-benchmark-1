@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import subprocess
 import time
+from pathlib import Path
 from typing import Any
 
 from harness.benchmarks import AGENT, BenchmarkSpec
@@ -21,6 +22,23 @@ def cpuset_range(host_cpus: int) -> str:
     return f"0-{host_cpus - 1}"
 
 
+def numa_node_cpulist(node: int, *, sysfs: Path | None = None) -> str:
+    """Linux sysfs CPU list for NUMA node N (e.g. ``0-87,176-263``)."""
+    if node < 0:
+        raise ValueError(f"NUMA node must be >= 0, got {node}")
+    root = sysfs or Path("/sys/devices/system/node")
+    path = root / f"node{node}" / "cpulist"
+    if not path.is_file():
+        raise FileNotFoundError(
+            f"No NUMA node {node} at {path}. Run on the Vera host and check "
+            "`numactl -H` / `ls /sys/devices/system/node`."
+        )
+    text = path.read_text(encoding="utf-8").strip()
+    if not text:
+        raise ValueError(f"Empty cpulist for NUMA node {node} ({path})")
+    return text
+
+
 class DockerRunner:
     def __init__(
         self,
@@ -29,9 +47,19 @@ class DockerRunner:
         cpus: str = "1",
         cpuset_cpus: str | None = None,
         host_cpus: int | None = None,
+        cpuset_mems: str | None = None,
+        numa_node: int | None = None,
     ) -> None:
         self._spec = spec
         self._cpus = cpus
+        self._numa_node = numa_node
+        if numa_node is not None:
+            if host_cpus is not None or cpuset_cpus is not None:
+                raise ValueError("pass only --numa-node, not with --host-cpus / --cpuset-cpus")
+            if cpuset_mems is not None:
+                raise ValueError("pass only --numa-node, not with --cpuset-mems")
+            cpuset_cpus = numa_node_cpulist(numa_node)
+            cpuset_mems = str(numa_node)
         if host_cpus is not None and cpuset_cpus is not None:
             raise ValueError("pass only one of host_cpus or cpuset_cpus")
         if host_cpus is not None:
@@ -40,7 +68,10 @@ class DockerRunner:
         else:
             self._host_cpus = None
             self._cpuset_cpus = cpuset_cpus
+        self._cpuset_mems = cpuset_mems
         extra = f" cpuset={self._cpuset_cpus!r}" if self._cpuset_cpus else ""
+        if self._cpuset_mems:
+            extra += f" mems={self._cpuset_mems!r}"
         print(
             f"docker client: image={spec.docker_image!r} "
             f"cpus={self._cpus!r}{extra}"
@@ -51,7 +82,9 @@ class DockerRunner:
         out: dict[str, Any] = {
             "docker_cpus": self._cpus,
             "docker_cpuset_cpus": self._cpuset_cpus,
+            "docker_cpuset_mems": self._cpuset_mems,
             "host_cpus": self._host_cpus,
+            "numa_node": self._numa_node,
         }
         return out
 
@@ -65,6 +98,8 @@ class DockerRunner:
         ]
         if self._cpuset_cpus:
             cmd.append(f"--cpuset-cpus={self._cpuset_cpus}")
+        if self._cpuset_mems is not None:
+            cmd.append(f"--cpuset-mems={self._cpuset_mems}")
         cmd.extend(tail)
         return cmd
 
@@ -99,6 +134,10 @@ class DockerRunner:
                 }
             elif self._cpuset_cpus:
                 env = {**env, "docker_cpuset_cpus": self._cpuset_cpus}
+            if self._cpuset_mems is not None:
+                env = {**env, "docker_cpuset_mems": self._cpuset_mems}
+            if self._numa_node is not None:
+                env = {**env, "numa_node": self._numa_node}
             return env
         except Exception as exc:  # noqa: BLE001
             print(f"warning: docker env probe failed: {exc}")

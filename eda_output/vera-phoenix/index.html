@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="20 August 2026 Vera vs Phoenix readout: 1 vCPU pack plus 0.125 CPU density." />
+  <title>Vera vs Phoenix | Today</title>
+  <style>
+    :root {
+      --ink: #102a2a;
+      --muted: #52666a;
+      --paper: #f7f8f4;
+      --card: #ffffff;
+      --line: #dbe3df;
+      --vera: #8f1f47;
+      --phoenix: #a48400;
+      --green: #287c43;
+      --lime: #8fda82;
+      --amber: #b86b11;
+      --blue: #1b6577;
+      --shadow: 0 18px 55px rgba(16, 42, 42, .11);
+    }
+
+    * { box-sizing: border-box; }
+    html { background: #102a2a; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: clamp(14px, 1.5vw, 19px);
+      line-height: 1.45;
+    }
+    button { font: inherit; }
+    .deck { min-height: 100svh; }
+    .slide {
+      display: none;
+      min-height: 100svh;
+      padding: clamp(3.25rem, 7vh, 5.5rem) clamp(1.2rem, 5vw, 6rem) 5.5rem;
+      background:
+        radial-gradient(circle at 86% 8%, rgba(196, 160, 0, .14), transparent 22rem),
+        radial-gradient(circle at 8% 92%, rgba(143, 31, 71, .10), transparent 18rem),
+        var(--paper);
+    }
+    .slide.active { display: flex; align-items: center; }
+    .slide-inner { width: min(1440px, 100%); margin: 0 auto; }
+    .eyebrow {
+      margin: 0 0 .55rem;
+      color: var(--vera);
+      font-size: .78em;
+      font-weight: 800;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3, p { margin-top: 0; }
+    h1, h2 { letter-spacing: -.045em; line-height: .98; }
+    h1 { max-width: 16ch; margin-bottom: 1rem; font-size: clamp(3rem, 7vw, 6.5rem); }
+    h2 { margin-bottom: 1.25rem; font-size: clamp(2.35rem, 5.4vw, 4.75rem); }
+    h3 { margin-bottom: .35rem; font-size: 1.07em; }
+    .lead { max-width: 47rem; color: var(--muted); font-size: clamp(1.12rem, 2.15vw, 1.65rem); }
+    .lead strong { color: var(--ink); }
+    .title-layout { display: grid; gap: 2rem; grid-template-columns: minmax(0, 1.25fr) minmax(18rem, .75fr); align-items: end; }
+    .hero-mark {
+      min-height: 19rem;
+      padding: 2rem;
+      color: #fff;
+      background: var(--ink);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .hero-mark .big { color: #f0d45a; font-size: clamp(3.8rem, 8vw, 7rem); font-weight: 850; letter-spacing: -.08em; line-height: .8; }
+    .hero-mark p { margin: 0; color: #d5e8e2; }
+    .meta { color: var(--muted); font-size: .87em; }
+    .rule { height: 1px; margin: 1.5rem 0; border: 0; background: var(--line); }
+    .grid { display: grid; gap: 1.1rem; }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .card {
+      min-width: 0;
+      padding: 1.25rem;
+      border: 1px solid var(--line);
+      background: var(--card);
+      box-shadow: 0 6px 18px rgba(16, 42, 42, .045);
+    }
+    .card p:last-child { margin-bottom: 0; }
+    .metric { margin: .25rem 0 .15rem; color: var(--vera); font-size: clamp(2rem, 3vw, 3.2rem); font-weight: 850; letter-spacing: -.06em; line-height: 1; }
+    .metric.green { color: var(--green); }
+    .metric.amber { color: var(--amber); }
+    .metric.gold { color: var(--phoenix); }
+    .metric-label { color: var(--muted); font-size: .84em; }
+    .result-layout { display: grid; gap: 1.4rem; grid-template-columns: minmax(0, 1.34fr) minmax(20rem, .66fr); align-items: start; }
+    figure { margin: 0; }
+    .chart-wrap { padding: .5rem; border: 1px solid var(--line); background: #fff; box-shadow: var(--shadow); }
+    .chart-wrap img { display: block; width: 100%; height: auto; }
+    figcaption { padding: .65rem .5rem .2rem; color: var(--muted); font-size: .77em; }
+    .callout { border-left: .34rem solid var(--vera); }
+    .callout.green { border-left-color: var(--green); }
+    .callout.amber { border-left-color: var(--amber); }
+    .callout.gold { border-left-color: var(--phoenix); }
+    .callout.blue { border-left-color: var(--blue); }
+    .bullet-list { margin: .4rem 0 0; padding-left: 1.12rem; }
+    .bullet-list li { margin-bottom: .58rem; }
+    .tag { display: inline-block; margin: 0 .35rem .35rem 0; padding: .22rem .5rem; border-radius: 99px; background: #e8f3e7; color: #17562d; font-size: .72em; font-weight: 750; }
+    .tag.warn { background: #fff1df; color: #87500f; }
+    .tag.gold { background: #f7efc8; color: #6d5900; }
+    .tag.derived { background: #e5f1f4; color: #145a6b; }
+    table.nums { width: 100%; border-collapse: collapse; font-size: .82em; font-variant-numeric: tabular-nums; }
+    table.nums th, table.nums td { padding: .38rem .4rem; text-align: right; border-bottom: 1px solid var(--line); }
+    table.nums th:first-child, table.nums td:first-child { text-align: left; }
+    table.nums th { color: var(--muted); font-weight: 700; }
+    details { margin-top: .8rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .84em; }
+    summary { padding-top: .68rem; color: var(--ink); cursor: pointer; font-weight: 750; }
+    details p { margin: .55rem 0 0; }
+    .recommendations { display: grid; gap: .8rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .recommendation { display: grid; grid-template-columns: 7.5rem 1fr; gap: .8rem; padding: .95rem 1rem; border: 1px solid var(--line); background: #fff; }
+    .recommendation b { color: var(--vera); }
+    .source-list { margin: .2rem 0 0; padding-left: 1rem; font-size: .82em; }
+    .source-list li { margin-bottom: .25rem; }
+    a { color: #0a6070; }
+    .nav {
+      position: fixed;
+      z-index: 4;
+      right: clamp(1rem, 3vw, 2rem);
+      bottom: clamp(1rem, 3vw, 1.6rem);
+      display: flex;
+      align-items: center;
+      gap: .65rem;
+      padding: .42rem;
+      border: 1px solid rgba(255,255,255,.24);
+      background: rgba(16, 42, 42, .94);
+      box-shadow: 0 10px 28px rgba(0,0,0,.22);
+      color: #fff;
+    }
+    .nav button {
+      width: 2.45rem;
+      height: 2.35rem;
+      border: 1px solid rgba(255,255,255,.24);
+      background: transparent;
+      color: #fff;
+      cursor: pointer;
+      font-size: 1.25rem;
+    }
+    .nav button:hover, .nav button:focus-visible { background: #2b5a55; outline: 2px solid #f0d45a; outline-offset: 2px; }
+    .counter { min-width: 3.5rem; text-align: center; font-variant-numeric: tabular-nums; font-size: .78em; }
+    .progress { position: fixed; z-index: 5; top: 0; left: 0; height: .3rem; width: var(--progress, 9%); background: linear-gradient(90deg, var(--vera), var(--phoenix)); transition: width .2s ease; }
+    .skip { position: fixed; top: -5rem; left: 1rem; z-index: 8; padding: .6rem .85rem; background: #fff; color: var(--ink); }
+    .skip:focus { top: 1rem; }
+    @media (max-width: 820px) {
+      .slide { align-items: flex-start !important; min-height: 100svh; padding-top: 4.3rem; }
+      .title-layout, .result-layout, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+      .hero-mark { min-height: 12rem; }
+      .recommendations { grid-template-columns: 1fr; }
+    }
+    @media print {
+      .slide { display: flex !important; min-height: 100vh; page-break-after: always; }
+      .nav, .progress, .skip { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#slide-content">Skip to slide content</a>
+  <div class="progress" aria-hidden="true"></div>
+  <main class="deck" id="slide-content">
+
+    <section class="slide active" id="title" aria-labelledby="title-heading" data-title="Title">
+      <div class="slide-inner title-layout">
+        <div>
+          <p class="eyebrow">Vera vs Phoenix · 20 August 2026</p>
+          <h1 id="title-heading">What we learned on the two RLP cells today.</h1>
+          <p class="lead">Same agent / RL / media / analytics / disk / evals pack on <strong>Vera (Olympus, aarch64)</strong> and <strong>Phoenix (Zen 5 Turin, x86_64)</strong>, then a new <strong>0.125 CPU</strong> density experiment on agent.</p>
+          <hr class="rule" />
+          <p class="meta">Sister decks stay as-is: <a href="../index.html">Vera vs G5</a> · <a href="../phoenix/index.html">Phoenix cell (includes G5)</a>. This one is today’s two-cell walkthrough.</p>
+        </div>
+        <aside class="hero-mark" aria-label="Scope">
+          <span class="big">2</span>
+          <p><strong>cells, not three</strong><br />crimson = Vera · gold = Phoenix</p>
+          <p>Arrows, Space, or swipe.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="slide" id="read" aria-labelledby="read-heading" data-title="How to read">
+      <div class="slide-inner">
+        <p class="eyebrow">Method</p>
+        <h2 id="read-heading">Chip is duration_ms. Packing is clean waves only. Do not mix -E.</h2>
+        <div class="grid grid-3">
+          <article class="card callout">
+            <h3>Chip</h3>
+            <p class="metric">duration</p>
+            <p>In-sandbox work only. Fair across 1 vCPU and 0.125 — the billed pin can throttle, but this is still the silicon clock.</p>
+          </article>
+          <article class="card callout gold">
+            <h3>Packing</h3>
+            <p class="metric gold">tput</p>
+            <p>Completed episodes / wave wall, including create and fails. Quote a level only if <strong>failures = 0</strong>.</p>
+          </article>
+          <article class="card callout amber">
+            <h3>Today’s trap</h3>
+            <p class="metric amber">-E</p>
+            <p>Vera 0.125 agent used <strong>-E 8</strong>. Phoenix 0.125 retry used <strong>-E 1</strong>. Compare chip, not jobs/s, on those two files.</p>
+          </article>
+        </div>
+        <p class="meta" style="margin-top:1.1rem">Phoenix is its own API cell (<code>api.us-phoenix-1.rlp.trydaytona.com</code>). 1 vCPU is the default pin; <code>--rlp-cpu 0.125</code> is request + burst, RAM still 1 GiB.</p>
+      </div>
+    </section>
+
+    <section class="slide" id="summary" aria-labelledby="summary-heading" data-title="Executive summary">
+      <div class="slide-inner">
+        <p class="eyebrow">Executive summary</p>
+        <h2 id="summary-heading">Phoenix wins some idle chips. Vera holds packing. 0.125 does not buy a free 8× on agent.</h2>
+        <div class="grid grid-3">
+          <article class="card callout gold">
+            <p class="metric gold">~2×</p>
+            <p class="metric-label">media idle: Phoenix 8.6 s vs Vera 15.3 s</p>
+            <p>Turin also wins idle RL (0.50 s vs 0.88 s) and evals packing at 88 (42.4/s vs 39.0/s).</p>
+          </article>
+          <article class="card callout">
+            <p class="metric">flat</p>
+            <p class="metric-label">Vera RL ~0.88–0.91 s through 352, 0 fails</p>
+            <p>Phoenix RL is 0.77 s at 88, then 2.9 s at 176, 9.9 s + 31 fails at 352. That is the density cliff.</p>
+          </article>
+          <article class="card callout amber">
+            <p class="metric amber">0.125</p>
+            <p class="metric-label">agent chip ≈ 1 vCPU on both cells through 88</p>
+            <p>Vera 0.125 is clean through 176. Phoenix 0.125 is clean through 176 on the retry, then toolbox <code>:2280</code> timeouts at 528+.</p>
+          </article>
+        </div>
+        <div class="grid grid-2" style="margin-top: 1.1rem">
+          <article class="card">
+            <h3>Say in the room</h3>
+            <p>Use Phoenix for encode and short evals. Use Vera when you need ARM packing that stays the same chip at 176–352.</p>
+          </article>
+          <article class="card">
+            <h3>Do not say</h3>
+            <p>That 0.125 CPU × 8 is free density. Agent duration barely moved vs 1 vCPU; Phoenix 528+ failed after create, not at quota.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" id="agent-1cpu" aria-labelledby="agent-1cpu-heading" data-title="Agent 1 vCPU">
+      <div class="slide-inner">
+        <p class="eyebrow">1 · Agent · 1 vCPU</p>
+        <h2 id="agent-1cpu-heading">Vera still leads the coding-agent pack at 88. Phoenix 176 has one fail — do not sell 31.6/s.</h2>
+        <div class="result-layout">
+          <figure class="chart-wrap">
+            <img src="../agent/throughput_vs_concurrency.png" alt="Agent throughput versus concurrency for Vera and Phoenix series." />
+            <figcaption>n=200, seed=42, -E 8, Hub image. Quote 88. Charts may show extra series; numbers on the right are the 1 vCPU files.</figcaption>
+          </figure>
+          <div class="grid">
+            <article class="card callout">
+              <span class="tag">Vera 88</span>
+              <p class="metric">24.7/s</p>
+              <p class="metric-label">Phoenix 21.5/s · 0 fails both</p>
+              <p>Idle chip: Vera 2.45 s, Phoenix 2.80 s. At 176 Vera is 16.5/s, 0 fails, duration 3.02 s.</p>
+            </article>
+            <article class="card callout amber">
+              <span class="tag warn">Phoenix 176</span>
+              <h3>1 fail · 31.6/s</h3>
+              <p>Duration stretches to 4.05 s. Truncated-wave tput is not a packing win.</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" id="agent-0125" aria-labelledby="agent-0125-heading" data-title="Agent 0.125">
+      <div class="slide-inner">
+        <p class="eyebrow">2 · Agent · 0.125 CPU</p>
+        <h2 id="agent-0125-heading">Same chip as 1 vCPU through 88. Vera packing still peaks at 88, then duration stretches at 176.</h2>
+        <div class="result-layout">
+          <figure class="chart-wrap">
+            <img src="../agent/mean_duration_bars.png" alt="Agent mean duration by concurrency, including 0.125 CPU series." />
+            <figcaption>Chip story. Vera 0.125: -E 8, Hub. Phoenix 0.125 retry: -E 1, native snap. Do not compare tput across those two files.</figcaption>
+          </figure>
+          <div>
+            <table class="nums">
+              <thead>
+                <tr><th>c</th><th>Vera p50 dur</th><th>Vera tput</th><th>Phx p50 dur</th><th>Phx tput*</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>1</td><td>2.48 s</td><td>0.34/s</td><td>2.95 s</td><td>0.26/s</td></tr>
+                <tr><td>88</td><td>2.76 s</td><td>23.2/s</td><td>3.24 s</td><td>11.4/s</td></tr>
+                <tr><td>176</td><td>3.40 s</td><td>15.8/s</td><td>3.55 s</td><td>16.9/s</td></tr>
+              </tbody>
+            </table>
+            <p class="metric-label" style="margin-top:.7rem">*Phoenix column is -E 1 (one episode per sandbox). Vera 1 vCPU at 88 was 24.7/s / 2.79 s — 0.125 did not make the chip faster, and tput was slightly worse (23.2/s).</p>
+            <p class="meta">Both 176 waves: <strong>0 fails</strong> (Vera <code>…223728…</code>, Phoenix <code>…224738…</code>).</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" id="density-cliff" aria-labelledby="density-cliff-heading" data-title="0.125 cliffs">
+      <div class="slide-inner">
+        <p class="eyebrow">3 · Where 0.125 actually broke</p>
+        <h2 id="density-cliff-heading">Phoenix 528+ is a dataplane miss after create. Vera’s first miss was leftover VMs.</h2>
+        <div class="grid grid-2">
+          <article class="card callout amber">
+            <span class="tag warn">Phoenix first 0.125 ladder</span>
+            <p class="metric amber">514 fails</p>
+            <p class="metric-label">192 at 528 + 322 at 704 · file …212831…</p>
+            <p>Every failed job still has a <code>sandbox_id</code>. Error: <code>bad gateway: dial tcp 10.102.x.x:2280: i/o timeout</code>. Create worked; toolbox could not reach guest :2280. Distinct overlay IPs. Jobs that ran stayed ~3.3 s chip.</p>
+          </article>
+          <article class="card callout">
+            <span class="tag">Vera ops</span>
+            <p class="metric">375</p>
+            <p class="metric-label">leftover VMs listed after overlapping ladders</p>
+            <p>~80 <code>error</code> + ~295 <code>started</code> from a wave that never tore down. Second run got <code>no matching capacity</code>. After delete, list was all <code>destroyed</code> and the 176 ladder ran 0-fail.</p>
+          </article>
+        </div>
+        <p class="meta" style="margin-top:1.1rem">Two different bugs. Phoenix 528+ is not “out of CPU quota.” Vera 0.125 352+ was never rerun after the cleanup — only through 176.</p>
+      </div>
+    </section>
+
+    <section class="slide" id="rl" aria-labelledby="rl-heading" data-title="RL">
+      <div class="slide-inner">
+        <p class="eyebrow">4 · RL · 1 vCPU</p>
+        <h2 id="rl-heading">Phoenix is the fastest RL chip at idle — and the one that blows up after 88.</h2>
+        <div class="result-layout">
+          <figure class="chart-wrap">
+            <img src="../rl/p50_duration_bars.png" alt="RL p50 duration: Phoenix idle 0.5 seconds then 2.9 seconds at 176 and 9.9 seconds at 352; Vera stays near 0.9 seconds." />
+            <figcaption>n=5000, -E 8. Pause here. This is the packing product finding, not a seed glitch.</figcaption>
+          </figure>
+          <div class="grid">
+            <article class="card callout gold">
+              <p class="metric gold">0.50 s</p>
+              <p class="metric-label">Phoenix idle vs Vera 0.88 s</p>
+              <p>At 88: Phoenix 0.77 s / 56/s, Vera 0.89 s / 51/s. Still close.</p>
+            </article>
+            <article class="card callout amber">
+              <span class="tag warn">Do not sell 176+</span>
+              <h3>2.91 s → 9.87 s</h3>
+              <p>Phoenix 176: 0 fails, chip already 6× idle. 352: 31 fails, 9.87 s. Vera 352: 0.91 s / 64/s / 0 fails.</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" id="media" aria-labelledby="media-heading" data-title="Media">
+      <div class="slide-inner">
+        <p class="eyebrow">5 · Media</p>
+        <h2 id="media-heading">This is the slide where Turin actually wins the chip.</h2>
+        <div class="result-layout">
+          <figure class="chart-wrap">
+            <img src="../media/throughput_vs_concurrency.png" alt="Media throughput: Phoenix about 9 per second at 88 versus Vera 5.0." />
+            <figcaption>FFmpeg n=40, -E 8. Phoenix chart uses the retry with 176 clean. Vera 176 still has 52 fails — do not quote 5.6/s.</figcaption>
+          </figure>
+          <div class="grid">
+            <article class="card callout gold">
+              <p class="metric gold">8.6 s</p>
+              <p class="metric-label">idle vs Vera 15.3 s (~1.8×)</p>
+              <p>At 88: <strong>9.0/s vs 5.0/s</strong> (Phoenix 88 had 1 fail on the retry — mention it). Retry 176: 0 fails, 15.4/s, duration 10.0 s.</p>
+            </article>
+            <article class="card">
+              <h3>Packing jitter</h3>
+              <p>First Phoenix 176 dropped 42 creates. Second wave was clean. Encode chip is real; 176 capacity is retry-sensitive.</p>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" id="rest" aria-labelledby="rest-heading" data-title="Analytics disk evals">
+      <div class="slide-inner">
+        <p class="eyebrow">6 · The rest of today’s 1 vCPU pack</p>
+        <h2 id="rest-heading">Analytics and disk stay Vera. Evals is the cleanest Phoenix packing result.</h2>
+        <div class="grid grid-3">
+          <article class="card">
+            <figure class="chart-wrap">
+              <img src="../analytics/throughput_vs_concurrency.png" alt="Analytics throughput Vera 18.3 per second at 88, Phoenix 14.5." />
+            </figure>
+            <p><span class="tag">Analytics</span> Idle Vera 3.36 s vs Phoenix 3.74 s. At 88: <strong>18.3/s vs 14.5/s</strong> (Phoenix 1 fail). Sell Vera 88 × 4 GiB.</p>
+          </article>
+          <article class="card">
+            <figure class="chart-wrap">
+              <img src="../disk/p50_duration_bars.png" alt="Disk p50 duration Vera around 430 milliseconds, Phoenix around 670 milliseconds." />
+            </figure>
+            <p><span class="tag">Disk</span> Both flat. Vera ~430 ms / 34.2/s at 88. Phoenix ~660–713 ms / 26.4/s. Phoenix 352: 1 fail, chip still 675 ms.</p>
+          </article>
+          <article class="card">
+            <figure class="chart-wrap">
+              <img src="../evals/throughput_vs_concurrency.png" alt="Evals throughput Phoenix 42.4 per second at 88 versus Vera 39.0." />
+            </figure>
+            <p><span class="tag gold">Evals</span> Phoenix 42.4/s at 88, 44.5/s at 176, 0 fails. Vera 39.0/s at 88. Short terminal work packs on Turin.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" id="say" aria-labelledby="say-heading" data-title="What to say">
+      <div class="slide-inner">
+        <p class="eyebrow">Decision guide</p>
+        <h2 id="say-heading">One line per pack, then stop.</h2>
+        <div class="recommendations">
+          <article class="recommendation"><b>Agent 1 vCPU</b><span>Vera 88 at <strong>24.7/s</strong>. Phoenix 21.5/s. Do not quote Phoenix 176.</span></article>
+          <article class="recommendation"><b>Agent 0.125</b><span>Chip ≈ 1 vCPU through 88. Vera 176 clean but slower. Phoenix tput is -E 1 — chip only vs Vera.</span></article>
+          <article class="recommendation"><b>RL</b><span>Phoenix idle 0.50 s; quote packing only through <strong>88</strong>. Vera holds through 352.</span></article>
+          <article class="recommendation"><b>Media</b><span>Phoenix encode chip (~8.6 s, ~9/s at 88). 176 is retry-sensitive.</span></article>
+          <article class="recommendation"><b>Analytics / disk</b><span>Vera. Phoenix is mid-pack on DuckDB and ~1.6× slower on FS.</span></article>
+          <article class="recommendation"><b>Evals</b><span>Phoenix matches or beats Vera, 0 fails through 176.</span></article>
+        </div>
+        <div class="grid grid-2" style="margin-top: 1.1rem">
+          <article class="card">
+            <h3>Files to pin</h3>
+            <ul class="source-list">
+              <li>Agent Vera 0.125: <code>data/agent/rlp-vera-c0p125/concurrency_20260820_223728_n200.jsonl</code></li>
+              <li>Agent Phoenix 0.125 clean: <code>…/rlp-phoenix-c0p125/…224738…</code> (through 176)</li>
+              <li>Agent Phoenix 0.125 cliff: <code>…212831…</code> (528/704 :2280)</li>
+              <li>RL Phoenix: <code>data/rl/rlp-phoenix/concurrency_20260820_195139_n5000.jsonl</code></li>
+              <li>Media Phoenix retry: <code>…210230_n40.jsonl</code></li>
+            </ul>
+          </article>
+          <article class="card">
+            <h3>Still open</h3>
+            <ul class="bullet-list">
+              <li>Vera 0.125 agent 352+ after the VM cleanup.</li>
+              <li>Phoenix 0.125 with <strong>-E 8</strong> so tput matches Vera.</li>
+              <li>0.125 on RL / media — agent-only so far.</li>
+              <li>On-box Docker on a 352-CPU Vera node is a different series (<code>docker/</code>), not this deck.</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="nav" aria-label="Slide navigation">
+    <button type="button" id="previous" aria-label="Previous slide">←</button>
+    <span class="counter" id="counter" aria-live="polite">1 / 10</span>
+    <button type="button" id="next" aria-label="Next slide">→</button>
+  </nav>
+
+  <script>
+    (() => {
+      const slides = [...document.querySelectorAll('.slide')];
+      const previous = document.querySelector('#previous');
+      const next = document.querySelector('#next');
+      const counter = document.querySelector('#counter');
+      const progress = document.querySelector('.progress');
+      let current = 0;
+
+      function show(index, updateHash = true) {
+        current = (index + slides.length) % slides.length;
+        slides.forEach((slide, i) => {
+          const active = i === current;
+          slide.classList.toggle('active', active);
+          slide.setAttribute('aria-hidden', String(!active));
+        });
+        counter.textContent = `${current + 1} / ${slides.length}`;
+        progress.style.setProperty('--progress', `${((current + 1) / slides.length) * 100}%`);
+        document.title = `${slides[current].dataset.title} | Vera vs Phoenix`;
+        if (updateHash) history.replaceState(null, '', `#${slides[current].id}`);
+        window.scrollTo({ top: 0, behavior: 'auto' });
+      }
+
+      const startingSlide = slides.findIndex(slide => slide.id === location.hash.slice(1));
+      show(startingSlide >= 0 ? startingSlide : 0, false);
+      previous.addEventListener('click', () => show(current - 1));
+      next.addEventListener('click', () => show(current + 1));
+      window.addEventListener('hashchange', () => {
+        const index = slides.findIndex(slide => slide.id === location.hash.slice(1));
+        if (index >= 0 && index !== current) show(index, false);
+      });
+      window.addEventListener('keydown', event => {
+        if (event.target.closest('details, a, button')) return;
+        if (['ArrowRight', ' ', 'PageDown'].includes(event.key)) { event.preventDefault(); show(current + 1); }
+        if (['ArrowLeft', 'PageUp'].includes(event.key)) { event.preventDefault(); show(current - 1); }
+        if (event.key === 'Home') { event.preventDefault(); show(0); }
+        if (event.key === 'End') { event.preventDefault(); show(slides.length - 1); }
+      });
+      let touchStartX = null;
+      window.addEventListener('touchstart', event => { touchStartX = event.changedTouches[0].screenX; }, { passive: true });
+      window.addEventListener('touchend', event => {
+        if (touchStartX === null) return;
+        const difference = event.changedTouches[0].screenX - touchStartX;
+        if (Math.abs(difference) > 50) show(current + (difference < 0 ? 1 : -1));
+        touchStartX = null;
+      }, { passive: true });
+    })();
+  </script>
+</body>
+</html>

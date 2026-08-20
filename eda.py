@@ -25,6 +25,7 @@ OUT_DIR = ROOT / "eda_output"
 SERIES_ORDER = (
     "docker",
     "docker-c32",
+    "docker-numa0",
     "daytona",
     "daytona-graviton5",
     "daytona-graviton5-hot",
@@ -36,12 +37,14 @@ SERIES_ORDER = (
     "rlp-phoenix-c0p125",
     "rlp-arm64",
     "rlp-vera",
+    "rlp-vera-c0p125",
     "rlp",  # legacy folder name (pre split)
     "ec2",
 )
 SERIES_COLORS = {
     "docker": "#4C78A8",  # blue
     "docker-c32": "#1F4E79",  # darker blue — 32-core cap parity
+    "docker-numa0": "#5B8FA8",  # NUMA-pinned Docker
     "daytona": "#2CA02C",  # green
     "daytona-graviton5": "#98DF8A",  # light green — Graviton5 cold VM
     "daytona-graviton5-hot": "#2E7D32",  # darker green — Graviton5 hot/memory snap
@@ -54,6 +57,7 @@ SERIES_COLORS = {
     "rlp-phoenix-c0p125": "#8A6D00",  # darker gold — 0.125 CPU density
     "rlp-arm64": "#D62728",  # red
     "rlp-vera": "#8C1D40",  # dark crimson — onsite Vera RLP cell
+    "rlp-vera-c0p125": "#C45C7A",  # lighter crimson — 0.125 CPU density
     "ec2": "#8C564B",  # brown
 }
 

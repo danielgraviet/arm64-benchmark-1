@@ -124,7 +124,28 @@ def main() -> None:
         help=(
             "Pin Docker/EC2 workers to cpuset 0..(N-1) so high-concurrency "
             "runs match an N-core control host (e.g. --host-cpus 32). "
+            "Does not pin NUMA memory — use --numa-node for that. "
             "Results go under data/<bench>/docker-cN/."
+        ),
+    )
+    parser.add_argument(
+        "--numa-node",
+        type=int,
+        default=None,
+        help=(
+            "Docker only, Linux host: pin every worker to NUMA node N "
+            "(--cpuset-cpus from sysfs + --cpuset-mems=N). First socket is "
+            "usually 0. Results go under data/<bench>/docker-numaN/."
+        ),
+    )
+    parser.add_argument(
+        "--cpuset-mems",
+        type=str,
+        default=None,
+        help=(
+            "Docker only: pass-through --cpuset-mems (e.g. 0). Combine with "
+            "--host-cpus if you already know 0..(N-1) is that socket. "
+            "Ignored when --numa-node is set."
         ),
     )
     args = parser.parse_args()
@@ -144,6 +165,16 @@ def main() -> None:
         parser.error("--host-cpus is only valid with --runner docker or ec2")
     if args.host_cpus is not None and args.host_cpus < 1:
         parser.error("--host-cpus must be >= 1")
+    if args.numa_node is not None and args.runner != "docker":
+        parser.error("--numa-node is only valid with --runner docker")
+    if args.numa_node is not None and args.numa_node < 0:
+        parser.error("--numa-node must be >= 0")
+    if args.numa_node is not None and (
+        args.host_cpus is not None or args.cpuset_mems is not None
+    ):
+        parser.error("--numa-node cannot be combined with --host-cpus or --cpuset-mems")
+    if args.cpuset_mems is not None and args.runner != "docker":
+        parser.error("--cpuset-mems is only valid with --runner docker")
     if args.episodes_per_sandbox < 1:
         parser.error("--episodes-per-sandbox must be >= 1")
     if args.episodes_per_sandbox > 1 and args.runner not in (*DAYTONA_FAMILY, "rlp"):
@@ -196,13 +227,16 @@ def main() -> None:
             target=args.target,
             host_cpus=args.host_cpus,
             rlp_cpu=args.rlp_cpu if args.runner == "rlp" else None,
+            numa_node=args.numa_node,
+            cpuset_mems=args.cpuset_mems,
         )
     )
     print(
         f"benchmark={args.benchmark} runner={args.runner} "
         f"target={args.target!r} artifact={artifact!r} "
         f"episodes_per_sandbox={args.episodes_per_sandbox} "
-        f"host_cpus={args.host_cpus!r} rlp_cpu={args.rlp_cpu!r} "
+        f"host_cpus={args.host_cpus!r} numa_node={args.numa_node!r} "
+        f"cpuset_mems={args.cpuset_mems!r} rlp_cpu={args.rlp_cpu!r} "
         f"output={output}"
     )
 
@@ -215,6 +249,7 @@ def main() -> None:
         "n": args.n,
         "episodes_per_sandbox": args.episodes_per_sandbox,
         "host_cpus": args.host_cpus,
+        "numa_node": args.numa_node,
         "rlp_cpu": args.rlp_cpu if args.runner == "rlp" else None,
     }
     if args.benchmark == "evals":

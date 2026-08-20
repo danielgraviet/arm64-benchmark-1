@@ -40,7 +40,12 @@ def build_runner(args: argparse.Namespace) -> Any:
     spec = get_benchmark(args.benchmark)
     host_cpus = getattr(args, "host_cpus", None)
     if args.runner == "docker":
-        return DockerRunner(spec, host_cpus=host_cpus)
+        return DockerRunner(
+            spec,
+            host_cpus=host_cpus,
+            cpuset_mems=getattr(args, "cpuset_mems", None),
+            numa_node=getattr(args, "numa_node", None),
+        )
     if args.runner == "ec2":
         return Ec2Runner(spec, host_cpus=host_cpus)
     if args.runner in DAYTONA_FAMILY:

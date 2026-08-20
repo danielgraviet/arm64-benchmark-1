@@ -24,6 +24,8 @@ def result_series_name(
     *,
     host_cpus: int | None = None,
     rlp_cpu: float | None = None,
+    numa_node: int | None = None,
+    cpuset_mems: str | None = None,
 ) -> str:
     """Map CLI runner (+ optional RLP target / Docker CPU cap) to a results folder.
 
@@ -36,7 +38,8 @@ def result_series_name(
     so it stays separate from default-target ``daytona`` (x86).
 
     Docker with ``--host-cpus N`` writes to ``docker-cN`` so capped runs stay
-    separate from full-machine ``docker`` results.
+    separate from full-machine ``docker`` results. ``--numa-node N`` writes
+    ``docker-numaN`` (CPU+memory pinned to that node).
     """
     if runner == "rlp":
         if target == "vera":
@@ -55,8 +58,15 @@ def result_series_name(
             return "daytona-graviton5-hot"
         if runner in ("daytona", "daytona-vm"):
             return "daytona-graviton5"
-    if runner in ("docker", "ec2") and host_cpus is not None:
-        return f"{runner}-c{host_cpus}"
+    if runner in ("docker", "ec2"):
+        if numa_node is not None:
+            return f"{runner}-numa{numa_node}"
+        mem = (cpuset_mems or "").strip()
+        mem_s = "-m" + mem.replace(",", "-") if mem else ""
+        if host_cpus is not None:
+            return f"{runner}-c{host_cpus}{mem_s}"
+        if mem_s:
+            return f"{runner}{mem_s}"
     return runner
 
 
@@ -68,11 +78,18 @@ def default_output_path(
     target: str | None = None,
     host_cpus: int | None = None,
     rlp_cpu: float | None = None,
+    numa_node: int | None = None,
+    cpuset_mems: str | None = None,
 ) -> Path:
     """Path like ``data/analytics/rlp-arm64/concurrency_<ts>_n10.jsonl``."""
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     series = result_series_name(
-        runner, target, host_cpus=host_cpus, rlp_cpu=rlp_cpu
+        runner,
+        target,
+        host_cpus=host_cpus,
+        rlp_cpu=rlp_cpu,
+        numa_node=numa_node,
+        cpuset_mems=cpuset_mems,
     )
     base = ROOT / "data" / benchmark / series
     return base / f"concurrency_{stamp}_n{n}.jsonl"
