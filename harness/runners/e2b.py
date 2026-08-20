@@ -18,6 +18,7 @@ from dotenv import load_dotenv
 from e2b import CommandExitException, Sandbox
 
 from harness.benchmarks import AGENT, BenchmarkSpec
+from harness.common import apply_workload_payload
 from harness.env_probe import failed_env, host_env, merge_env, parse_probe_stdout, probe_shell_command
 from harness.paths import ROOT
 
@@ -107,8 +108,7 @@ class E2bRunner:
             if exit_code == 0:
                 try:
                     payload = json.loads(stdout)
-                    record["checksum"] = payload.get("checksum")
-                    record["duration_ms"] = payload.get("duration_ms")
+                    apply_workload_payload(record, payload)
                 except json.JSONDecodeError:
                     record["error"] = "invalid_json_output"
                     record["stdout"] = stdout

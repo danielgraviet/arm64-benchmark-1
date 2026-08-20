@@ -88,13 +88,35 @@ def setup(workspace: Path, seed: int) -> None:
         "    assert token_count('a b  c') == 3\n",
         encoding="utf-8",
     )
+    hidden = tests / "hidden"
+    hidden.mkdir(parents=True)
+    (hidden / "__init__.py").write_text("", encoding="utf-8")
+    (hidden / "test_extra.py").write_text(
+        "from app.mathy import clamp\n"
+        "from app.stats import mean\n"
+        "\n"
+        "def test_mean_empty():\n"
+        "    assert mean([]) == 0.0\n"
+        "\n"
+        "def test_clamp_inverted_bounds():\n"
+        "    assert clamp(5, 10, 0) == 5\n"
+        "    assert clamp(-1, 10, 0) == 0\n"
+        "    assert clamp(99, 10, 0) == 10\n",
+        encoding="utf-8",
+    )
     # Seed only affects a marker file (checksum-stable layout otherwise).
     (workspace / "SEED.txt").write_text(str(seed), encoding="utf-8")
 
 
-def _pytest(workspace: Path) -> subprocess.CompletedProcess[str]:
+VISIBLE_TESTS = ("test_mathy.py", "test_stats.py", "test_texty.py")
+
+
+def _pytest(workspace: Path, *rel_paths: str) -> subprocess.CompletedProcess[str]:
+    targets = [str(workspace / "tests" / p) for p in rel_paths] or [
+        str(workspace / "tests")
+    ]
     return subprocess.run(
-        [sys.executable, "-m", "pytest", "-q", str(workspace / "tests")],
+        [sys.executable, "-m", "pytest", "-q", *targets],
         cwd=workspace,
         capture_output=True,
         text=True,
@@ -108,17 +130,19 @@ def oracle(workspace: Path, seed: int) -> dict[str, Any]:
     steps: list[str] = []
 
     # Step 1: confirm suite fails (agent would run tests first).
-    before = _pytest(workspace)
+    before = _pytest(workspace, *VISIBLE_TESTS)
     steps.append(f"pytest_before_exit={before.returncode}")
     if before.returncode == 0:
         return {"steps": steps, "error": "expected failing suite before patch", "seed": seed}
 
-    # Step 2: patch each module (scripted agent edits).
+    # Step 2: patch each module (scripted agent edits), including hidden-spec behavior.
     (workspace / "app" / "mathy.py").write_text(
         "def add(a: int, b: int) -> int:\n"
         "    return a + b\n"
         "\n"
         "def clamp(x: int, lo: int, hi: int) -> int:\n"
+        "    if lo > hi:\n"
+        "        lo, hi = hi, lo\n"
         "    return max(lo, min(hi, x))\n",
         encoding="utf-8",
     )
@@ -126,6 +150,8 @@ def oracle(workspace: Path, seed: int) -> dict[str, Any]:
 
     (workspace / "app" / "stats.py").write_text(
         "def mean(xs: list[float]) -> float:\n"
+        "    if not xs:\n"
+        "        return 0.0\n"
         "    return sum(xs) / len(xs)\n"
         "\n"
         "def moving_sum(xs: list[int], window: int) -> list[int]:\n"
@@ -148,7 +174,7 @@ def oracle(workspace: Path, seed: int) -> dict[str, Any]:
     steps.append("patched app/texty.py")
 
     # Step 3: intermediate pytest (agent re-runs after edits).
-    mid = _pytest(workspace)
+    mid = _pytest(workspace, *VISIBLE_TESTS)
     steps.append(f"pytest_after_patch_exit={mid.returncode}")
 
     return {"steps": steps, "seed": seed, "n_cases": N_CASES}
@@ -157,13 +183,8 @@ def oracle(workspace: Path, seed: int) -> dict[str, Any]:
 def verify(workspace: Path) -> dict[str, Any]:
     proc = _pytest(workspace)
     passed = proc.returncode == 0
-    # Extra CPU: recompute expected add table (keeps duration meaningful).
-    checksum = 0
-    for i in range(N_CASES):
-        checksum ^= (i + (i + 1)) * (i + 7)
     return {
         "passed": passed,
         "exit_code": proc.returncode,
         "stdout_tail": (proc.stdout or "")[-300:],
-        "add_checksum": checksum,
     }

@@ -199,6 +199,8 @@ def main() -> None:
         "episodes_per_sandbox": args.episodes_per_sandbox,
         "host_cpus": args.host_cpus,
     }
+    if args.benchmark == "evals":
+        meta["eval_task_id"] = "log-surgery"
 
     if args.runner == "harbor":
         meta["env"] = probe_runner_env(None, runner_name="harbor")
@@ -227,6 +229,7 @@ def main() -> None:
         output=output,
         run_worker=runner_as_worker(runner, args),
         meta=meta,
+        job_seed_mod=1,
     )
 
 

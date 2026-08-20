@@ -31,8 +31,10 @@ uv run main.py --benchmark media --runner daytona-vm-hot --levels 1 8 22 --n 40 
 # Eng disk axis (sandbox local FS — not media/CPU): seq write + small files
 uv run main.py --benchmark disk --runner daytona-vm --levels 1 8 22 44 88 --n 128 -E 1
 uv run main.py --benchmark disk --runner daytona-vm-hot --levels 1 8 22 44 88 --n 128 -E 1
-# Chart B evals density (Terminal-Bench–style trials)
+# Chart B evals density (log-surgery only; one task per sandbox)
 uv run main.py --benchmark evals --runner daytona --levels 1 8 22 44 88 --n 1 -E 1
+# Evals chip pack: same one-task-per-sandbox, warm reuse
+uv run main.py --benchmark evals --runner daytona --levels 1 --n 1 --seed 42 -E 8
 # Phase 2: real Harbor TB oracle (not docker). --n = task limit (0=all); --levels = Harbor -n
 # Requires: uv tool install 'harbor[daytona]' + DAYTONA_API_KEY
 uv run main.py --benchmark tbench --runner harbor --levels 5 --n 5
@@ -124,7 +126,7 @@ it you get `no matching capacity`. Arch is probed on the builder / first worker.
 - `agent` (B1): isolated tmp workspace; search / AST / edit / pytest / SQL (`repo-agent-v2`)
 - `analytics` (B2): Parquet write + DuckDB join/filter/agg (Chart C: `--n 200`)
 - `rl` (B3): batched mocked RL episode (`rl-rollout-v2`; Chart A: `--n 5000 -E 8`)
-- `evals` (B4): Terminal-Bench–style trials — multi-second oracle + verify, no LLM (density: `--n 1 -E 1`)
+- `evals` (B4): Terminal-Bench–style **log-surgery** (1.5M-line filter) — one task per sandbox (`evals-tb-style-v3`; chip: `--n 1 -E 8`; density: `--n 1 -E 1`). Rebuild the snapshot after this pin.
 - `media` (Chart C sibling): FFmpeg h.264 of synthetic frames (`media-transcode-v1`; Chart C: `--n 40`)
 - `disk` (eng / infra): sandbox local FS stress — sequential write/fsync/read + small-file storm (`sandbox-disk-v1`; ladder: `--n 128`). Not media; not Vera BW.
 - `tbench` (Phase 2): real Harbor Terminal-Bench **oracle** via `--runner harbor` only (not docker/daytona). `--levels` = Harbor concurrency; `--n` = task limit (`0` = full pack). See `tickets/evals-terminal-bench-style.md`.

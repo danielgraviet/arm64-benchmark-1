@@ -1,8 +1,7 @@
-"""TB-style: broken launcher scripts + permission fixes + payload CPU check."""
+"""TB-style: broken launcher scripts + permission fixes + smoke run."""
 
 from __future__ import annotations
 
-import hashlib
 import os
 import stat
 import subprocess
@@ -10,24 +9,14 @@ import sys
 from pathlib import Path
 from typing import Any
 
-N_HASH_ITERS = 4_500_000
-
 
 def setup(workspace: Path, seed: int) -> None:
     bin_dir = workspace / "bin"
     bin_dir.mkdir(parents=True)
-    # Payload script uses the same interpreter as the harness (portable).
     script = bin_dir / "hello.py"
     script.write_text(
         "#!/usr/bin/env python3\n"
-        "import hashlib\n"
-        f"SEED = {seed}\n"
-        f"N = {N_HASH_ITERS}\n"
-        "print(f'ready-{SEED}')\n"
-        "h = hashlib.sha256(str(SEED).encode())\n"
-        "for i in range(N):\n"
-        "    h.update(str(i).encode())\n"
-        "print(f'digest={h.hexdigest()}')\n",
+        f"print(f'ready-{seed}')\n",
         encoding="utf-8",
     )
     script.chmod(stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
@@ -86,17 +75,7 @@ def verify(workspace: Path) -> dict[str, Any]:
     )
     out = (proc.stdout or "").strip().splitlines()
     ready_ok = bool(out) and out[0].startswith("ready-")
-
-    # Independent digest (third hash pass keeps duration meaningful).
-    seed_line = out[0] if out else "ready-0"
-    seed = int(seed_line.removeprefix("ready-"))
-    h = hashlib.sha256(str(seed).encode())
-    for i in range(N_HASH_ITERS):
-        h.update(str(i).encode())
-    want = f"digest={h.hexdigest()}"
-    digest_ok = want in out
-
-    passed = executable and proc.returncode == 0 and ready_ok and digest_ok
+    passed = executable and proc.returncode == 0 and ready_ok
     return {
         "passed": passed,
         "executable": executable,

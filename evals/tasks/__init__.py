@@ -1,26 +1,29 @@
-"""Task registry for TB-style eval trials."""
+"""Task registry for TB-style eval trials.
+
+The ladder runs **log-surgery** only so duration_ms is one workload shape.
+Other modules stay in-tree for optional local checks; they are not selected.
+"""
 
 from __future__ import annotations
 
-from evals.tasks import build_and_run, fix_failing_tests, log_surgery, permissions_path
+from evals.tasks import log_surgery
 
-# Stable order — seed picks a rotation start; --n is how many tasks per trial.
+PRIMARY_TASK_ID = "log-surgery"
+
 TASKS: list[tuple[str, object]] = [
-    ("fix-failing-tests", fix_failing_tests),
-    ("log-surgery", log_surgery),
-    ("build-and-run", build_and_run),
-    ("permissions-path", permissions_path),
+    (PRIMARY_TASK_ID, log_surgery),
 ]
 
 TASK_IDS = [t[0] for t in TASKS]
 
 
 def select_tasks(n: int, seed: int) -> list[tuple[str, object]]:
-    """Return ``n`` tasks (cycling the suite) with a seed-based start offset."""
+    """Always return log-surgery. ``n`` and ``seed`` do not pick a different task.
+
+    ``seed`` still flows into setup/oracle so the log stream is deterministic.
+    ``n`` is kept for CLI parity; a trial always runs one task.
+    """
     if n < 1:
         raise ValueError("n must be >= 1")
-    start = seed % len(TASKS)
-    out: list[tuple[str, object]] = []
-    for i in range(n):
-        out.append(TASKS[(start + i) % len(TASKS)])
-    return out
+    _ = n, seed
+    return [TASKS[0]]

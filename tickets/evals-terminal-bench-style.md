@@ -1,6 +1,6 @@
 # Plan: Terminal-Bench–style evals benchmark
 
-**Status:** Phase 1 hardened (`evals-tb-style-v2`); Phase 2 wired (`--benchmark tbench --runner harbor`)  
+**Status:** Phase 1 `evals-tb-style-v3` (ladder = **log-surgery** only); Phase 2 wired (`--benchmark tbench --runner harbor`)  
 **Date:** 2026-08-12  
 **Related:** GTC Vera story, Daytona + Terminal-Bench / Harbor  
 
@@ -8,7 +8,7 @@
 
 ## Goal / claim (locked wording)
 
-**Phase 1 say:** On Vera, Daytona finishes the same Terminal-Bench–*style* eval pack faster / at higher concurrency (trials/sec, p99 wall), with stable in-sandbox verify time (`duration_ms`).
+**Phase 1 say:** On Vera, Daytona finishes the same Terminal-Bench–*style* **log-surgery** trial faster / at higher concurrency (trials/sec, p99 wall), with stable in-sandbox verify time (`duration_ms`).
 
 **Phase 2 say:** Harbor Terminal-Bench **oracle** pack finishes sooner / denser on Vera (wall time-to-finish at fixed concurrency).
 
@@ -16,21 +16,24 @@
 
 ---
 
-## Phase 1 — in-repo (v2 hardened)
+## Phase 1 — in-repo (v3)
+
+No hash-loop padding. Tasks are TB-shaped (setup → oracle → verify, subprocess). Image installs `gcc` + `libc6-dev`.
 
 | Piece | Location |
 | --- | --- |
-| Tasks | `evals/tasks/` — multi-file pytest fix, 1.5M-line log surgery, hash fingerprint build, permissions+CPU payload |
-| Runner / CLI | `evals/runner.py`, `evals/agent.py` (`evals-tb-style-v2`, default `--n 1`) |
-| Harness | `EVALS` in `harness/benchmarks.py` |
+| Tasks | Ladder = **log-surgery** only (`evals/tasks/log_surgery.py`). Other task modules remain in-tree unused. |
+| Runner / CLI | `evals/runner.py`, `evals/agent.py` (`evals-tb-style-v3`, default `--n 1`) |
+| Harness | `EVALS` in `harness/benchmarks.py` (`apt_packages` gcc/libc6-dev) |
 | Image | `Dockerfile.evals` → `vera-evals-benchmark` |
 | Tests | `tests/test_evals.py` |
 
 ### Sizing intent
 
-- **`--n 1`**: one sandbox ≈ one TB-style task (create tax paid once per trial).
-- **`duration_ms`**: multi-second in-sandbox work (oracle + verify), large share of wall at `c=1`.
-- Deterministic oracle (agent-shaped multi-step path), no LLM.
+- **One sandbox = log-surgery** (same task at every `--levels` worker). `--n` is unused.
+- No per-job seed rotation; one checksum per wave is `checksum_ok`.
+- **`duration_ms`**: oracle + verify only; use `-E 8` so create tax is not the chip story.
+- Deterministic oracle, no LLM, no SHA-256 padding.
 - Density matrix still `levels → 88`, `-E 1`.
 
 ### Density matrix (Chart B sibling)
@@ -40,9 +43,15 @@ uv run main.py --benchmark evals --runner daytona --levels 1 8 22 44 88 --n 1 --
 uv run main.py --benchmark evals --runner rlp --target <vera-region> --levels 1 8 22 44 88 --n 1 --seed 42 -E 1
 ```
 
-`--n` = tasks per trial; concurrency = `--levels`. Always `-E 1` for density.
+Concurrency = `--levels`. Always `-E 1` for density.
 
-Headline: *“TB-style eval trials: X/sec on Vera vs control.”*
+Chip pack (one task per sandbox, warm reuse):
+
+```bash
+uv run main.py --benchmark evals --runner daytona --levels 1 88 --n 1 --seed 42 -E 8
+```
+
+Headline: *“TB-style log-surgery trials: X/sec on Vera vs control.”*
 
 Rebuild snapshot after task changes:
 

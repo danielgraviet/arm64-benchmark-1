@@ -8,6 +8,7 @@ import time
 from typing import Any
 
 from harness.benchmarks import AGENT, BenchmarkSpec
+from harness.common import apply_workload_payload
 from harness.env_probe import PROBE_PY, failed_env, host_env, merge_env, parse_probe_stdout
 
 
@@ -122,8 +123,7 @@ class DockerRunner:
         if result.returncode == 0:
             try:
                 payload = json.loads(result.stdout.strip())
-                record["checksum"] = payload.get("checksum")
-                record["duration_ms"] = payload.get("duration_ms")
+                apply_workload_payload(record, payload)
             except json.JSONDecodeError:
                 record["error"] = "invalid_json_output"
                 record["stdout"] = result.stdout

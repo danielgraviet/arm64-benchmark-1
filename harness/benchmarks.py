@@ -132,14 +132,15 @@ RL = BenchmarkSpec(
 
 EVALS = BenchmarkSpec(
     id="evals",
-    task_name="evals-tb-style-v2",
+    task_name="evals-tb-style-v3",
     docker_image="vera-evals-benchmark",
     artifact_name="vera-evals-benchmark",
     module="evals.agent",
     include_paths=("pyproject.toml", "uv.lock", "evals"),
     pythonpath_extra=None,
     docker_memory="1g",
-    description="Terminal-Bench–style evals: multi-second oracle+verify trials (no LLM)",
+    description="Terminal-Bench–style evals: log-surgery oracle+verify per sandbox (no LLM)",
+    apt_packages=("gcc", "libc6-dev"),
 )
 
 MEDIA = BenchmarkSpec(

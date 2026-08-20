@@ -17,6 +17,7 @@ from daytona import CreateSandboxFromSnapshotParams, Daytona, DaytonaConfig
 from dotenv import load_dotenv
 
 from harness.benchmarks import AGENT, BenchmarkSpec
+from harness.common import apply_workload_payload
 from harness.env_probe import failed_env, host_env, merge_env, parse_probe_stdout, probe_shell_command
 from harness.paths import ROOT
 from harness.runner_id import IFCONFIG_SHELL, parse_ifconfig_stdout, sdk_runner_id
@@ -222,8 +223,7 @@ class DaytonaRunner:
                     if exit_code == 0:
                         try:
                             payload = json.loads(stdout)
-                            record["checksum"] = payload.get("checksum")
-                            record["duration_ms"] = payload.get("duration_ms")
+                            apply_workload_payload(record, payload)
                         except json.JSONDecodeError:
                             record["error"] = "invalid_json_output"
                             record["stdout"] = stdout

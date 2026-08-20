@@ -2,6 +2,11 @@ FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim
 
 WORKDIR /app
 
+RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list.d/debian.sources \
+    && apt-get -qq update \
+    && apt-get -qq -o Acquire::Retries=3 install -y --no-install-recommends gcc libc6-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
 

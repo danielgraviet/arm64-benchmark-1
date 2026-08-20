@@ -1,8 +1,7 @@
 """Evals benchmark entrypoint (Docker / sandbox workers).
 
 Terminal-Bench–style trial: isolated workspace → oracle terminal work → verify.
-No LLM. Harness concurrency = many trials; ``--n`` = tasks per trial
-(Chart B density uses ``--n 1`` ≈ one TB task per sandbox).
+No LLM. One sandbox = log-surgery (same task at every concurrency).
 """
 
 from __future__ import annotations
@@ -23,19 +22,19 @@ def parse_args() -> argparse.Namespace:
         "--n",
         type=int,
         default=1,
-        help="Tasks per trial (Chart B density: --n 1 ≈ one TB task per sandbox)",
+        help="Unused (one task per sandbox). Kept so the shared harness CLI matches other benches.",
     )
     parser.add_argument(
         "--task",
         type=str,
-        default="evals-tb-style-v2",
+        default="evals-tb-style-v3",
         help="Workload scenario name",
     )
     parser.add_argument(
         "--seed",
         type=int,
         default=42,
-        help="Fixed seed for task rotation / setup variants",
+        help="Deterministic seed for the log-surgery workload (all sandboxes share it)",
     )
     parser.add_argument(
         "--output",
@@ -79,9 +78,10 @@ def main() -> None:
     checksum = compute_checksum(stable)
     payload = {
         "task": args.task,
-        "iterations": args.n,
+        "iterations": 1,
         "duration_ms": duration_ms,
         "checksum": checksum,
+        "eval_task_id": result["task_ids"][0] if result["task_ids"] else None,
         "passed": result["passed"],
         "passed_count": result["passed_count"],
     }

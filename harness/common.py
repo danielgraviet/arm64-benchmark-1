@@ -51,7 +51,19 @@ def percentile(values: list[float], pct: float) -> float:
     return ordered[f] + (ordered[c] - ordered[f]) * (k - f)
 
 
-def summarize(records: list[dict[str, Any]], wall_time_s: float) -> dict[str, Any]:
+def apply_workload_payload(record: dict[str, Any], payload: dict[str, Any]) -> None:
+    """Copy stable fields from in-sandbox JSON onto a harness run record."""
+    for key in ("checksum", "duration_ms", "eval_task_id"):
+        if payload.get(key) is not None:
+            record[key] = payload[key]
+
+
+def summarize(
+    records: list[dict[str, Any]],
+    wall_time_s: float,
+    *,
+    max_distinct_checksums: int = 1,
+) -> dict[str, Any]:
     latencies = [float(r["latency_ms"]) for r in records if "latency_ms" in r]
     warm_latencies = [
         float(r["latency_ms"])
@@ -71,7 +83,7 @@ def summarize(records: list[dict[str, Any]], wall_time_s: float) -> dict[str, An
         "runs": len(records),
         "failures": len(failures),
         "distinct_checksums": len(checksums),
-        "checksum_ok": len(checksums) <= 1 and not failures,
+        "checksum_ok": len(checksums) <= max_distinct_checksums and not failures,
         "p50_ms": round(percentile(latencies, 50), 1),
         "p95_ms": round(percentile(latencies, 95), 1),
         "p99_ms": round(percentile(latencies, 99), 1),
@@ -93,11 +105,23 @@ def summarize(records: list[dict[str, Any]], wall_time_s: float) -> dict[str, An
 
 
 def run_level(
-    concurrency: int, n: int, seed: int, run_worker: RunWorker
+    concurrency: int,
+    n: int,
+    seed: int,
+    run_worker: RunWorker,
+    *,
+    job_seed_mod: int = 1,
 ) -> Iterator[dict[str, Any]]:
-    """Yield each episode result as soon as that worker finishes."""
+    """Yield each episode result as soon as that worker finishes.
+
+    ``job_seed_mod > 1`` rotates the seed per concurrent job
+    (``seed + i % job_seed_mod``). Default 1: every job uses the same seed.
+    """
+    mod = max(1, job_seed_mod)
     with ThreadPoolExecutor(max_workers=concurrency) as pool:
-        futures = [pool.submit(run_worker, n, seed) for _ in range(concurrency)]
+        futures = [
+            pool.submit(run_worker, n, seed + (i % mod)) for i in range(concurrency)
+        ]
         for future in as_completed(futures):
             for record in future.result():
                 yield record
@@ -111,7 +135,9 @@ def run_suite(
     output: Path,
     run_worker: RunWorker,
     meta: dict[str, Any] | None = None,
+    job_seed_mod: int = 1,
 ) -> None:
+    max_checksums = max(1, job_seed_mod)
     with JsonlWriter(output) as writer:
         if meta:
             writer.write({"type": "meta", **meta})
@@ -119,11 +145,15 @@ def run_suite(
             start = time.monotonic()
             records: list[dict[str, Any]] = []
 
-            for record in run_level(level, n, seed, run_worker):
+            for record in run_level(
+                level, n, seed, run_worker, job_seed_mod=job_seed_mod
+            ):
                 writer.write({"type": "run", "concurrency": level, **record})
                 records.append(record)
 
             wall_time_s = time.monotonic() - start
-            summary = summarize(records, wall_time_s)
+            summary = summarize(
+                records, wall_time_s, max_distinct_checksums=max_checksums
+            )
             writer.write({"type": "summary", "concurrency": level, **summary})
             print(json.dumps({"concurrency": level, **summary}))
