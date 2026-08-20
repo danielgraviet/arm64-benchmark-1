@@ -36,10 +36,13 @@ class RlpRunner:
         toolbox_url: str | None = None,
         skip_arch_probe: bool = False,
         episodes_per_sandbox: int = 1,
+        cpu: float = 1.0,
     ) -> None:
         load_dotenv(ROOT / ".env")
         if episodes_per_sandbox < 1:
             raise ValueError("episodes_per_sandbox must be >= 1")
+        if cpu <= 0:
+            raise ValueError(f"cpu must be > 0, got {cpu}")
         self._spec = spec
         self._snapshot = snapshot or spec.artifact_name
         self._exec_timeout_s = exec_timeout_s
@@ -47,7 +50,7 @@ class RlpRunner:
         self._episodes_per_sandbox = episodes_per_sandbox
         mem = spec.memory_gib()
         # Match Docker mem; give a little disk headroom for parquet spills.
-        self._resources = Resources(cpu=1, memory=mem, disk=max(2, mem))
+        self._resources = Resources(cpu=cpu, memory=mem, disk=max(2, mem))
         config = resolve_rlp_client_config(target, toolbox_url)
         self._client = Daytona(config)
         routing = getattr(config, "region_routing", None)
@@ -56,7 +59,7 @@ class RlpRunner:
             f"api_url={config.api_url!r} toolbox_url={config.toolbox_url!r} "
             f"region_routing={routing!r} "
             f"benchmark={spec.id!r} episodes_per_sandbox={episodes_per_sandbox} "
-            f"resources=cpu=1,memory={mem}GiB,disk={max(2, mem)}GiB"
+            f"resources=cpu={cpu},memory={mem}GiB,disk={max(2, mem)}GiB"
         )
 
         # Probed once on the first worker sandbox (avoids a spare create on
@@ -66,10 +69,10 @@ class RlpRunner:
         self._arch_lock = threading.Lock()
 
         self._boot_image = resolve_boot_image(self._client, self._snapshot)
+        self._registry_boot = is_registry_image_ref(self._boot_image)
+        self._create_timeout_s = 300 if self._registry_boot else 120
         self._app_dir = (
-            REGISTRY_APP_DIR
-            if is_registry_image_ref(self._boot_image)
-            else SNAPSHOT_APP_DIR
+            REGISTRY_APP_DIR if self._registry_boot else SNAPSHOT_APP_DIR
         )
         self._run_env = spec.run_env(self._app_dir)
         self._agent_cmd = spec.agent_command()
@@ -86,7 +89,7 @@ class RlpRunner:
                 self._client,
                 image=self._boot_image,
                 resources=self._resources,
-                timeout=120,
+                timeout=self._create_timeout_s,
                 target=self._target,
             )
             if not self._arch_probed:
@@ -139,7 +142,7 @@ class RlpRunner:
                 self._client,
                 image=self._boot_image,
                 resources=self._resources,
-                timeout=120,
+                timeout=self._create_timeout_s,
                 target=self._target,
             )
             if not self._arch_probed:

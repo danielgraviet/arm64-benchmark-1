@@ -68,7 +68,8 @@ def create_rlp_sandbox(
     region = getattr(client, "_target", None)
     print(
         f"rlp create: region={region!r} cpu_arch={cpu_arch!r} "
-        f"cpu_type={cpu_type!r} mode={mode!r} image={image!r}"
+        f"cpu_type={cpu_type!r} mode={mode!r} image={image!r} "
+        f"cpu={getattr(resources, 'cpu', None)!r}"
     )
     return client.create(params, timeout=timeout)
 

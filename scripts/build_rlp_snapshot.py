@@ -69,6 +69,12 @@ def main() -> None:
         help="Override RLP toolbox proxy URL for this target",
     )
     parser.add_argument(
+        "--cpu",
+        type=float,
+        default=1.0,
+        help="Builder sandbox Resources.cpu (also the default baked into the snap)",
+    )
+    parser.add_argument(
         "--skip-smoke",
         action="store_true",
         help="Skip running the workload --n 1 before snapshotting",
@@ -79,6 +85,8 @@ def main() -> None:
         help="Skip platform.machine() probe for ARM64 targets",
     )
     args = parser.parse_args()
+    if args.cpu <= 0:
+        parser.error("--cpu must be > 0")
     spec = get_benchmark(args.benchmark)
     # With --target, default to a distinct name so we never delete/overwrite
     # default-region snaps like vera-analytics-benchmark / vera-agent-benchmark.
@@ -110,11 +118,11 @@ def main() -> None:
         print(f"Creating RLP builder sandbox from {args.base_image!r} …")
         mem = spec.memory_gib()
         disk = max(2, mem)
-        print(f"builder resources: cpu=1 memory={mem}GiB disk={disk}GiB")
+        print(f"builder resources: cpu={args.cpu} memory={mem}GiB disk={disk}GiB")
         sandbox = create_rlp_sandbox(
             client,
             image=args.base_image,
-            resources=Resources(cpu=1, memory=mem, disk=disk),
+            resources=Resources(cpu=args.cpu, memory=mem, disk=disk),
             timeout=300,
             target=args.target,
         )

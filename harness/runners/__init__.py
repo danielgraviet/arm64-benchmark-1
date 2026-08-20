@@ -70,11 +70,12 @@ def build_runner(args: argparse.Namespace) -> Any:
     if args.runner == "rlp":
         return RlpRunner(
             spec=spec,
-            snapshot=args.snapshot or spec.artifact_for_target(args.target),
+            snapshot=args.snapshot or spec.boot_image_for_rlp(args.target),
             exec_timeout_s=args.exec_timeout,
             target=args.target,
             toolbox_url=args.toolbox_url,
             episodes_per_sandbox=args.episodes_per_sandbox,
+            cpu=getattr(args, "rlp_cpu", 1.0),
         )
     if args.runner == "e2b":
         return E2bRunner(

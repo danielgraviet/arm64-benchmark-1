@@ -72,7 +72,8 @@ def main() -> None:
         default=None,
         help=(
             "Override JSONL path (default: data/<benchmark>/<series>/"
-            "concurrency_<ts>_n<n>.jsonl; RLP uses rlp-x86 or rlp-arm64)"
+            "concurrency_<ts>_n<n>.jsonl; RLP uses rlp-x86 / rlp-phoenix / "
+            "rlp-arm64 / rlp-vera)"
         ),
     )
     parser.add_argument(
@@ -95,7 +96,8 @@ def main() -> None:
         type=str,
         default=None,
         help=(
-            "Region/target for daytona/daytona-vm/rlp/harbor (e.g. arm64-test-1). "
+            "Region/target for daytona/daytona-vm/rlp/harbor "
+            "(e.g. arm64-test-1, us-phoenix-1, vera). "
             "Harbor forwards as DAYTONA_TARGET until the region flag is frozen."
         ),
     )
@@ -104,6 +106,16 @@ def main() -> None:
         type=str,
         default=None,
         help="Override RLP toolbox proxy URL (defaults from --target map or env)",
+    )
+    parser.add_argument(
+        "--rlp-cpu",
+        type=float,
+        default=1.0,
+        help=(
+            "RLP create Resources.cpu (default 1). Use 0.125 for density "
+            "ladders after the Phoenix burst cap dropped 16→1. Results go "
+            "under data/<bench>/rlp-<cell>-c0p125/ when not 1.0."
+        ),
     )
     parser.add_argument(
         "--host-cpus",
@@ -124,6 +136,10 @@ def main() -> None:
             "--target is only valid with --runner daytona, daytona-vm, "
             "daytona-vm-hot, rlp, or harbor"
         )
+    if args.rlp_cpu != 1.0 and args.runner != "rlp":
+        parser.error("--rlp-cpu is only valid with --runner rlp")
+    if args.rlp_cpu <= 0:
+        parser.error("--rlp-cpu must be > 0")
     if args.host_cpus is not None and args.runner not in ("docker", "ec2"):
         parser.error("--host-cpus is only valid with --runner docker or ec2")
     if args.host_cpus is not None and args.host_cpus < 1:
@@ -155,7 +171,7 @@ def main() -> None:
     if args.snapshot:
         artifact = args.snapshot
     elif args.runner == "rlp":
-        artifact = spec.artifact_for_target(args.target)
+        artifact = spec.boot_image_for_rlp(args.target)
     elif args.runner in DAYTONA_FAMILY:
         if args.runner == "daytona-vm-hot":
             kind, boot = "vm", "hot"
@@ -179,13 +195,14 @@ def main() -> None:
             benchmark=args.benchmark,
             target=args.target,
             host_cpus=args.host_cpus,
+            rlp_cpu=args.rlp_cpu if args.runner == "rlp" else None,
         )
     )
     print(
         f"benchmark={args.benchmark} runner={args.runner} "
         f"target={args.target!r} artifact={artifact!r} "
         f"episodes_per_sandbox={args.episodes_per_sandbox} "
-        f"host_cpus={args.host_cpus!r} "
+        f"host_cpus={args.host_cpus!r} rlp_cpu={args.rlp_cpu!r} "
         f"output={output}"
     )
 
@@ -198,6 +215,7 @@ def main() -> None:
         "n": args.n,
         "episodes_per_sandbox": args.episodes_per_sandbox,
         "host_cpus": args.host_cpus,
+        "rlp_cpu": args.rlp_cpu if args.runner == "rlp" else None,
     }
     if args.benchmark == "evals":
         meta["eval_task_id"] = "log-surgery"

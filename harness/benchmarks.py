@@ -35,6 +35,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from harness.regions import REGISTRY_BOOT_TARGETS
+
 
 @dataclass(frozen=True)
 class BenchmarkSpec:
@@ -51,6 +53,8 @@ class BenchmarkSpec:
     description: str = ""
     # System packages installed via apt during Docker/snapshot builds (e.g. ffmpeg).
     apt_packages: tuple[str, ...] = ()
+    # Docker Hub ref used on cells without native NFS snaps (Vera, Phoenix).
+    registry_image: str = ""
 
     def agent_argv(self, n: int, seed: int) -> list[str]:
         return ["--n", str(n), "--seed", str(seed), "--task", self.task_name]
@@ -87,11 +91,24 @@ class BenchmarkSpec:
         (``vera-analytics-benchmark``). Targeted builds (e.g. ARM64) get a
         distinct suffix so rebuilds do not delete/overwrite the default-region
         snapshot of the same benchmark.
+
+        Vera and Phoenix boot the Docker Hub image: those cells do not have
+        the west-1 native NFS manifests. See ``boot_image_for_rlp``.
         """
         if not target:
             return self.artifact_name
         safe = target.replace("/", "-")
         return f"{self.artifact_name}-{safe}"
+
+    def boot_image_for_rlp(self, target: str | None = None) -> str:
+        """Image/snapshot string passed to RLP create for this target."""
+        if target in REGISTRY_BOOT_TARGETS:
+            if not self.registry_image:
+                raise ValueError(
+                    f"Benchmark {self.id!r} has no registry_image for target {target!r}"
+                )
+            return self.registry_image
+        return self.artifact_for_target(target)
 
 
 AGENT = BenchmarkSpec(
@@ -104,6 +121,7 @@ AGENT = BenchmarkSpec(
     pythonpath_extra="workload/repos/sqlite-utils",
     docker_memory="1g",
     description="Repo-agent style CPU work: isolated tmp workspace, search/AST/edit/pytest/SQL",
+    registry_image="dtgraviet/vera-agent-benchmark:latest",
 )
 
 ANALYTICS = BenchmarkSpec(
@@ -116,6 +134,7 @@ ANALYTICS = BenchmarkSpec(
     pythonpath_extra=None,
     docker_memory="4g",
     description="Memory-bandwidth heavy Parquet + DuckDB joins/filters/aggs",
+    registry_image="dtgraviet/vera-agent-benchmark-analytics:latest",
 )
 
 RL = BenchmarkSpec(
@@ -128,6 +147,7 @@ RL = BenchmarkSpec(
     pythonpath_extra=None,
     docker_memory="1g",
     description="Mocked RL rollout: batched env/policy steps, no network/GPU",
+    registry_image="dtgraviet/vera-agent-benchmark-rl:latest",
 )
 
 EVALS = BenchmarkSpec(
@@ -141,6 +161,7 @@ EVALS = BenchmarkSpec(
     docker_memory="1g",
     description="Terminal-Bench–style evals: log-surgery oracle+verify per sandbox (no LLM)",
     apt_packages=("gcc", "libc6-dev"),
+    registry_image="dtgraviet/vera-agent-benchmark-evals:latest",
 )
 
 MEDIA = BenchmarkSpec(
@@ -154,6 +175,7 @@ MEDIA = BenchmarkSpec(
     docker_memory="2g",
     description="FFmpeg h.264 transcode of synthetic frames (bandwidth / agent media preprocess)",
     apt_packages=("ffmpeg",),
+    registry_image="dtgraviet/vera-agent-benchmark-media:latest",
 )
 
 DISK = BenchmarkSpec(
@@ -166,6 +188,7 @@ DISK = BenchmarkSpec(
     pythonpath_extra=None,
     docker_memory="2g",
     description="Sandbox disk I/O: sequential write/fsync/read + small-file storm",
+    registry_image="dtgraviet/vera-agent-benchmark-disk:latest",
 )
 
 # Phase 2: real Harbor Terminal-Bench. No local image/module — runner=harbor only.

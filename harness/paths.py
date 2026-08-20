@@ -10,16 +10,27 @@ from harness.regions import ARM64_TARGETS, DAYTONA_GRAVITON5_TARGET
 ROOT = Path(__file__).resolve().parent.parent
 
 
+def rlp_cpu_series_suffix(cpu: float | None) -> str:
+    """``-c0p125`` when create CPU is not 1.0, else empty (keep 1-vCPU series)."""
+    if cpu is None or abs(float(cpu) - 1.0) < 1e-9:
+        return ""
+    text = f"{float(cpu):.6f}".rstrip("0").rstrip(".")
+    return "-c" + text.replace(".", "p")
+
+
 def result_series_name(
     runner: str,
     target: str | None = None,
     *,
     host_cpus: int | None = None,
+    rlp_cpu: float | None = None,
 ) -> str:
     """Map CLI runner (+ optional RLP target / Docker CPU cap) to a results folder.
 
-    RLP default-region, ARM64, and onsite Vera runs are split so EDA can chart
-    them as separate series (``rlp-x86`` vs ``rlp-arm64`` vs ``rlp-vera``).
+    RLP default-region, ARM64, Phoenix (Turin), and onsite Vera runs are split
+    so EDA can chart them as separate series (``rlp-x86`` vs ``rlp-arm64`` vs
+    ``rlp-phoenix`` vs ``rlp-vera``). Fractional ``--rlp-cpu`` appends
+    ``-c0p125`` so 0.125-CPU density ladders do not steal the 1-vCPU series.
 
     Daytona ``--target us-east-1-arm`` (Graviton5) writes to ``daytona-graviton5``
     so it stays separate from default-target ``daytona`` (x86).
@@ -29,10 +40,14 @@ def result_series_name(
     """
     if runner == "rlp":
         if target == "vera":
-            return "rlp-vera"
-        if target and target in ARM64_TARGETS:
-            return "rlp-arm64"
-        return "rlp-x86"
+            base = "rlp-vera"
+        elif target == "us-phoenix-1":
+            base = "rlp-phoenix"
+        elif target and target in ARM64_TARGETS:
+            base = "rlp-arm64"
+        else:
+            base = "rlp-x86"
+        return base + rlp_cpu_series_suffix(rlp_cpu)
     # Graviton5 target is linux-vm–only today.
     # Cold VM → daytona-graviton5; hot/memory snap → daytona-graviton5-hot.
     if target == DAYTONA_GRAVITON5_TARGET:
@@ -52,9 +67,12 @@ def default_output_path(
     benchmark: str = "agent",
     target: str | None = None,
     host_cpus: int | None = None,
+    rlp_cpu: float | None = None,
 ) -> Path:
     """Path like ``data/analytics/rlp-arm64/concurrency_<ts>_n10.jsonl``."""
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    series = result_series_name(runner, target, host_cpus=host_cpus)
+    series = result_series_name(
+        runner, target, host_cpus=host_cpus, rlp_cpu=rlp_cpu
+    )
     base = ROOT / "data" / benchmark / series
     return base / f"concurrency_{stamp}_n{n}.jsonl"

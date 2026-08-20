@@ -1,0 +1,1 @@
+{"type":"meta","benchmark":"analytics","runner":"rlp","target":"us-phoenix-1","artifact":"vera-analytics-benchmark-us-phoenix-1","seed":42,"n":200,"episodes_per_sandbox":8,"host_cpus":null,"env":{"arch":"x86_64","cpu_model":"AMD EPYC","cpu_count":16,"platform":"Linux-6.8.12-x86_64-with-glibc2.36","host_arch":"arm64","host_cpu":"Apple M3","probe":"rlp"}}

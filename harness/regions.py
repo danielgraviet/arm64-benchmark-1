@@ -3,6 +3,11 @@
 RLP region is selected by DaytonaConfig(target=..., toolbox_url=...), not by
 image. Known ARM64 values come from tickets/CONTEXT-rlp-arm64-implementation.md.
 Onsite Vera cell: tickets/vera-rlp-smoke.md (SSH tunnel → localhost).
+
+Phoenix (``us-phoenix-1``) is its own API cell. POSTing ``region=us-phoenix-1``
+to the default ``RLP_API_URL`` returns HTTP 409 — send creates to
+``https://api.us-phoenix-1.rlp.trydaytona.com``. Native west-1 NFS snaps are
+not replicated there; boot Docker Hub images instead.
 """
 
 from __future__ import annotations
@@ -22,6 +27,11 @@ RLP_TARGET_TOOLBOX: dict[str, str] = {
     "arm64-test-1": "https://toolbox.arm64-test-1.rlp.trydaytona.com/toolbox",
     "us-phoenix-1": "https://toolbox.us-phoenix-1.rlp.trydaytona.com/toolbox",
     "vera": "http://127.0.0.1:9000/toolbox",
+}
+
+# Targets whose control plane is not the default RLP_API_URL.
+RLP_TARGET_API: dict[str, str] = {
+    "us-phoenix-1": "https://api.us-phoenix-1.rlp.trydaytona.com",
 }
 
 ARM64_TARGETS = frozenset({"arm64-test-1", "vera"})
@@ -46,6 +56,10 @@ RLP_TARGET_MODE: dict[str, str] = {
 }
 
 VERA_TARGET = "vera"
+PHOENIX_TARGET = "us-phoenix-1"
+
+# Cells that boot Docker Hub images (no native NFS snap in that region).
+REGISTRY_BOOT_TARGETS = frozenset({VERA_TARGET, PHOENIX_TARGET})
 
 
 def resolve_rlp_toolbox_url(target: str | None, toolbox_url: str | None) -> str | None:
@@ -53,6 +67,10 @@ def resolve_rlp_toolbox_url(target: str | None, toolbox_url: str | None) -> str 
         return toolbox_url
     if target == VERA_TARGET:
         env_tb = (os.environ.get("VERA_RLP_TOOLBOX_URL") or "").strip()
+        if env_tb:
+            return env_tb
+    if target == PHOENIX_TARGET:
+        env_tb = (os.environ.get("PHOENIX_RLP_TOOLBOX_URL") or "").strip()
         if env_tb:
             return env_tb
     if target and target in RLP_TARGET_TOOLBOX:
@@ -109,6 +127,9 @@ def resolve_rlp_client_config(
 
     For ``vera``, also set LAN/tunnel ``api_url`` + key from ``VERA_RLP_*`` and
     ``region_routing=False`` so calls stay on that cell.
+
+    For ``us-phoenix-1``, pin ``api_url`` to the Phoenix cell (override with
+    ``PHOENIX_RLP_API_URL`` / ``PHOENIX_RLP_API_KEY``).
     """
     if not target:
         return DaytonaConfig()
@@ -141,7 +162,35 @@ def resolve_rlp_client_config(
             region_routing=False,
         )
 
+    if target == PHOENIX_TARGET:
+        api_url = (os.environ.get("PHOENIX_RLP_API_URL") or "").strip() or RLP_TARGET_API[
+            PHOENIX_TARGET
+        ]
+        api_key = (
+            os.environ.get("PHOENIX_RLP_API_KEY") or os.environ.get("RLP_API_KEY") or ""
+        ).strip()
+        if not api_key:
+            raise ValueError(
+                "RLP_API_KEY or PHOENIX_RLP_API_KEY is required for "
+                "--target us-phoenix-1"
+            )
+        return _daytona_config(
+            api_url=api_url,
+            api_key=api_key,
+            toolbox_url=resolved_toolbox,
+            target=target,
+            region_routing=False,
+        )
+
     return DaytonaConfig(target=target, toolbox_url=resolved_toolbox)
+
+
+def _daytona_config(**kwargs: Any) -> DaytonaConfig:
+    """Build DaytonaConfig, dropping kwargs the installed SDK does not accept."""
+    fields = getattr(DaytonaConfig, "__dataclass_fields__", {})
+    return DaytonaConfig(
+        **{k: v for k, v in kwargs.items() if k in fields and v is not None}
+    )
 
 
 def require_sdk_field(cls: type, name: str, *, purpose: str) -> None:

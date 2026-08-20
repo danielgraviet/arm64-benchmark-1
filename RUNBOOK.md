@@ -10,7 +10,8 @@ uv run python -m media.agent --n 1
 uv run python -m disk.agent --n 1
 
 # Concurrency harness → data/<benchmark>/<series>/concurrency_*.jsonl
-# RLP default region → rlp-x86/; RLP --target arm64-test-1 → rlp-arm64/
+# RLP default region → rlp-x86/; --target us-phoenix-1 → rlp-phoenix/ (Zen 5 Turin, Hub image)
+# RLP --target arm64-test-1 → rlp-arm64/; --target vera → rlp-vera/
 uv run main.py --benchmark agent --runner docker --levels 1 8 22 --n 20
 uv run main.py --benchmark analytics --runner docker --levels 1 8 --n 5
 uv run main.py --benchmark rl --runner docker --levels 1 8 22 44 88 --n 64
@@ -21,6 +22,9 @@ uv run main.py --benchmark agent --runner e2b --levels 1 8 22 --n 20
 uv run main.py --benchmark agent --runner rlp --levels 1 --n 20
 uv run main.py --benchmark analytics --runner rlp --target arm64-test-1 --levels 1 --n 5
 uv run main.py --benchmark rl --runner rlp --levels 1 8 22 44 88 --n 64
+# Phoenix Turin cell (own API). Hub images; do not pass west-1 NFS snap names.
+uv run main.py --benchmark evals --runner rlp --target us-phoenix-1 --levels 1 --n 1 --seed 42 -E 1
+uv run main.py --benchmark rl --runner rlp --target us-phoenix-1 --levels 1 8 22 44 88 --n 64 --seed 42 -E 8
 # Optional Chart C bandwidth (analytics DuckDB and/or media FFmpeg)
 uv run main.py --benchmark analytics --runner daytona --levels 1 --n 200 -E 8
 uv run main.py --benchmark media --runner daytona --levels 1 --n 40 -E 8

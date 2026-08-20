@@ -32,6 +32,8 @@ SERIES_ORDER = (
     "daytona-vm-hot",
     "e2b",
     "rlp-x86",
+    "rlp-phoenix",
+    "rlp-phoenix-c0p125",
     "rlp-arm64",
     "rlp-vera",
     "rlp",  # legacy folder name (pre split)
@@ -48,6 +50,8 @@ SERIES_COLORS = {
     "e2b": "#9467BD",  # purple
     "rlp-x86": "#FF7F0E",  # orange
     "rlp": "#FF7F0E",  # legacy → same as x86
+    "rlp-phoenix": "#C7A000",  # gold — OCI Phoenix / Zen 5 Turin
+    "rlp-phoenix-c0p125": "#8A6D00",  # darker gold — 0.125 CPU density
     "rlp-arm64": "#D62728",  # red
     "rlp-vera": "#8C1D40",  # dark crimson — onsite Vera RLP cell
     "ec2": "#8C564B",  # brown
