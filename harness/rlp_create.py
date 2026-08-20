@@ -69,9 +69,15 @@ def create_rlp_sandbox(
     print(
         f"rlp create: region={region!r} cpu_arch={cpu_arch!r} "
         f"cpu_type={cpu_type!r} mode={mode!r} image={image!r} "
-        f"cpu={getattr(resources, 'cpu', None)!r}"
+        f"cpu={getattr(resources, 'cpu', None)!r}",
+        flush=True,
     )
-    return client.create(params, timeout=timeout)
+    sandbox = client.create(params, timeout=timeout)
+    print(
+        f"rlp create started: id={getattr(sandbox, 'id', None)!r}",
+        flush=True,
+    )
+    return sandbox
 
 
 def _create_params(**kwargs: Any) -> CreateSandboxFromImageParams:

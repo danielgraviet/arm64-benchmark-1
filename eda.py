@@ -323,6 +323,140 @@ def plot_throughput(
     plt.close(fig)
 
 
+def plot_duration_line(
+    loaded: dict[str, tuple[list[dict], list[dict]]], out: Path
+) -> None:
+    """Line chart of p50 duration_ms vs concurrency (chip only; no create/network)."""
+    fig, ax = plt.subplots(figsize=(9, 5))
+    plotted = False
+    for series, (runs, summaries) in loaded.items():
+        levels: list[int] = []
+        durs: list[float] = []
+        for s in summaries:
+            dur = s.get("p50_duration_ms")
+            if dur is None:
+                dur = percentile_duration(runs, s["concurrency"], 50)
+            if not dur:
+                continue
+            levels.append(s["concurrency"])
+            durs.append(float(dur))
+        if not levels:
+            continue
+        plotted = True
+        ax.plot(
+            levels,
+            durs,
+            marker="o",
+            linewidth=2,
+            label=series,
+            color=series_color(series),
+        )
+        for level, value in zip(levels, durs):
+            ax.annotate(
+                f"{value:.0f}",
+                (level, value),
+                textcoords="offset points",
+                xytext=(0, 8),
+                ha="center",
+                fontsize=8,
+            )
+
+    if not plotted:
+        plt.close(fig)
+        return
+
+    ax.set_xlabel("Concurrency level")
+    ax.set_ylabel("p50 duration_ms (in-sandbox work)")
+    ax.set_title("Duration vs concurrency (excludes create / network / toolbox)")
+    ax.set_xticks(all_levels(loaded))
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    fig.text(0.5, 0.01, DURATION_NOTE, ha="center", fontsize=8, style="italic")
+    fig.tight_layout()
+    fig.subplots_adjust(bottom=0.18)
+    fig.savefig(out / "duration_vs_concurrency.png", dpi=150)
+    plt.close(fig)
+
+
+def plot_chip_speed_vs_concurrency(
+    loaded: dict[str, tuple[list[dict], list[dict]]], out: Path
+) -> None:
+    """Marketing line chart: idle chip = 100%. Vera stays high when packing holds.
+
+    Uses p50 duration_ms only (no create / toolbox / network). Each series is
+    normalized to its own concurrency=1 so a faster idle chip does not sit
+    above a flatter packer.
+    """
+    fig, ax = plt.subplots(figsize=(9, 5))
+    plotted = False
+    for series, (runs, summaries) in loaded.items():
+        idle = None
+        for s in summaries:
+            if s["concurrency"] != 1:
+                continue
+            idle = s.get("p50_duration_ms")
+            if idle is None:
+                idle = percentile_duration(runs, 1, 50)
+            break
+        if not idle:
+            continue
+        idle = float(idle)
+        levels: list[int] = []
+        pcts: list[float] = []
+        for s in summaries:
+            dur = s.get("p50_duration_ms")
+            if dur is None:
+                dur = percentile_duration(runs, s["concurrency"], 50)
+            if not dur:
+                continue
+            levels.append(s["concurrency"])
+            pcts.append(100.0 * idle / float(dur))
+        if not levels:
+            continue
+        plotted = True
+        ax.plot(
+            levels,
+            pcts,
+            marker="o",
+            linewidth=2,
+            label=series,
+            color=series_color(series),
+        )
+        for level, value in zip(levels, pcts):
+            ax.annotate(
+                f"{value:.0f}%",
+                (level, value),
+                textcoords="offset points",
+                xytext=(0, 8),
+                ha="center",
+                fontsize=8,
+            )
+
+    if not plotted:
+        plt.close(fig)
+        return
+
+    ax.set_xlabel("Concurrency level")
+    ax.set_ylabel("In-sandbox chip speed vs idle (%)")
+    ax.set_title("Chip speed vs concurrency (100% = idle duration_ms)")
+    ax.set_xticks(all_levels(loaded))
+    ax.set_ylim(0, None)
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    fig.text(
+        0.5,
+        0.01,
+        DURATION_NOTE + " · 100% is each series' own c=1 p50 (create tax excluded)",
+        ha="center",
+        fontsize=8,
+        style="italic",
+    )
+    fig.tight_layout()
+    fig.subplots_adjust(bottom=0.18)
+    fig.savefig(out / "chip_speed_vs_concurrency.png", dpi=150)
+    plt.close(fig)
+
+
 def plot_duration_vs_concurrency(
     loaded: dict[str, tuple[list[dict], list[dict]]], out: Path
 ) -> None:
@@ -480,6 +614,15 @@ def main() -> None:
             "(default: docker,daytona; matches exact series names)"
         ),
     )
+    parser.add_argument(
+        "--exclude-levels",
+        default="",
+        metavar="N[,N...]",
+        help=(
+            "Comma-separated concurrency levels to omit from the table and charts "
+            "(e.g. 352,528,704)"
+        ),
+    )
     args = parser.parse_args()
 
     if args.benchmark not in available:
@@ -495,6 +638,17 @@ def main() -> None:
         raise SystemExit(str(exc)) from exc
 
     excluded = {series.strip() for series in args.exclude.split(",") if series.strip()}
+    excluded_levels: set[int] = set()
+    for raw in args.exclude_levels.split(","):
+        raw = raw.strip()
+        if not raw:
+            continue
+        try:
+            excluded_levels.add(int(raw))
+        except ValueError as exc:
+            raise SystemExit(
+                f"Invalid --exclude-levels value {raw!r}; expected integers"
+            ) from exc
     sources = {
         series: path for series, path in sources.items() if series not in excluded
     }
@@ -508,14 +662,29 @@ def main() -> None:
     loaded: dict[str, tuple[list[dict], list[dict]]] = {}
     for runner, path in sources.items():
         meta, runs, summaries = load_jsonl(path)
+        if excluded_levels:
+            runs = [r for r in runs if r.get("concurrency") not in excluded_levels]
+            summaries = [
+                s for s in summaries if s.get("concurrency") not in excluded_levels
+            ]
         metas[runner] = meta
         loaded[runner] = (runs, summaries)
+    if not any(summaries for _, summaries in loaded.values()):
+        raise SystemExit(
+            "No concurrency levels remain after --exclude-levels "
+            f"({', '.join(str(n) for n in sorted(excluded_levels))})."
+        )
     out = OUT_DIR / args.benchmark
     out.mkdir(parents=True, exist_ok=True)
 
     print(f"benchmark={args.benchmark}")
     if excluded:
         print(f"excluded={', '.join(sorted(excluded))}")
+    if excluded_levels:
+        print(
+            "excluded_levels="
+            + ",".join(str(n) for n in sorted(excluded_levels))
+        )
     print_summary_table(loaded, sources, metas)
 
     plot_grouped_metric(
@@ -554,6 +723,8 @@ def main() -> None:
         footnote=DURATION_NOTE,
     )
     plot_throughput(loaded, out)
+    plot_duration_line(loaded, out)
+    plot_chip_speed_vs_concurrency(loaded, out)
     plot_latency_boxplots(loaded, out)
     plot_duration_vs_concurrency(loaded, out)
     plot_duration_boxplots(loaded, out)
