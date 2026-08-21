@@ -22,7 +22,7 @@ from harness.regions import (
 def create_rlp_sandbox(
     client: Daytona,
     *,
-    image: str,
+    image: str | dict[str, str],
     timeout: int = 60,
     resources: Resources | None = None,
     cpu_arch: str | None = None,

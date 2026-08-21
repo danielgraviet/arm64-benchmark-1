@@ -36,45 +36,75 @@ def get_native_snapshot(client: Daytona, name: str) -> dict[str, Any] | None:
 
 
 def is_registry_image_ref(name_or_manifest: str) -> bool:
-    """True for Docker Hub / GHCR / digest refs (not native snap names)."""
+    """True for Docker Hub / GHCR / digest refs (not native snap names).
+
+    Mirrors the API's own heuristic in ``VmImageInput::into_source``
+    (``api/src/vms/entities.rs``): a ref contains ``/`` or ``:``, anything else
+    is a named image. Keep the two in step — when this was ``/``-only, a
+    tag-only ref like ``python:3.13-slim`` was classified as a native snapshot
+    name here (failing with a confusing "not found on /snapshots") while the API
+    would have pulled it as a registry image, and it picked the wrong app dir.
+    """
     s = name_or_manifest.strip()
     if not s:
         return False
     if s.startswith("snap-"):
         return False
-    if s.startswith("sha256:"):
-        return True
-    # user/repo, registry.example/…, docker.io/…
-    return "/" in s
+    # user/repo, registry.example/…, docker.io/…, sha256:…, python:3.13-slim
+    return "/" in s or ":" in s
 
 
-def resolve_boot_image(client: Daytona, name_or_manifest: str) -> str:
-    """Map a friendly snapshot name to the NFS ``manifest_name`` used by POST /vms.
+def resolve_boot_image(
+    client: Daytona, name_or_manifest: str, target: str | None = None
+) -> str | dict[str, str]:
+    """Resolve ``--snapshot`` to the ``image`` value for POST /vms.
 
-    Registry refs (e.g. ``dtgraviet/vera-agent-benchmark-rl:latest``) pass
-    through unchanged so RLP can pull OCI images without a native snapshot.
+    Returns the tagged snapshot source ``{"type": "snapshot", "name": ...}`` for
+    a friendly native-snapshot name, so the **API** resolves the name to a
+    manifest *in the target region*. Registry refs and explicit ``snap-<uuid>``
+    manifest names pass through unchanged.
+
+    Why not resolve ``manifest_name`` here (as this did until 2026-08-20):
+    a native disk snapshot is a REGIONAL artifact — its erofs manifest lives on
+    one region's NFS CAS — but ``GET /snapshots`` is a management surface bound
+    to whatever ``RLP_API_URL`` points at. Resolving the name client-side on one
+    cell and booting it on another hands the runner a ``snap-<uuid>`` that the
+    target region's NFS has never seen, and the create dies runner-side with::
+
+        manifest "snap-42a87359-..." not found on NFS
+
+    Passing the name instead routes through ``api/src/vms/http.rs`` (the
+    ``VmImageInput::Snapshot`` arm), which looks the snapshot up, checks its
+    ``region_id``, and replicates it into the target region on first cross-region
+    use (``ensure_artifact_available``). A bare string can never reach that arm:
+    with no ``/`` or ``:`` it parses as ``ImageSource::Named`` and becomes a raw
+    NFS manifest lookup.
     """
     if name_or_manifest.startswith("snap-") or is_registry_image_ref(name_or_manifest):
         return name_or_manifest
 
+    # Pre-flight only: catch a typo'd/unbuilt name here, where we can explain it,
+    # instead of letting POST /vms answer a bare `{"error":"not found"}` 404.
+    # The manifest_name is deliberately NOT used for booting (see above).
     snap = get_native_snapshot(client, name_or_manifest)
     if snap is None:
         raise DaytonaError(
-            f"Native RLP snapshot {name_or_manifest!r} not found on /snapshots. "
-            "Build it with: uv run scripts/build_rlp_snapshot.py "
-            "(or pass a registry image as --snapshot, e.g. user/image:tag)"
+            f"Native RLP snapshot {name_or_manifest!r} not found on /snapshots.\n"
+            "Either it was never built in this region:\n"
+            "  uv run scripts/build_rlp_snapshot.py "
+            f"--benchmark <b>{f' --target {target}' if target else ''}\n"
+            "or RLP_API_URL points at a different cell than "
+            f"--target {target!r} (snapshots are per-region; a cell only lists "
+            "its own). Set RLP_API_URL to that region's api_base_url from "
+            "GET /regions.\n"
+            "(Or pass a registry image as --snapshot, e.g. user/image:tag.)"
         )
     if snap.get("status") != "ready":
         raise DaytonaError(
             f"Native RLP snapshot {name_or_manifest!r} is not ready "
             f"(status={snap.get('status')!r}, error={snap.get('error')!r})"
         )
-    manifest = snap.get("manifest_name")
-    if not manifest:
-        raise DaytonaError(
-            f"Native RLP snapshot {name_or_manifest!r} has no manifest_name: {snap}"
-        )
-    return str(manifest)
+    return {"type": "snapshot", "name": name_or_manifest}
 
 
 def delete_native_snapshot_if_exists(client: Daytona, name: str) -> None:

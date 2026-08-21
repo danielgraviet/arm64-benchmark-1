@@ -64,10 +64,14 @@ class RlpRunner:
         self._arch_probed = skip_arch_probe or not target
         self._arch_lock = threading.Lock()
 
-        self._boot_image = resolve_boot_image(self._client, self._snapshot)
+        # str  -> registry ref or explicit snap-<uuid> manifest name
+        # dict -> {"type": "snapshot", "name": ...}, resolved API-side in the
+        #         target region (see harness.rlp_snapshots.resolve_boot_image)
+        self._boot_image = resolve_boot_image(self._client, self._snapshot, target)
         self._app_dir = (
             REGISTRY_APP_DIR
-            if is_registry_image_ref(self._boot_image)
+            if isinstance(self._boot_image, str)
+            and is_registry_image_ref(self._boot_image)
             else SNAPSHOT_APP_DIR
         )
         self._run_env = spec.run_env(self._app_dir)
