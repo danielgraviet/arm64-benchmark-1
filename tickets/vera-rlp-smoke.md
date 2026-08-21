@@ -8,9 +8,31 @@
 | API | `http://10.96.8.181:8088` | `http://127.0.0.1:8088` |
 | Toolbox | `http://10.96.8.181:9000/toolbox` | `http://127.0.0.1:9000/toolbox` |
 
-`.env` is set to the **localhost** URLs (`VERA_RLP_*`).
+`.env` is set to the **localhost** URLs (`VERA_RLP_*`) for laptop-tunnel smokes.
 
-## SSH tunnel (leave this running in its own terminal)
+**Do not drive c≥88 ladders through the laptop tunnel.** Measured on the same
+176-sandbox fleet: laptop+tunnel+pool100 = 19.5 exec/s; rlp-control (19ms) +
+pool100 = 82.3/s. Throughput then measures the tunnel, not Vera.
+
+### Co-located client (chip-grade ladders)
+
+Run the harness on **rlp-control** (eng left `/tmp/abenv` and
+`/tmp/ab_pool_colo.py` there). Point `VERA_RLP_*` at the **LAN** cell, not
+laptop localhost:
+
+| | rlp-control (required for c≥88) |
+| --- | --- |
+| Target | `vera` |
+| API | `http://10.96.8.181:8088` |
+| Toolbox | `http://10.96.8.181:9000/toolbox` |
+
+Prefix with `UV_NO_SYNC=1` and eng’s `rlp-sdk`. Use `--hold-then-exec` so
+create/delete churn does not overlap episode `duration_ms`. Note host loadavg
+before start (shared vendor box).
+
+Phoenix: run on the **phoenix cell API host**, not a laptop.
+
+## SSH tunnel (laptop smokes only; leave this running in its own terminal)
 
 ```bash
 ssh -N -L 8088:127.0.0.1:8088 -L 9000:127.0.0.1:9000 daytona@10.96.8.181

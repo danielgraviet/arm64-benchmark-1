@@ -157,3 +157,121 @@ def run_suite(
             )
             writer.write({"type": "summary", "concurrency": level, **summary})
             print(json.dumps({"concurrency": level, **summary}))
+
+
+def run_hold_suite(
+    *,
+    levels: list[int],
+    n: int,
+    seed: int,
+    output: Path,
+    runner: Any,
+    meta: dict[str, Any] | None = None,
+    job_seed_mod: int = 1,
+) -> None:
+    """Pre-create a fleet of C, barrier, exec, then delete.
+
+    ``throughput_per_sec`` is episodes / exec-wave wall (chip packing).
+    ``throughput_including_create`` keeps the product number that includes
+    sandbox boot. Create/delete churn is isolated from episode ``duration_ms``.
+    """
+    episodes = int(getattr(runner, "_episodes_per_sandbox", 1))
+    if episodes < 1:
+        raise ValueError("episodes_per_sandbox must be >= 1")
+    max_checksums = max(1, job_seed_mod)
+    spec_id = getattr(getattr(runner, "_spec", None), "id", None)
+    target = getattr(runner, "_target", None)
+
+    def _write(writer: JsonlWriter, level: int, record: dict[str, Any]) -> dict[str, Any]:
+        writer.write({"type": "run", "concurrency": level, **record})
+        return record
+
+    with JsonlWriter(output) as writer:
+        if meta:
+            writer.write({"type": "meta", **meta})
+        for level in levels:
+            create_start = time.monotonic()
+            fleet: list[Any] = []
+            records: list[dict[str, Any]] = []
+            with ThreadPoolExecutor(max_workers=level) as pool:
+                futures = [pool.submit(runner.create_sandbox) for _ in range(level)]
+                for future in as_completed(futures):
+                    try:
+                        fleet.append(future.result())
+                    except Exception as exc:  # noqa: BLE001
+                        records.append(
+                            _write(
+                                writer,
+                                level,
+                                {
+                                    "latency_ms": (time.monotonic() - create_start)
+                                    * 1000,
+                                    "exit_code": -1,
+                                    "error": f"{type(exc).__name__}: {exc}",
+                                    "target": target,
+                                    "arch": getattr(runner, "_arch", "unspecified"),
+                                    "benchmark": spec_id,
+                                    "episode_idx": 0,
+                                    "cold": True,
+                                    "fleet_hold": True,
+                                },
+                            )
+                        )
+            create_wall_s = time.monotonic() - create_start
+
+            exec_start = time.monotonic()
+            if fleet:
+                with ThreadPoolExecutor(max_workers=len(fleet)) as pool:
+                    futures = [
+                        pool.submit(
+                            runner.exec_on_sandbox,
+                            sandbox,
+                            n,
+                            seed,
+                            episodes,
+                            cold_first=False,
+                        )
+                        for sandbox in fleet
+                    ]
+                    for future in as_completed(futures):
+                        for record in future.result():
+                            records.append(_write(writer, level, record))
+            exec_wall_s = time.monotonic() - exec_start
+
+            delete_start = time.monotonic()
+            if fleet:
+                with ThreadPoolExecutor(max_workers=len(fleet)) as pool:
+                    futs = [
+                        pool.submit(runner.delete_sandbox, sandbox) for sandbox in fleet
+                    ]
+                    for fut in as_completed(futs):
+                        try:
+                            fut.result()
+                        except Exception:  # noqa: BLE001, S110
+                            pass
+            delete_wall_s = time.monotonic() - delete_start
+
+            summary = summarize(
+                records, exec_wall_s, max_distinct_checksums=max_checksums
+            )
+            summary["create_wall_s"] = round(create_wall_s, 3)
+            summary["exec_wall_s"] = round(exec_wall_s, 3)
+            summary["delete_wall_s"] = round(delete_wall_s, 3)
+            if exec_wall_s < 0.001 or not fleet:
+                summary["throughput_per_sec"] = 0.0
+            include_create = create_wall_s + exec_wall_s
+            summary["throughput_including_create"] = (
+                round(len(records) / include_create, 2) if include_create > 0 else 0
+            )
+            writer.write({"type": "summary", "concurrency": level, **summary})
+            print(
+                json.dumps(
+                    {
+                        "concurrency": level,
+                        "hold_then_exec": True,
+                        "benchmark": spec_id,
+                        "target": target,
+                        **summary,
+                    }
+                )
+            )

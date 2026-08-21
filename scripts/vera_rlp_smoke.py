@@ -21,6 +21,10 @@ from rlp import (
 )
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from harness import rlp_client_tuning  # noqa: E402
 
 
 def _require(name: str) -> str:
@@ -32,6 +36,7 @@ def _require(name: str) -> str:
 
 def main() -> None:
     load_dotenv(ROOT / ".env")
+    rlp_client_tuning.apply()
 
     api_url = _require("VERA_RLP_API_URL")
     api_key = _require("VERA_RLP_API_KEY")

@@ -60,6 +60,52 @@ uv run scripts/upload_data_s3.py --bucket YOUR_BUCKET --snapshot
 For RLP ARM64, pass `--target arm64-test-1` (do not leave an x86
 `RLP_TOOLBOX_URL` sticky).
 
+## Client-side throughput (concurrency ladders)
+
+The harness auto-applies `harness/rlp_client_tuning.py` (SDK pool 100 -> 512,
+`wait_until_started` polls 10Hz -> 0.25s..2s backoff). Without it, exec
+throughput plateaus at ~100/(episode+RTT) regardless of `--levels`, and create
+waves flood the link with status polls. Tune via `RLP_HTTP_MAX_CONNECTIONS`,
+`RLP_WAIT_POLL_{START_S,FACTOR,MAX_S}`.
+
+Raising the pool without tempering polls makes ladders worse (measured on
+phoenix: 24/s -> 9.8/s). A 352-wide create wave at 10Hz/sandbox is ~3.5k req/s
+of status polling drowning the pool you just widened. Both patches ship
+together.
+
+RTT is not patchable: for chip-grade numbers at c>=88, run the harness NEAR the
+cell (vera: rlp-control, 19ms; us-phoenix-1: the phoenix cell API host). Measured
+on vera (176 workers, ~1.1s episodes, guest p50 identical in every row):
+
+    client location        pool   exec tput   wall_p50
+    laptop via SSH tunnel   100      19.5/s   7.6s
+    laptop via SSH tunnel   600      30.6/s   6.6s  (tunnel TCP serializes)
+    co-located (19ms RTT)   100      82.3/s   1.9s
+    co-located (19ms RTT)   600     128.9/s   1.2s
+
+`--hold-then-exec` (RLP only) pre-creates the fleet of C, waits until all
+started, then execs `-E` times, then deletes. Use this to isolate chip
+`duration_ms` and exec-wave jobs/s from create/delete churn. Summaries record
+`create_wall_s` / `exec_wall_s`; `throughput_per_sec` is episodes / exec wall.
+`throughput_including_create` is the Daytona product number — do not quote it
+as silicon.
+
+Do not run c>=88 ladders from a laptop SSH tunnel. That measures the tunnel.
+
+```bash
+# Vera — from rlp-control (LAN URLs, not laptop localhost). Keep eng rlp-sdk.
+# VERA_RLP_API_URL=http://10.96.8.181:8088
+# VERA_RLP_TOOLBOX_URL=http://10.96.8.181:9000/toolbox
+UV_NO_SYNC=1 uv run main.py --benchmark rl --runner rlp --target vera \
+  --snapshot dtgraviet/vera-agent-benchmark-rl:latest \
+  --levels 1 44 88 132 176 352 --n 5000 --seed 42 -E 8 --hold-then-exec
+
+# Phoenix — from the phoenix cell API host (same flags, --target us-phoenix-1)
+uv run main.py --benchmark rl --runner rlp --target us-phoenix-1 \
+  --snapshot dtgraviet/vera-agent-benchmark-rl:latest \
+  --levels 1 44 88 132 176 --n 5000 --seed 42 -E 8 --hold-then-exec
+```
+
 ```bash
 # Build per benchmark (artifact names differ)
 uv run scripts/build_daytona_snapshot.py --benchmark agent

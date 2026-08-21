@@ -10,6 +10,7 @@ from typing import Any
 from dotenv import load_dotenv
 from rlp import Daytona, Resources
 
+from harness import rlp_client_tuning
 from harness.benchmarks import AGENT, BenchmarkSpec
 from harness.common import apply_workload_payload
 from harness.env_probe import failed_env, host_env, merge_env, parse_probe_stdout, probe_shell_command
@@ -39,6 +40,11 @@ class RlpRunner:
         cpu: float = 1.0,
     ) -> None:
         load_dotenv(ROOT / ".env")
+        # Client-side throughput tuning (pool + poll cadence): without it, exec
+        # throughput plateaus at ~(100 x 1/(episode+RTT)) regardless of --levels
+        # and the create-wave poll storm floods the link. Env-tunable; see
+        # harness/rlp_client_tuning.py for the measured numbers.
+        rlp_client_tuning.apply()
         if episodes_per_sandbox < 1:
             raise ValueError("episodes_per_sandbox must be >= 1")
         if cpu <= 0:
@@ -59,7 +65,8 @@ class RlpRunner:
             f"api_url={config.api_url!r} toolbox_url={config.toolbox_url!r} "
             f"region_routing={routing!r} "
             f"benchmark={spec.id!r} episodes_per_sandbox={episodes_per_sandbox} "
-            f"resources=cpu={cpu},memory={mem}GiB,disk={max(2, mem)}GiB"
+            f"resources=cpu={cpu},memory={mem}GiB,disk={max(2, mem)}GiB "
+            f"client_tuning={rlp_client_tuning.settings()}"
         )
 
         # Probed once on the first worker sandbox (avoids a spare create on
@@ -85,18 +92,7 @@ class RlpRunner:
         host = host_env()
         sandbox = None
         try:
-            sandbox = create_rlp_sandbox(
-                self._client,
-                image=self._boot_image,
-                resources=self._resources,
-                timeout=self._create_timeout_s,
-                target=self._target,
-            )
-            if not self._arch_probed:
-                with self._arch_lock:
-                    if not self._arch_probed:
-                        self._arch = check_sandbox_arch(sandbox, self._target)
-                        self._arch_probed = True
+            sandbox = self.create_sandbox()
             response = sandbox.process.exec(
                 probe_shell_command(),
                 timeout=60,
@@ -113,11 +109,107 @@ class RlpRunner:
             print(f"warning: rlp env probe failed: {exc}")
             return failed_env(host, probe="rlp", error=str(exc))
         finally:
-            if sandbox is not None:
-                try:
-                    self._client.delete(sandbox)
-                except Exception:  # noqa: BLE001, S110
-                    pass
+            self.delete_sandbox(sandbox)
+
+    def create_sandbox(self) -> Any:
+        """Create one sandbox and wait until started. Does not exec or delete."""
+        sandbox = create_rlp_sandbox(
+            self._client,
+            image=self._boot_image,
+            resources=self._resources,
+            timeout=self._create_timeout_s,
+            target=self._target,
+        )
+        if not self._arch_probed:
+            with self._arch_lock:
+                if not self._arch_probed:
+                    self._arch = check_sandbox_arch(sandbox, self._target)
+                    self._arch_probed = True
+        return sandbox
+
+    def delete_sandbox(self, sandbox: Any | None) -> None:
+        if sandbox is None:
+            return
+        try:
+            self._client.delete(sandbox)
+        except Exception:  # noqa: BLE001, S110
+            pass
+
+    def exec_on_sandbox(
+        self,
+        sandbox: Any,
+        n: int,
+        seed: int,
+        episodes: int,
+        *,
+        cold_first: bool,
+        latency_origin: float | None = None,
+    ) -> list[dict[str, Any]]:
+        """Run ``episodes`` execs on an already-started sandbox.
+
+        When ``cold_first`` is True (create-exec-delete workers), episode 0
+        ``latency_ms`` includes create if ``latency_origin`` is the create
+        start. Hold-then-exec passes ``cold_first=False`` so every episode is
+        exec-only (``duration_ms`` is still the chip metric).
+        """
+        if episodes < 1:
+            raise ValueError("episodes must be >= 1")
+        sandbox_id = getattr(sandbox, "id", None)
+        argv = " ".join(self._spec.agent_argv(n, seed))
+        cmd = f"{self._agent_cmd} {argv}"
+        records: list[dict[str, Any]] = []
+        for episode_idx in range(episodes):
+            cold = bool(cold_first and episode_idx == 0)
+            if cold and latency_origin is not None:
+                exec_start = latency_origin
+            else:
+                exec_start = time.monotonic()
+            try:
+                response = sandbox.process.exec(
+                    cmd,
+                    cwd=self._app_dir,
+                    env=self._run_env,
+                    timeout=self._exec_timeout_s,
+                )
+                exit_code = int(response.exit_code or 0)
+                stdout = (response.result or "").strip()
+                record: dict[str, Any] = {
+                    "latency_ms": (time.monotonic() - exec_start) * 1000,
+                    "exit_code": exit_code,
+                    "sandbox_id": sandbox_id,
+                    "target": self._target,
+                    "arch": self._arch,
+                    "benchmark": self._spec.id,
+                    "episode_idx": episode_idx,
+                    "cold": cold,
+                    "fleet_hold": not cold_first,
+                }
+                if exit_code == 0:
+                    try:
+                        payload = json.loads(stdout)
+                        apply_workload_payload(record, payload)
+                    except json.JSONDecodeError:
+                        record["error"] = "invalid_json_output"
+                        record["stdout"] = stdout
+                else:
+                    record["stderr"] = stdout
+                records.append(record)
+            except Exception as exc:  # noqa: BLE001
+                records.append(
+                    {
+                        "latency_ms": (time.monotonic() - exec_start) * 1000,
+                        "exit_code": -1,
+                        "error": f"{type(exc).__name__}: {exc}",
+                        "target": self._target,
+                        "arch": self._arch,
+                        "benchmark": self._spec.id,
+                        "sandbox_id": sandbox_id,
+                        "episode_idx": episode_idx,
+                        "cold": cold,
+                        "fleet_hold": not cold_first,
+                    }
+                )
+        return records
 
     def run_one(self, n: int, seed: int) -> dict[str, Any]:
         return self.run_episodes(n, seed, episodes=1)[0]
@@ -138,69 +230,15 @@ class RlpRunner:
         sandbox = None
         create_start = time.monotonic()
         try:
-            sandbox = create_rlp_sandbox(
-                self._client,
-                image=self._boot_image,
-                resources=self._resources,
-                timeout=self._create_timeout_s,
-                target=self._target,
+            sandbox = self.create_sandbox()
+            return self.exec_on_sandbox(
+                sandbox,
+                n,
+                seed,
+                episodes,
+                cold_first=True,
+                latency_origin=create_start,
             )
-            if not self._arch_probed:
-                with self._arch_lock:
-                    if not self._arch_probed:
-                        self._arch = check_sandbox_arch(sandbox, self._target)
-                        self._arch_probed = True
-            sandbox_id = getattr(sandbox, "id", None)
-            argv = " ".join(self._spec.agent_argv(n, seed))
-            cmd = f"{self._agent_cmd} {argv}"
-
-            for episode_idx in range(episodes):
-                cold = episode_idx == 0
-                exec_start = time.monotonic() if not cold else create_start
-                try:
-                    response = sandbox.process.exec(
-                        cmd,
-                        cwd=self._app_dir,
-                        env=self._run_env,
-                        timeout=self._exec_timeout_s,
-                    )
-                    exit_code = int(response.exit_code or 0)
-                    stdout = (response.result or "").strip()
-                    record: dict[str, Any] = {
-                        "latency_ms": (time.monotonic() - exec_start) * 1000,
-                        "exit_code": exit_code,
-                        "sandbox_id": sandbox_id,
-                        "target": self._target,
-                        "arch": self._arch,
-                        "benchmark": self._spec.id,
-                        "episode_idx": episode_idx,
-                        "cold": cold,
-                    }
-                    if exit_code == 0:
-                        try:
-                            payload = json.loads(stdout)
-                            apply_workload_payload(record, payload)
-                        except json.JSONDecodeError:
-                            record["error"] = "invalid_json_output"
-                            record["stdout"] = stdout
-                    else:
-                        record["stderr"] = stdout
-                    records.append(record)
-                except Exception as exc:  # noqa: BLE001
-                    records.append(
-                        {
-                            "latency_ms": (time.monotonic() - exec_start) * 1000,
-                            "exit_code": -1,
-                            "error": f"{type(exc).__name__}: {exc}",
-                            "target": self._target,
-                            "arch": self._arch,
-                            "benchmark": self._spec.id,
-                            "sandbox_id": sandbox_id,
-                            "episode_idx": episode_idx,
-                            "cold": cold,
-                        }
-                    )
-            return records
         except Exception as exc:  # noqa: BLE001
             if not records:
                 return [
@@ -213,12 +251,9 @@ class RlpRunner:
                         "benchmark": self._spec.id,
                         "episode_idx": 0,
                         "cold": True,
+                        "fleet_hold": False,
                     }
                 ]
             return records
         finally:
-            if sandbox is not None:
-                try:
-                    self._client.delete(sandbox)
-                except Exception:  # noqa: BLE001, S110
-                    pass
+            self.delete_sandbox(sandbox)

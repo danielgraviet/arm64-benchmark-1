@@ -13,11 +13,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import socket
 from pathlib import Path
 
 from harness.benchmarks import BENCHMARK_IDS, TBENCH, get_benchmark
-from harness.common import run_suite
+from harness.common import run_hold_suite, run_suite
 from harness.paths import default_output_path
+from harness.rlp_client_tuning import settings as rlp_client_tuning_settings
 from harness.runners import (
     DAYTONA_FAMILY,
     RUNNERS,
@@ -148,6 +150,17 @@ def main() -> None:
             "Ignored when --numa-node is set."
         ),
     )
+    parser.add_argument(
+        "--hold-then-exec",
+        action="store_true",
+        help=(
+            "RLP only: pre-create a fleet of C sandboxes, wait until all "
+            "started, then exec -E times, then delete. Isolates chip "
+            "duration_ms and exec-wave throughput from create/delete churn. "
+            "JSONL summaries include create_wall_s / exec_wall_s; "
+            "throughput_per_sec is episodes / exec wall."
+        ),
+    )
     args = parser.parse_args()
 
     if args.toolbox_url and args.runner != "rlp":
@@ -182,6 +195,8 @@ def main() -> None:
             "--episodes-per-sandbox > 1 is only supported with "
             "--runner daytona, daytona-vm, daytona-vm-hot, or rlp"
         )
+    if args.hold_then_exec and args.runner != "rlp":
+        parser.error("--hold-then-exec is only valid with --runner rlp")
     if args.n < 0:
         parser.error("--n must be >= 0 (0 = no Harbor task limit for tbench)")
 
@@ -237,7 +252,7 @@ def main() -> None:
         f"episodes_per_sandbox={args.episodes_per_sandbox} "
         f"host_cpus={args.host_cpus!r} numa_node={args.numa_node!r} "
         f"cpuset_mems={args.cpuset_mems!r} rlp_cpu={args.rlp_cpu!r} "
-        f"output={output}"
+        f"hold_then_exec={args.hold_then_exec} output={output}"
     )
 
     meta = {
@@ -251,7 +266,11 @@ def main() -> None:
         "host_cpus": args.host_cpus,
         "numa_node": args.numa_node,
         "rlp_cpu": args.rlp_cpu if args.runner == "rlp" else None,
+        "hold_then_exec": bool(args.hold_then_exec),
     }
+    if args.runner == "rlp":
+        meta["rlp_client_tuning"] = rlp_client_tuning_settings()
+        meta["client_host"] = socket.gethostname()
     if args.benchmark == "evals":
         meta["eval_task_id"] = "log-surgery"
 
@@ -274,6 +293,18 @@ def main() -> None:
     if callable(limits):
         meta.update(limits())
     print(f"env={json.dumps(meta['env'], separators=(',', ':'))}")
+
+    if args.hold_then_exec:
+        run_hold_suite(
+            levels=args.levels,
+            n=args.n,
+            seed=args.seed,
+            output=output,
+            runner=runner,
+            meta=meta,
+            job_seed_mod=1,
+        )
+        return
 
     run_suite(
         levels=args.levels,
