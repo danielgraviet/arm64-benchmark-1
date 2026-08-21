@@ -54,6 +54,19 @@ uv run scripts/upload_data_s3.py --bucket YOUR_BUCKET --snapshot
 For RLP ARM64, pass `--target arm64-test-1` (do not leave an x86
 `RLP_TOOLBOX_URL` sticky).
 
+## Client-side throughput (concurrency ladders)
+
+The harness auto-applies `harness/rlp_client_tuning.py` (SDK pool 100 -> 512,
+`wait_until_started` polls 10Hz -> 0.25s..2s backoff). Without it, exec
+throughput plateaus at ~100/(episode+RTT) regardless of `--levels`, and create
+waves flood the link with status polls. Tune via `RLP_HTTP_MAX_CONNECTIONS`,
+`RLP_WAIT_POLL_{START_S,FACTOR,MAX_S}`.
+
+RTT is not patchable: for chip-grade numbers at c>=88, run the harness NEAR the
+cell (vera: rlp-control, 19ms; us-phoenix-1: the phoenix cell API host). Measured
+on vera (176 workers, ~1.1s episodes): laptop+tunnel pool100 = 19.5/s;
+co-located pool600 = 128.9/s -- same fleet, guest p50 identical.
+
 ```bash
 # Build per benchmark (artifact names differ)
 uv run scripts/build_daytona_snapshot.py --benchmark agent

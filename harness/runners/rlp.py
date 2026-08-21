@@ -10,6 +10,7 @@ from typing import Any
 from dotenv import load_dotenv
 from rlp import Daytona, Resources
 
+from harness import rlp_client_tuning
 from harness.benchmarks import AGENT, BenchmarkSpec
 from harness.env_probe import failed_env, host_env, merge_env, parse_probe_stdout, probe_shell_command
 from harness.paths import ROOT
@@ -37,6 +38,11 @@ class RlpRunner:
         episodes_per_sandbox: int = 1,
     ) -> None:
         load_dotenv(ROOT / ".env")
+        # Client-side throughput tuning (pool + poll cadence): without it, exec
+        # throughput plateaus at ~(100 x 1/(episode+RTT)) regardless of --levels
+        # and the create-wave poll storm floods the link. Env-tunable; see
+        # harness/rlp_client_tuning.py for the measured numbers.
+        rlp_client_tuning.apply()
         if episodes_per_sandbox < 1:
             raise ValueError("episodes_per_sandbox must be >= 1")
         self._spec = spec
