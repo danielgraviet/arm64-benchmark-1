@@ -1,10 +1,11 @@
 """Explore concurrency JSONL results across runners / RLP arch series.
 
 Picks the newest ``data/<benchmark>/<series>/concurrency_*.jsonl`` per series
-(e.g. ``docker``, ``rlp-x86``, ``rlp-arm64``), prints a metrics table, and
-writes charts to ``eda_output/<benchmark>/``.
+(e.g. ``rlp-phoenix``, ``rlp-vera``), prints a metrics table, and writes charts
+to ``eda_output/<benchmark>/``.
 
-Benchmark folders under ``data/`` are discovered dynamically.
+Use ``--include`` to chart only named series. Benchmark folders under ``data/``
+are discovered dynamically.
 """
 
 from __future__ import annotations
@@ -38,6 +39,7 @@ SERIES_ORDER = (
     "rlp-arm64",
     "rlp-vera",
     "rlp-vera-c0p125",
+    "rlp-vera-c0p125-max1",
     "rlp",  # legacy folder name (pre split)
     "ec2",
 )
@@ -53,11 +55,12 @@ SERIES_COLORS = {
     "e2b": "#9467BD",  # purple
     "rlp-x86": "#FF7F0E",  # orange
     "rlp": "#FF7F0E",  # legacy → same as x86
-    "rlp-phoenix": "#C7A000",  # gold — OCI Phoenix / Zen 5 Turin
+    "rlp-phoenix": "#7D7D7D",  # gray — OCI Phoenix / Zen 5 Turin
     "rlp-phoenix-c0p125": "#8A6D00",  # darker gold — 0.125 CPU density
     "rlp-arm64": "#D62728",  # red
-    "rlp-vera": "#8C1D40",  # dark crimson — onsite Vera RLP cell
+    "rlp-vera": "#76B900",  # NVIDIA green — onsite Vera RLP cell
     "rlp-vera-c0p125": "#C45C7A",  # lighter crimson — 0.125 CPU density
+    "rlp-vera-c0p125-max1": "#4CAF50",  # burst 0.125/max1
     "ec2": "#8C564B",  # brown
 }
 
@@ -610,12 +613,14 @@ def main() -> None:
         ),
     )
     parser.add_argument(
-        "--exclude",
-        default="docker,daytona",
-        metavar="SERIES[,SERIES...]",
+        "--include",
+        nargs="+",
+        metavar="SERIES",
+        default=None,
         help=(
-            "Comma-separated result series to omit "
-            "(default: docker,daytona; matches exact series names)"
+            "Only these result series (exact folder names under "
+            "data/<benchmark>/). Example: --include rlp-phoenix rlp-vera. "
+            "Default: every series that has a concurrency_*.jsonl"
         ),
     )
     parser.add_argument(
@@ -641,7 +646,6 @@ def main() -> None:
     except FileNotFoundError as exc:
         raise SystemExit(str(exc)) from exc
 
-    excluded = {series.strip() for series in args.exclude.split(",") if series.strip()}
     excluded_levels: set[int] = set()
     for raw in args.exclude_levels.split(","):
         raw = raw.strip()
@@ -653,14 +657,16 @@ def main() -> None:
             raise SystemExit(
                 f"Invalid --exclude-levels value {raw!r}; expected integers"
             ) from exc
-    sources = {
-        series: path for series, path in sources.items() if series not in excluded
-    }
-    if not sources:
-        raise SystemExit(
-            "No result series remain after exclusion"
-            f" (excluded: {', '.join(sorted(excluded)) or 'none'})."
-        )
+    if args.include:
+        wanted = [series.strip() for series in args.include if series.strip()]
+        missing = [s for s in wanted if s not in sources]
+        if missing:
+            raise SystemExit(
+                "No JSONL for --include series: "
+                + ", ".join(missing)
+                + f". Available: {', '.join(sources) or 'none'}"
+            )
+        sources = {series: sources[series] for series in wanted}
 
     metas: dict[str, dict | None] = {}
     loaded: dict[str, tuple[list[dict], list[dict]]] = {}
@@ -682,8 +688,8 @@ def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
 
     print(f"benchmark={args.benchmark}")
-    if excluded:
-        print(f"excluded={', '.join(sorted(excluded))}")
+    if args.include:
+        print(f"include={','.join(args.include)}")
     if excluded_levels:
         print(
             "excluded_levels="

@@ -26,6 +26,10 @@ def test_result_series_rlp_vera() -> None:
         == "rlp-phoenix-c0p125"
     )
     assert result_series_name("rlp", "us-phoenix-1", rlp_cpu=1.0) == "rlp-phoenix"
+    assert (
+        result_series_name("rlp", "vera", rlp_cpu=0.125, rlp_cpu_max=1)
+        == "rlp-vera-c0p125-max1"
+    )
     assert result_series_name("rlp", "arm64-test-1") == "rlp-arm64"
     assert result_series_name("rlp", None) == "rlp-x86"
 

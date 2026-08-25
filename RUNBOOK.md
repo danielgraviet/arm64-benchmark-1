@@ -1,5 +1,10 @@
 # RUNBOOK
 
+UV_NO_SYNC=1 uv run main.py --benchmark agent --runner rlp --target us-phoenix-1 \
+  --snapshot dtgraviet/vera-agent-benchmark:latest \
+  --levels 1 8 22 44 88 132 176 --n 200 --seed 42 -E 8
+
+
 ## Dev
 # Single-agent workload (local, no harness):
 uv run python -m workload.agent --n 10

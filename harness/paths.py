@@ -10,12 +10,21 @@ from harness.regions import ARM64_TARGETS, DAYTONA_GRAVITON5_TARGET
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def rlp_cpu_series_suffix(cpu: float | None) -> str:
-    """``-c0p125`` when create CPU is not 1.0, else empty (keep 1-vCPU series)."""
-    if cpu is None or abs(float(cpu) - 1.0) < 1e-9:
+def rlp_cpu_series_suffix(
+    cpu: float | None,
+    cpu_max: float | None = None,
+) -> str:
+    """``-c0p125`` / ``-c0p125-max1`` so burst ladders do not steal 1-vCPU series."""
+    parts: list[str] = []
+    if cpu is not None and abs(float(cpu) - 1.0) >= 1e-9:
+        text = f"{float(cpu):.6f}".rstrip("0").rstrip(".")
+        parts.append("c" + text.replace(".", "p"))
+    if cpu_max is not None:
+        text = f"{float(cpu_max):.6f}".rstrip("0").rstrip(".")
+        parts.append("max" + text.replace(".", "p"))
+    if not parts:
         return ""
-    text = f"{float(cpu):.6f}".rstrip("0").rstrip(".")
-    return "-c" + text.replace(".", "p")
+    return "-" + "-".join(parts)
 
 
 def result_series_name(
@@ -24,6 +33,7 @@ def result_series_name(
     *,
     host_cpus: int | None = None,
     rlp_cpu: float | None = None,
+    rlp_cpu_max: float | None = None,
     numa_node: int | None = None,
     cpuset_mems: str | None = None,
 ) -> str:
@@ -31,8 +41,8 @@ def result_series_name(
 
     RLP default-region, ARM64, Phoenix (Turin), and onsite Vera runs are split
     so EDA can chart them as separate series (``rlp-x86`` vs ``rlp-arm64`` vs
-    ``rlp-phoenix`` vs ``rlp-vera``). Fractional ``--rlp-cpu`` appends
-    ``-c0p125`` so 0.125-CPU density ladders do not steal the 1-vCPU series.
+    ``rlp-phoenix`` vs ``rlp-vera``). Fractional ``--rlp-cpu`` / ``--rlp-cpu-max``
+    append ``-c0p125-max1`` so burst ladders do not steal the 1-vCPU series.
 
     Daytona ``--target us-east-1-arm`` (Graviton5) writes to ``daytona-graviton5``
     so it stays separate from default-target ``daytona`` (x86).
@@ -50,7 +60,7 @@ def result_series_name(
             base = "rlp-arm64"
         else:
             base = "rlp-x86"
-        return base + rlp_cpu_series_suffix(rlp_cpu)
+        return base + rlp_cpu_series_suffix(rlp_cpu, rlp_cpu_max)
     # Graviton5 target is linux-vm–only today.
     # Cold VM → daytona-graviton5; hot/memory snap → daytona-graviton5-hot.
     if target == DAYTONA_GRAVITON5_TARGET:
@@ -78,6 +88,7 @@ def default_output_path(
     target: str | None = None,
     host_cpus: int | None = None,
     rlp_cpu: float | None = None,
+    rlp_cpu_max: float | None = None,
     numa_node: int | None = None,
     cpuset_mems: str | None = None,
 ) -> Path:
@@ -88,6 +99,7 @@ def default_output_path(
         target,
         host_cpus=host_cpus,
         rlp_cpu=rlp_cpu,
+        rlp_cpu_max=rlp_cpu_max,
         numa_node=numa_node,
         cpuset_mems=cpuset_mems,
     )

@@ -1,0 +1,57 @@
+Vera node Phase 1 (NVIDIA Firecracker SMT)
+Captured: 2026-08-24 ~19:25 UTC (sshd session)
+Host: ipp8-d15-c2-vera-2
+User: daytona
+
+Do not treat this as a packing result. This is the box as we found it, before
+swapping Firecracker.
+
+--- CPU / SMT ---
+
+lscpu:
+  CPU(s):               352
+  On-line CPU(s) list:  0-351
+  Model name:           Olympus
+  Thread(s) per core:   2
+  Core(s) per socket:   88
+  Socket(s):            2
+  CPU(s) scaling MHz:   100%
+  NUMA node0 CPU(s):    0-87,176-263
+  NUMA node1 CPU(s):    88-175,264-351
+  NUMA node2 CPU(s):    (empty)
+  NUMA node3 CPU(s):    (empty)
+
+nproc: 352
+
+/sys/devices/system/cpu/smt/active: 1
+
+Read: 176 physical cores (88 per socket x 2), SMT on, 352 logical CPUs.
+NUMA interleaves physical cores then SMT siblings (classic 2-way SMT layout).
+
+--- Processes ---
+
+rlp-proxy:  /usr/local/bin/rlp-proxy          (pid 9005, up since Aug 20)
+rlp-runner: /usr/local/bin/rlp-runner         (pid 80241, id runner-vera-1)
+            nats://127.0.0.1:4222
+            public-ip 10.200.0.38
+            subnet 10.101.32.0/20
+            NATS token: REDACTED (was on the process argv; do not commit)
+rlp-api:    /usr/local/bin/rlp-api            (pid 1480846, up since Aug 22)
+
+No firecracker or jailer process was running at capture time (idle cell).
+
+--- Firecracker binaries ---
+
+command -v:
+  firecracker -> /usr/local/bin/firecracker
+  jailer      -> not on PATH (command -v printed only firecracker)
+
+firecracker --version:
+  Firecracker v1.16.1
+  Then: [anonymous-instance:main] Firecracker exiting successfully. exit_code=0
+
+Still needed before swap:
+  ls -l /usr/local/bin/firecracker /usr/local/bin/jailer
+  which jailer; find /usr -name jailer 2>/dev/null
+  runner sandbox/vCPU cap and jailer cpuset (176 vs 352)
+  free -h (analytics 4 GiB x 352 RAM gate)

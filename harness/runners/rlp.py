@@ -8,7 +8,7 @@ import time
 from typing import Any
 
 from dotenv import load_dotenv
-from rlp import Daytona, Resources
+from rlp import Daytona
 
 from harness import rlp_client_tuning
 from harness.benchmarks import AGENT, BenchmarkSpec
@@ -16,7 +16,7 @@ from harness.common import apply_workload_payload
 from harness.env_probe import failed_env, host_env, merge_env, parse_probe_stdout, probe_shell_command
 from harness.paths import ROOT
 from harness.regions import check_sandbox_arch, resolve_rlp_client_config
-from harness.rlp_create import create_rlp_sandbox
+from harness.rlp_create import build_rlp_resources, create_rlp_sandbox
 from harness.rlp_snapshots import is_registry_image_ref, resolve_boot_image
 
 # Native RLP disk snaps bake the app under /home/daytona/app (snapshot_common).
@@ -38,6 +38,10 @@ class RlpRunner:
         skip_arch_probe: bool = False,
         episodes_per_sandbox: int = 1,
         cpu: float = 1.0,
+        cpu_max: float | None = None,
+        memory: float | None = None,
+        memory_max: float | None = None,
+        disk: float | None = None,
     ) -> None:
         load_dotenv(ROOT / ".env")
         # Client-side throughput tuning (pool + poll cadence): without it, exec
@@ -49,14 +53,27 @@ class RlpRunner:
             raise ValueError("episodes_per_sandbox must be >= 1")
         if cpu <= 0:
             raise ValueError(f"cpu must be > 0, got {cpu}")
+        if cpu_max is not None and cpu_max < cpu:
+            raise ValueError(f"cpu_max ({cpu_max}) must be >= cpu ({cpu})")
+        if memory_max is not None and memory is not None and memory_max < memory:
+            raise ValueError(
+                f"memory_max ({memory_max}) must be >= memory ({memory})"
+            )
         self._spec = spec
         self._snapshot = snapshot or spec.artifact_name
         self._exec_timeout_s = exec_timeout_s
         self._target = target
         self._episodes_per_sandbox = episodes_per_sandbox
-        mem = spec.memory_gib()
-        # Match Docker mem; give a little disk headroom for parquet spills.
-        self._resources = Resources(cpu=cpu, memory=mem, disk=max(2, mem))
+        mem = spec.memory_gib() if memory is None else memory
+        disk_gib = max(2, mem) if disk is None else disk
+        self._omit_mode = cpu_max is not None
+        self._resources = build_rlp_resources(
+            cpu=cpu,
+            cpu_max=cpu_max,
+            memory=mem,
+            memory_max=memory_max,
+            disk=disk_gib,
+        )
         config = resolve_rlp_client_config(target, toolbox_url)
         self._client = Daytona(config)
         routing = getattr(config, "region_routing", None)
@@ -65,7 +82,9 @@ class RlpRunner:
             f"api_url={config.api_url!r} toolbox_url={config.toolbox_url!r} "
             f"region_routing={routing!r} "
             f"benchmark={spec.id!r} episodes_per_sandbox={episodes_per_sandbox} "
-            f"resources=cpu={cpu},memory={mem}GiB,disk={max(2, mem)}GiB "
+            f"resources=cpu={cpu},cpu_max={cpu_max},memory={mem}GiB,"
+            f"memory_max={memory_max},disk={disk_gib}GiB "
+            f"omit_dedicated={self._omit_mode} "
             f"client_tuning={rlp_client_tuning.settings()}"
         )
 
@@ -119,6 +138,7 @@ class RlpRunner:
             resources=self._resources,
             timeout=self._create_timeout_s,
             target=self._target,
+            omit_mode=self._omit_mode,
         )
         if not self._arch_probed:
             with self._arch_lock:

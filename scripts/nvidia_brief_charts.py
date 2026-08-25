@@ -22,29 +22,32 @@ OUT = ROOT / "eda_output" / "nvidia-brief"
 # Pinned 0-fail pairs from analysis.md. Do not replace with glob newest.
 PINS: dict[str, dict[str, str]] = {
     "agent": {
-        "Vera": "data/agent/rlp-vera/concurrency_20260821_030511_n200.jsonl",
-        "Zen 5": "data/agent/rlp-phoenix/concurrency_20260821_030926_n200.jsonl",
+        "Vera": "data/agent/rlp-vera/concurrency_20260821_161503_n200.jsonl",
+        "Zen 5": "data/agent/rlp-phoenix/concurrency_20260821_164629_n200.jsonl",
     },
     "disk": {
-        "Vera": "data/disk/rlp-vera/concurrency_20260819_202521_n128.jsonl",
-        "Zen 5": "data/disk/rlp-phoenix/concurrency_20260820_204117_n128.jsonl",
+        "Vera": "data/disk/rlp-vera/concurrency_20260821_162121_n128.jsonl",
+        "Zen 5": "data/disk/rlp-phoenix/concurrency_20260821_165436_n128.jsonl",
     },
     "analytics": {
-        "Vera": "data/analytics/rlp-vera/concurrency_20260819_222014_n200.jsonl",
-        "Zen 5": "data/analytics/rlp-phoenix/concurrency_20260820_201308_n200.jsonl",
+        "Vera": "data/analytics/rlp-vera/concurrency_20260821_162249_n200.jsonl",
+        "Zen 5": "data/analytics/rlp-phoenix/concurrency_20260821_171146_n200.jsonl",
     },
     "rl": {
-        "Vera": "data/rl/rlp-vera/concurrency_20260819_190856_n5000.jsonl",
-        "Zen 5": "data/rl/rlp-phoenix/concurrency_20260820_195139_n5000.jsonl",
+        "Vera": "data/rl/rlp-vera/concurrency_20260821_154514_n5000.jsonl",
+        "Zen 5": "data/rl/rlp-phoenix/concurrency_20260821_163715_n5000.jsonl",
     },
 }
 
-COLORS = {"Vera": "#8C1D40", "Zen 5": "#C7A000"}
-DURATION_NOTE = "Time per job is in-sandbox duration_ms (chip). Create / API / tunnel are not included."
+LEVELS = (1, 8, 22, 44, 88, 132, 176)
+COLORS = {"Vera": "#76B900", "Zen 5": "#7D7D7D"}  # NVIDIA green; gray for Zen 5
+DURATION_NOTE = (
+    "Time per job is in-sandbox duration (chip). Starting or stopping the sandbox "
+    "is not included. Lower is faster."
+)
 TPUT_NOTE = (
-    "Jobs per second uses the full wave wall, including sandbox create and client "
-    "dispatch. August 19–21 ladders were laptop/tunnel + pool 100; flattening after "
-    "88 is that client, not a Vera socket wall. Quote duration_ms for silicon."
+    "Jobs per second is how many jobs the wave finished, divided by wall-clock time. "
+    "Use time per job for chip speed."
 )
 
 
@@ -63,6 +66,11 @@ def _mean_duration_s(runs: list[dict], conc: int) -> float:
 def _tput(summaries: list[dict], conc: int) -> float:
     by = {s["concurrency"]: s for s in summaries}
     return float(by[conc]["throughput_per_sec"])
+
+
+def _xs(summaries: list[dict], max_c: int) -> list[int]:
+    present = {s["concurrency"] for s in summaries}
+    return [c for c in LEVELS if c <= max_c and c in present]
 
 
 def _style_ax(ax: plt.Axes, ylabel: str, title: str, footnote: str) -> None:
@@ -87,8 +95,8 @@ def plot_idle_duration() -> None:
     names = []
     for bench, name in labels:
         pins = PINS[bench]
-        v_runs, v_sum = _load_pin(pins["Vera"])
-        z_runs, z_sum = _load_pin(pins["Zen 5"])
+        v_runs, _v_sum = _load_pin(pins["Vera"])
+        z_runs, _z_sum = _load_pin(pins["Zen 5"])
         vera.append(_mean_duration_s(v_runs, 1))
         zen.append(_mean_duration_s(z_runs, 1))
         names.append(name)
@@ -106,7 +114,7 @@ def plot_idle_duration() -> None:
         ax,
         "Seconds per job (one sandbox)",
         "Time to finish one job on one vCPU",
-        DURATION_NOTE + " Lower is faster.",
+        DURATION_NOTE,
     )
     fig.savefig(OUT / "01_idle_duration.png", dpi=150)
     plt.close(fig)
@@ -117,13 +125,13 @@ def plot_duration_vs_conc(bench: str, filename: str, title: str, max_c: int = 17
     fig, ax = plt.subplots(figsize=(9.5, 4.4))
     for series, rel in pins.items():
         runs, summaries = _load_pin(rel)
-        xs = [s["concurrency"] for s in summaries if s["concurrency"] <= max_c]
+        xs = _xs(summaries, max_c)
         ys = [_mean_duration_s(runs, c) for c in xs]
         ax.plot(xs, ys, marker="o", linewidth=2, color=COLORS[series], label=series)
         for x, y in zip(xs, ys):
             ax.annotate(f"{y:.2f}", (x, y), textcoords="offset points", xytext=(0, 7), ha="center", fontsize=7)
     ax.set_xlabel("Concurrent sandboxes")
-    ax.set_xticks(sorted({s["concurrency"] for s in _load_pin(pins["Vera"])[1] if s["concurrency"] <= max_c}))
+    ax.set_xticks([c for c in LEVELS if c <= max_c])
     _style_ax(ax, "Seconds per job", title, DURATION_NOTE + " Lower and flatter is better.")
     fig.savefig(OUT / filename, dpi=150)
     plt.close(fig)
@@ -134,13 +142,13 @@ def plot_tput_vs_conc(bench: str, filename: str, title: str, max_c: int = 176) -
     fig, ax = plt.subplots(figsize=(9.5, 4.4))
     for series, rel in pins.items():
         _runs, summaries = _load_pin(rel)
-        xs = [s["concurrency"] for s in summaries if s["concurrency"] <= max_c]
+        xs = _xs(summaries, max_c)
         ys = [_tput(summaries, c) for c in xs]
         ax.plot(xs, ys, marker="o", linewidth=2, color=COLORS[series], label=series)
         for x, y in zip(xs, ys):
             ax.annotate(f"{y:.1f}", (x, y), textcoords="offset points", xytext=(0, 7), ha="center", fontsize=7)
     ax.set_xlabel("Concurrent sandboxes")
-    ax.set_xticks(sorted({s["concurrency"] for s in _load_pin(pins["Vera"])[1] if s["concurrency"] <= max_c}))
+    ax.set_xticks([c for c in LEVELS if c <= max_c])
     _style_ax(ax, "Jobs per second (wave wall)", title, TPUT_NOTE)
     fig.savefig(OUT / filename, dpi=150)
     plt.close(fig)
@@ -154,8 +162,8 @@ def main() -> None:
     plot_tput_vs_conc("disk", "04_disk_throughput.png", "Local disk, jobs per second")
     plot_duration_vs_conc("analytics", "05_analytics_duration.png", "Analytics, time per job")
     plot_tput_vs_conc("analytics", "06_analytics_throughput.png", "Analytics, jobs per second")
-    plot_duration_vs_conc("rl", "07_numeric_duration.png", "Sequential numeric loop, time per job", max_c=352)
-    plot_tput_vs_conc("rl", "08_numeric_throughput.png", "Sequential numeric loop, jobs per second", max_c=352)
+    plot_duration_vs_conc("rl", "07_numeric_duration.png", "Sequential numeric loop, time per job")
+    plot_tput_vs_conc("rl", "08_numeric_throughput.png", "Sequential numeric loop, jobs per second")
     print(f"Wrote charts to {OUT}/")
     for path in sorted(OUT.glob("*.png")):
         print(f"  - {path.name}")

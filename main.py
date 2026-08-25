@@ -114,10 +114,38 @@ def main() -> None:
         type=float,
         default=1.0,
         help=(
-            "RLP create Resources.cpu (default 1). Use 0.125 for density "
-            "ladders after the Phoenix burst cap dropped 16→1. Results go "
-            "under data/<bench>/rlp-<cell>-c0p125/ when not 1.0."
+            "RLP create Resources.cpu guarantee (default 1). Use 0.125 with "
+            "--rlp-cpu-max for burstable density. Results go under "
+            "data/<bench>/rlp-<cell>-c0p125/ when not 1.0."
         ),
+    )
+    parser.add_argument(
+        "--rlp-cpu-max",
+        type=float,
+        default=None,
+        help=(
+            "RLP Resources.cpu_max burst cap in vCPUs (e.g. 1). Omits "
+            "mode=dedicated so the cell does not reserve a full vCPU. "
+            "Requires eng rlp-sdk Resources.cpu_max."
+        ),
+    )
+    parser.add_argument(
+        "--rlp-memory",
+        type=float,
+        default=None,
+        help="RLP Resources.memory GiB guarantee (default: benchmark docker_memory)",
+    )
+    parser.add_argument(
+        "--rlp-memory-max",
+        type=float,
+        default=None,
+        help="RLP Resources.memory_max GiB burst cap (e.g. 4)",
+    )
+    parser.add_argument(
+        "--rlp-disk",
+        type=float,
+        default=None,
+        help="RLP Resources.disk GiB (default: max(2, memory))",
     )
     parser.add_argument(
         "--host-cpus",
@@ -174,6 +202,25 @@ def main() -> None:
         parser.error("--rlp-cpu is only valid with --runner rlp")
     if args.rlp_cpu <= 0:
         parser.error("--rlp-cpu must be > 0")
+    burst_flags = (
+        args.rlp_cpu_max is not None
+        or args.rlp_memory is not None
+        or args.rlp_memory_max is not None
+        or args.rlp_disk is not None
+    )
+    if burst_flags and args.runner != "rlp":
+        parser.error(
+            "--rlp-cpu-max / --rlp-memory / --rlp-memory-max / --rlp-disk "
+            "are only valid with --runner rlp"
+        )
+    if args.rlp_cpu_max is not None and args.rlp_cpu_max < args.rlp_cpu:
+        parser.error("--rlp-cpu-max must be >= --rlp-cpu")
+    if (
+        args.rlp_memory_max is not None
+        and args.rlp_memory is not None
+        and args.rlp_memory_max < args.rlp_memory
+    ):
+        parser.error("--rlp-memory-max must be >= --rlp-memory")
     if args.host_cpus is not None and args.runner not in ("docker", "ec2"):
         parser.error("--host-cpus is only valid with --runner docker or ec2")
     if args.host_cpus is not None and args.host_cpus < 1:
@@ -242,6 +289,7 @@ def main() -> None:
             target=args.target,
             host_cpus=args.host_cpus,
             rlp_cpu=args.rlp_cpu if args.runner == "rlp" else None,
+            rlp_cpu_max=args.rlp_cpu_max if args.runner == "rlp" else None,
             numa_node=args.numa_node,
             cpuset_mems=args.cpuset_mems,
         )
@@ -252,6 +300,8 @@ def main() -> None:
         f"episodes_per_sandbox={args.episodes_per_sandbox} "
         f"host_cpus={args.host_cpus!r} numa_node={args.numa_node!r} "
         f"cpuset_mems={args.cpuset_mems!r} rlp_cpu={args.rlp_cpu!r} "
+        f"rlp_cpu_max={args.rlp_cpu_max!r} rlp_memory={args.rlp_memory!r} "
+        f"rlp_memory_max={args.rlp_memory_max!r} rlp_disk={args.rlp_disk!r} "
         f"hold_then_exec={args.hold_then_exec} output={output}"
     )
 
@@ -266,6 +316,10 @@ def main() -> None:
         "host_cpus": args.host_cpus,
         "numa_node": args.numa_node,
         "rlp_cpu": args.rlp_cpu if args.runner == "rlp" else None,
+        "rlp_cpu_max": args.rlp_cpu_max if args.runner == "rlp" else None,
+        "rlp_memory": args.rlp_memory if args.runner == "rlp" else None,
+        "rlp_memory_max": args.rlp_memory_max if args.runner == "rlp" else None,
+        "rlp_disk": args.rlp_disk if args.runner == "rlp" else None,
         "hold_then_exec": bool(args.hold_then_exec),
     }
     if args.runner == "rlp":

@@ -81,6 +81,10 @@ def build_runner(args: argparse.Namespace) -> Any:
             toolbox_url=args.toolbox_url,
             episodes_per_sandbox=args.episodes_per_sandbox,
             cpu=getattr(args, "rlp_cpu", 1.0),
+            cpu_max=getattr(args, "rlp_cpu_max", None),
+            memory=getattr(args, "rlp_memory", None),
+            memory_max=getattr(args, "rlp_memory_max", None),
+            disk=getattr(args, "rlp_disk", None),
         )
     if args.runner == "e2b":
         return E2bRunner(
