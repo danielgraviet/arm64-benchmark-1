@@ -1,13 +1,16 @@
 # RUNBOOK
 
+# Agent coding-agent v3 (Vera vs Zen 5) — see tickets/agent-v3-ladder.md
+# Zen5-calibrated --n 30 (~8s idle); prefer :v3 tag; hold-then-exec + dedicated 1 vCPU
 UV_NO_SYNC=1 uv run main.py --benchmark agent --runner rlp --target us-phoenix-1 \
-  --snapshot dtgraviet/vera-agent-benchmark:latest \
-  --levels 1 8 22 44 88 132 176 --n 200 --seed 42 -E 8
+  --snapshot dtgraviet/vera-agent-benchmark:v3 \
+  --levels 1 8 22 44 88 132 176 264 352 528 704 --n 30 --seed 42 -E 8 \
+  --hold-then-exec --rlp-cpu 1
 
 
 ## Dev
 # Single-agent workload (local, no harness):
-uv run python -m workload.agent --n 10
+uv run python -m workload.agent --n 30 --seed 42
 uv run python -m analytics.agent --n 2
 uv run python -m rl.agent --n 64
 uv run python -m evals.agent --n 1

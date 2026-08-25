@@ -113,15 +113,19 @@ class BenchmarkSpec:
 
 AGENT = BenchmarkSpec(
     id="agent",
-    task_name="repo-agent-v2",
+    task_name="repo-agent-v3",
     docker_image="vera-agent-benchmark",
     artifact_name="vera-agent-benchmark",
     module="workload.agent",
     include_paths=("pyproject.toml", "uv.lock", "workload"),
+    # Legacy v2 still imports vendored sqlite-utils; v3 only needs repo root on PYTHONPATH.
     pythonpath_extra="workload/repos/sqlite-utils",
     docker_memory="1g",
-    description="Repo-agent style CPU work: isolated tmp workspace, search/AST/edit/pytest/SQL",
-    registry_image="dtgraviet/vera-agent-benchmark:latest",
+    description=(
+        "Coding-agent v3: seed broken package → search → AST → oracle edit → heavy pytest "
+        "(no SQL); deterministic --n/--seed checksum"
+    ),
+    registry_image="dtgraviet/vera-agent-benchmark:v3",
 )
 
 ANALYTICS = BenchmarkSpec(

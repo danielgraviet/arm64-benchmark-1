@@ -71,6 +71,38 @@ LATENCY_NOTE = (
 DURATION_NOTE = (
     "duration_ms is in-sandbox CPU/IO; compare this for chip claims, not wall latency_ms"
 )
+TPUT_NOTE = "Throughput = completed runs / exec wall"
+
+SERIES_LABELS = {
+    "rlp-phoenix": "daytona-zen5",
+    "rlp-vera": "daytona-vera",
+}
+
+
+def series_label(series: str) -> str:
+    return SERIES_LABELS.get(series, series)
+
+
+# Hung toolbox clients can stretch the exec join; we still chart measured
+# exec_wall for every series so Vera and Zen 5 use the same packing rule.
+_EPISODES_DEFAULT = 8
+
+
+def completed_throughput(
+    summary: dict,
+    *,
+    episodes: int = _EPISODES_DEFAULT,
+    series: str | None = None,
+) -> float:
+    """Completed episodes / measured exec wall (no hang-cap; same for all series)."""
+    _ = (episodes, series)
+    runs = int(summary.get("runs") or 0)
+    fails = int(summary.get("failures") or 0)
+    ok = runs - fails
+    wall = summary.get("exec_wall_s")
+    if wall and float(wall) > 0:
+        return round(ok / float(wall), 2) if ok >= 0 else 0.0
+    return float(summary.get("throughput_per_sec") or 0)
 
 
 def series_color(series: str) -> str:
@@ -112,7 +144,9 @@ def latest_jsonl(benchmark: str, series: str) -> Path | None:
     paths.extend(base.glob("*/concurrency_*.jsonl"))
     if not paths:
         return None
-    return sorted(paths)[-1]
+    # mtime, not name: `patched704` sorts after `043313` and would freeze old
+    # 528/704 waves forever.
+    return max(paths, key=lambda p: p.stat().st_mtime)
 
 
 def discover_datasets(benchmark: str) -> dict[str, Path]:
@@ -210,17 +244,18 @@ def print_summary_table(
     metas: dict[str, dict | None] | None = None,
 ) -> None:
     print(LATENCY_NOTE)
+    print(TPUT_NOTE)
     print()
     metas = metas or {}
     for series, path in sources.items():
-        print(f"{series}: {path.relative_to(ROOT)}")
+        print(f"{series_label(series)}: {path.relative_to(ROOT)}")
         env_line = format_env_line(metas.get(series))
         if env_line:
             print(env_line)
     print()
 
     header = (
-        f"{'series':<16} {'conc':>5} {'p50_ms':>10} {'mean_ms':>10} "
+        f"{'series':<20} {'conc':>5} {'p50_ms':>10} {'mean_ms':>10} "
         f"{'p50_dur':>10} {'p99_ms':>10} {'tput/s':>8} "
         f"{'fail':>5} {'runners':>7} {'checksum':>8}"
     )
@@ -237,10 +272,10 @@ def print_summary_table(
             runners = s.get("distinct_runners")
             runners_s = f"{int(runners):7d}" if runners is not None else f"{'-':>7}"
             print(
-                f"{series:<16} {level:5d} "
+                f"{series_label(series):<20} {level:5d} "
                 f"{s['p50_ms']:10.1f} {mean_ms:10.1f} "
                 f"{float(p50_dur):10.1f} {s['p99_ms']:10.1f} "
-                f"{s['throughput_per_sec']:8.2f} "
+                f"{completed_throughput(s, series=series):8.2f} "
                 f"{s['failures']:5d} {runners_s} {str(s.get('checksum_ok')):>8}"
             )
         print()
@@ -275,7 +310,7 @@ def plot_grouped_metric(
             values = [by_level.get(level, 0) for level in levels]
         offset = (i - (len(series_list) - 1) / 2) * width
         bars = ax.bar(
-            x + offset, values, width, label=series, color=series_color(series)
+            x + offset, values, width, label=series_label(series), color=series_color(series)
         )
         ax.bar_label(bars, fmt="%.0f", padding=2, fontsize=7)
 
@@ -298,13 +333,13 @@ def plot_throughput(
     fig, ax = plt.subplots(figsize=(9, 5))
     for series, (_, summaries) in loaded.items():
         levels = [s["concurrency"] for s in summaries]
-        tput = [s["throughput_per_sec"] for s in summaries]
+        tput = [completed_throughput(s, series=series) for s in summaries]
         ax.plot(
             levels,
             tput,
             marker="o",
             linewidth=2,
-            label=series,
+            label=series_label(series),
             color=series_color(series),
         )
         for level, value in zip(levels, tput):
@@ -318,12 +353,12 @@ def plot_throughput(
             )
 
     ax.set_xlabel("Concurrency level")
-    ax.set_ylabel("Throughput (runs / sec)")
+    ax.set_ylabel("Throughput (completed runs / sec)")
     ax.set_title("Throughput vs concurrency")
     ax.set_xticks(all_levels(loaded))
     ax.legend()
     ax.grid(True, alpha=0.3)
-    fig.text(0.5, 0.01, LATENCY_NOTE, ha="center", fontsize=8, style="italic")
+    fig.text(0.5, 0.01, TPUT_NOTE, ha="center", fontsize=8, style="italic")
     fig.tight_layout()
     fig.subplots_adjust(bottom=0.18)
     fig.savefig(out / "throughput_vs_concurrency.png", dpi=150)
@@ -355,7 +390,7 @@ def plot_duration_line(
             durs,
             marker="o",
             linewidth=2,
-            label=series,
+            label=series_label(series),
             color=series_color(series),
         )
         for level, value in zip(levels, durs):
@@ -426,7 +461,7 @@ def plot_chip_speed_vs_concurrency(
             pcts,
             marker="o",
             linewidth=2,
-            label=series,
+            label=series_label(series),
             color=series_color(series),
         )
         for level, value in zip(levels, pcts):
@@ -486,7 +521,7 @@ def plot_duration_vs_concurrency(
             values.append(float(dur or 0))
         offset = (i - (len(series_list) - 1) / 2) * width
         bars = ax.bar(
-            x + offset, values, width, label=series, color=series_color(series)
+            x + offset, values, width, label=series_label(series), color=series_color(series)
         )
         ax.bar_label(bars, fmt="%.0f", padding=2, fontsize=7)
 
@@ -543,7 +578,7 @@ def plot_duration_boxplots(
         for key in ("medians", "whiskers", "caps", "fliers"):
             for artist in bp[key]:
                 artist.set_color(color)
-        ax.set_title(series)
+        ax.set_title(series_label(series))
         ax.set_xlabel("Concurrency level")
         ax.grid(axis="y", alpha=0.3)
 
@@ -587,7 +622,7 @@ def plot_latency_boxplots(
         for key in ("medians", "whiskers", "caps", "fliers"):
             for artist in bp[key]:
                 artist.set_color(color)
-        ax.set_title(series)
+        ax.set_title(series_label(series))
         ax.set_xlabel("Concurrency level")
         ax.grid(axis="y", alpha=0.3)
 
