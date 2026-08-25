@@ -6,6 +6,7 @@ and Vera cells get the right placement (see ``harness.regions``).
 
 from __future__ import annotations
 
+import inspect
 from typing import Any
 
 from rlp import CreateSandboxFromImageParams, Daytona, Resources
@@ -18,6 +19,36 @@ from harness.regions import (
     resolve_rlp_mode,
 )
 
+# Eng API maps cpu_max → vcpus_max; some SDK checkouts use one name or the other.
+_CPU_MAX_ALIASES = ("cpu_max", "vcpus_max", "max_cpu")
+_MEM_MAX_ALIASES = ("memory_max", "mem_max", "max_memory")
+
+
+def _resources_param_names() -> set[str]:
+    names: set[str] = set()
+    names.update(getattr(Resources, "__dataclass_fields__", {}) or {})
+    model_fields = getattr(Resources, "model_fields", None)
+    if isinstance(model_fields, dict):
+        names.update(model_fields)
+    try:
+        for name, param in inspect.signature(Resources).parameters.items():
+            if name == "self":
+                continue
+            if param.kind is inspect.Parameter.VAR_KEYWORD:
+                names.add("**")
+            else:
+                names.add(name)
+    except (TypeError, ValueError):
+        pass
+    return names
+
+
+def _pick_alias(wanted: tuple[str, ...], available: set[str]) -> str | None:
+    for name in wanted:
+        if name in available:
+            return name
+    return None
+
 
 def build_rlp_resources(
     *,
@@ -27,17 +58,33 @@ def build_rlp_resources(
     cpu_max: float | None = None,
     memory_max: int | float | None = None,
 ) -> Resources:
-    """Build ``Resources``, requiring eng SDK fields when burst caps are set."""
+    """Build ``Resources``, mapping burst caps onto whatever names this SDK has."""
+    available = _resources_param_names()
     kwargs: dict[str, Any] = {"cpu": cpu, "memory": memory, "disk": disk}
-    if cpu_max is not None:
-        kwargs["cpu_max"] = cpu_max
-    if memory_max is not None:
-        kwargs["memory_max"] = memory_max
-    fields = getattr(Resources, "__dataclass_fields__", {})
-    for name in ("cpu_max", "memory_max"):
-        if name in kwargs and name not in fields:
-            require_sdk_field(Resources, name, purpose=f"Resources.{name}")
-    return Resources(**{k: v for k, v in kwargs.items() if k in fields})
+    extra: list[tuple[tuple[str, ...], float | int | None]] = [
+        (_CPU_MAX_ALIASES, cpu_max),
+        (_MEM_MAX_ALIASES, memory_max),
+    ]
+    allow_extra = "**" in available
+    for aliases, value in extra:
+        if value is None:
+            continue
+        name = _pick_alias(aliases, available)
+        if name is None and allow_extra:
+            name = aliases[0]
+        if name is None:
+            have = ", ".join(sorted(n for n in available if n != "**")) or "(none)"
+            print(
+                f"rlp resources: SDK has no {aliases[0]} (tried {', '.join(aliases)}; "
+                f"fields={have}). Sending guarantee only; burst cap is the cell "
+                f"RLP_BURST_MAX_* default, not this flag.",
+                flush=True,
+            )
+            continue
+        kwargs[name] = value
+    if allow_extra:
+        return Resources(**kwargs)
+    return Resources(**{k: v for k, v in kwargs.items() if k in available})
 
 
 def create_rlp_sandbox(
@@ -91,13 +138,19 @@ def create_rlp_sandbox(
         mode=mode,
     )
     region = getattr(client, "_target", None)
+    def _first(*names: str) -> Any:
+        for name in names:
+            if hasattr(resources, name):
+                return getattr(resources, name)
+        return None
+
     print(
         f"rlp create: region={region!r} cpu_arch={cpu_arch!r} "
         f"cpu_type={cpu_type!r} mode={mode!r} image={image!r} "
         f"cpu={getattr(resources, 'cpu', None)!r} "
-        f"cpu_max={getattr(resources, 'cpu_max', None)!r} "
+        f"cpu_max={_first(*_CPU_MAX_ALIASES)!r} "
         f"memory={getattr(resources, 'memory', None)!r} "
-        f"memory_max={getattr(resources, 'memory_max', None)!r} "
+        f"memory_max={_first(*_MEM_MAX_ALIASES)!r} "
         f"disk={getattr(resources, 'disk', None)!r}",
         flush=True,
     )
