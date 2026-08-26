@@ -296,17 +296,21 @@ def _pytest(workspace: Path, *rel_paths: str) -> subprocess.CompletedProcess[str
 
 
 def verify_suite(workspace: Path, *, precheck_exit: int) -> dict[str, Any]:
-    """Full pytest including hidden tests (agent verify step)."""
+    """Full pytest including hidden tests (agent verify step).
+
+    Checksum fields are counts/exit only. Do **not** include the raw pytest
+    summary string — under pack it gains flaky ``N warnings`` / similar noise
+    and blows ``distinct_checksums`` while exit_code stays 0 (seen on Phoenix
+    c0p125 at 528/704).
+    """
     proc = _pytest(workspace)
     passed = proc.returncode == 0
     out = proc.stdout or ""
-    # Normalize summary: drop wall-clock ("in 1.23s") so checksums stay stable.
     summary_line = ""
     for line in reversed(out.splitlines()):
         if "passed" in line or "failed" in line:
             summary_line = re.sub(r"\s+in\s+[\d.]+s\s*$", "", line.strip())
             break
-    # Count passed/failed from summary for a stable digest (ignore order noise).
     passed_n = failed_n = 0
     m = re.search(r"(\d+)\s+passed", summary_line)
     if m:
@@ -319,8 +323,9 @@ def verify_suite(workspace: Path, *, precheck_exit: int) -> dict[str, Any]:
         "exit_code": proc.returncode,
         "passed_count": passed_n,
         "failed_count": failed_n,
-        "summary": summary_line,
         "precheck_exit": precheck_exit,
+        # summary kept only for failure messages — not part of this dict's hash path
+        # once omitted here (agent checksums the whole verify object).
     }
 
 
@@ -338,7 +343,8 @@ def run_coding_loop(workspace: Path, *, n: int, seed: int) -> dict[str, Any]:
     if not verify_result["passed"]:
         raise RuntimeError(
             f"verify failed: exit={verify_result['exit_code']} "
-            f"summary={verify_result['summary']!r}"
+            f"passed={verify_result['passed_count']} "
+            f"failed={verify_result['failed_count']}"
         )
     return {
         "seed": seed_result,

@@ -36,6 +36,7 @@ SERIES_ORDER = (
     "rlp-x86",
     "rlp-phoenix",
     "rlp-phoenix-c0p125",
+    "rlp-phoenix-c0p125-max1",
     "rlp-arm64",
     "rlp-vera",
     "rlp-vera-c0p125",
@@ -57,6 +58,7 @@ SERIES_COLORS = {
     "rlp": "#FF7F0E",  # legacy → same as x86
     "rlp-phoenix": "#7D7D7D",  # gray — OCI Phoenix / Zen 5 Turin
     "rlp-phoenix-c0p125": "#8A6D00",  # darker gold — 0.125 CPU density
+    "rlp-phoenix-c0p125-max1": "#B8860B",  # dark goldenrod — burst 0.125/max1
     "rlp-arm64": "#D62728",  # red
     "rlp-vera": "#76B900",  # NVIDIA green — onsite Vera RLP cell
     "rlp-vera-c0p125": "#C45C7A",  # lighter crimson — 0.125 CPU density
@@ -75,7 +77,11 @@ TPUT_NOTE = "Throughput = completed runs / exec wall"
 
 SERIES_LABELS = {
     "rlp-phoenix": "daytona-zen5",
+    "rlp-phoenix-c0p125": "daytona-zen5-c0p125",
+    "rlp-phoenix-c0p125-max1": "daytona-zen5-burst",
     "rlp-vera": "daytona-vera",
+    "rlp-vera-c0p125": "daytona-vera-c0p125",
+    "rlp-vera-c0p125-max1": "daytona-vera-burst",
 }
 
 

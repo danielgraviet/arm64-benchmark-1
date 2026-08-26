@@ -80,6 +80,7 @@ Add failure-rate panel for 352+; do not treat raw tput at 704 as chip scaling (l
 ## Status (2026-08-25)
 
 - Dedicated `--rlp-cpu 1` v3 ladders done (Zen5 + Vera) — use for duration through ~264 only
-- Phoenix **c0p125** clean through 704 (eng, post-ARP fix) — pair target
-- Vera **c0p125** v3: **pending** — calibrate `n` then full ladder on-node
-- Cancelled: `rlp-vera-c0p125-max1/concurrency_20260825_222112_n30.jsonl` (incomplete)
+- Plain `--rlp-cpu 0.125` **without** `--rlp-cpu-max` still sends `mode=dedicated` on Vera → ~350 Class B ceiling
+- Burst debug (`--rlp-cpu 0.125 --rlp-cpu-max 1`, `-E 1`): Vera **0 fails at 352/528/704**
+- Phoenix `…235735_n50.jsonl` (`0.125`, no max): 0 fail rows, but **checksum_ok false at 528/704** — pytest `summary` string (warnings) was hashed; fixed in coding_loop (drop `summary` from verify checksum). **Re-pull `:v3` before full sweep.**
+- Matched full sweep (pending): both chips `--n 50 --rlp-cpu 0.125 --rlp-cpu-max 1 -E 8`
