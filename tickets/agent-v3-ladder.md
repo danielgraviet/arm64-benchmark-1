@@ -4,75 +4,82 @@
 
 - Task: `repo-agent-v3` (default in `workload.agent` / `AGENT` harness spec)
 - Loop: seed broken package → multi-file search → AST → oracle patches → heavy pytest
-- No SQL as a cost center (legacy `--task repo-agent-v2` still available)
-- Image: `dtgraviet/vera-agent-benchmark:v3` (also tagged `:latest`; multi-arch amd64+arm64)
-- JSON contract unchanged: `task`, `iterations`, `duration_ms`, `checksum`
+- Image: `dtgraviet/vera-agent-benchmark:v3` (multi-arch amd64+arm64)
+- JSON contract: `task`, `iterations`, `duration_ms`, `checksum`
 
-## Calibrated `--n`
+## Matched pair (eng — use this for 352/528/704)
 
-| Host | Target idle (c=1 p50 `duration_ms`) | `--n` |
-|------|--------------------------------------|-------|
-| Zen 5 / Phoenix (measured) | ~8.2 s | **30** |
-| Local Mac (proxy) | heavier at same `n` — do not use Mac `n` on chip | — |
-| Vera | **TBD when cell reachable** — start **30**, trim/bump to 6–10 s | **30** |
+**Do not compare `--rlp-cpu 1` past ~348 on Vera.**
 
-Always re-check Vera c=1 before trusting a dual-chip chart.
+| Cell | `--rlp-cpu 1` ceiling (reserve_pct=99) | `--rlp-cpu 0.125` ceiling |
+|------|----------------------------------------|---------------------------|
+| Vera (352 total CPU) | **~348** sandboxes — **352 rung fails** | **~2,784** |
+| Phoenix (~380/runner) | ~381 | **~3,041** |
 
-## Recipe (same flags both chips)
+Class B (`no matching capacity`) at `--rlp-cpu 1` is **correct backpressure**, not a bug.
+Raising `reserve_pct` to 100 only buys 352 vs 348 on Vera — still short at 528/704.
 
-Prefer `:v3` so cells do not stick on a stale `:latest` digest.
+**Matched recipe:** both chips at **`--rlp-cpu 0.125`** (no dedicated 1-vCPU reservation).
+Phoenix reference: clean **`rlp-phoenix-c0p125`** ladder (0 failures through 704) after ARP sysctl fix.
 
 ```bash
 SNAP=dtgraviet/vera-agent-benchmark:v3
-N=30
-
-# Smoke c=1
-UV_NO_SYNC=1 uv run main.py --benchmark agent --runner rlp --target us-phoenix-1 \
-  --snapshot $SNAP --levels 1 --n $N --seed 42 -E 8 --hold-then-exec --rlp-cpu 1
-
-# Vera (requires on-node or tunnel; do not drive c≥88 via laptop tunnel)
-UV_NO_SYNC=1 uv run main.py --benchmark agent --runner rlp --target vera \
-  --snapshot $SNAP --levels 1 --n $N --seed 42 -E 8 --hold-then-exec --rlp-cpu 1
-```
-
-Checksum gate: same `(n,seed)` → same `checksum` on Vera and Zen 5.
-
-```bash
+N=<calibrate Vera c=1 to 6–10s — see below>
 LEVELS="1 8 22 44 88 132 176 264 352 528 704"
+FLAGS="--levels $LEVELS --n $N --seed 42 -E 8 --hold-then-exec --rlp-cpu 0.125"
 
-UV_NO_SYNC=1 uv run main.py --benchmark agent --runner rlp --target us-phoenix-1 \
-  --snapshot $SNAP --levels $LEVELS --n $N --seed 42 -E 8 --hold-then-exec --rlp-cpu 1
-
+# Vera (on-node only)
 UV_NO_SYNC=1 uv run main.py --benchmark agent --runner rlp --target vera \
-  --snapshot $SNAP --levels $LEVELS --n $N --seed 42 -E 8 --hold-then-exec --rlp-cpu 1
+  --snapshot $SNAP $FLAGS
+# → data/agent/rlp-vera-c0p125/
+
+# Phoenix (on-cell client)
+UV_NO_SYNC=1 uv run main.py --benchmark agent --runner rlp --target us-phoenix-1 \
+  --snapshot $SNAP $FLAGS
+# → data/agent/rlp-phoenix-c0p125/
 ```
 
-## Validation gates (before marketing)
+Optional burst caps (`--rlp-cpu-max 1`, memory/disk) go in **`rlp-vera-c0p125-max1`** — separate series; use only if eng asks. Plain **`0.125`** matches tonight's Phoenix ladder.
 
-| Gate | Pass |
-|------|------|
-| Checksum | Identical digests both chips at `(30, 42)` |
-| Chip idle | Vera p50 `duration_ms` clearly below Zen 5 at c=1 and through 0-fail levels |
-| SMT story | Through 264–352, Vera tput ≥ Zen 5 with a **visible** gap |
-| Overload | 528/704 may fail; prefer Vera plateau vs Zen 5 drop — if cliff is toolbox/live-cap, report fails, do not hang-cap one chip |
-| Fairness | Same image digest family, same flags, dedicated 1 vCPU, hold-then-exec, uncapped tput (= completed / measured exec wall) |
+## Calibrate `--n` (6–10 s idle at c=1)
 
-## EDA
+| Chip | Measured at `--n 30` | Target `--n` |
+|------|----------------------|--------------|
+| Zen 5 (c0p125 or c=1) | ~8 s | **30** |
+| Vera | **~3.1 s** at n=30 — too light | **bump** (try 60→80 on-node smoke) |
+
+Same `(n, seed)` → same checksum on both chips after calibration.
+
+**Smoke before full ladder:**
 
 ```bash
-uv run python eda.py --benchmark agent --include rlp-phoenix rlp-vera
+UV_NO_SYNC=1 uv run main.py --benchmark agent --runner rlp --target vera \
+  --snapshot dtgraviet/vera-agent-benchmark:v3 \
+  --levels 1 --n <N> --seed 42 -E 8 --hold-then-exec --rlp-cpu 0.125
 ```
 
-Lead slides: **duration** + **tput through SMT**; annotate 352+ if live-cap / toolbox dominates.
+## Legacy: dedicated 1 vCPU (`--rlp-cpu 1`)
 
-## Fairness notes (slides)
+Valid for **chip duration story through ≤264** where both fit under ceiling.
+Not valid for **528/704** compare — Vera hits 348 cap, Phoenix ARP/Class B issues.
 
-- Story is single cordoned box + SMT (176 physical → 352 logical on Vera); 704 is past-SMT pressure, not “SMT saturates at 700.”
-- Throughput definition is identical on both chips (no asymmetric hang wall).
-- Heavier coding loop improves per-core/SMT signal; remaining 352+ cliffs can still be platform (toolbox timeouts / live VM cap)—call that out rather than retuning the workload to fake a soft Zen 5 curve.
+- Zen 5: `data/agent/rlp-phoenix/concurrency_20260825_191628_n30.jsonl`
+- Vera: `data/agent/rlp-vera/concurrency_20260825_211103_n30.jsonl`
+
+## Charts
+
+Lead: **`duration_vs_concurrency`** and **`chip_speed_vs_concurrency`** (≤264 or 0-fail region).
+Pair series: `rlp-phoenix-c0p125` vs `rlp-vera-c0p125`.
+
+```bash
+uv run python eda.py --benchmark agent --include rlp-phoenix-c0p125 rlp-vera-c0p125
+```
+
+Add failure-rate panel for 352+; do not treat raw tput at 704 as chip scaling (live-cap + fail rows).
 
 ## Status (2026-08-25)
 
-- Zen 5 full ladder done: `data/agent/rlp-phoenix/concurrency_20260825_191628_n30.jsonl` (`--n 30`, `:v3`)
-  - 0 fails through **264**; **352** ~66% Daytona toolbox dial timeouts; 528/704 also noisy
-- Vera ladder: blocked (no cell access); re-run when on-node / tunnel is up before dual-chip EDA
+- Dedicated `--rlp-cpu 1` v3 ladders done (Zen5 + Vera) — use for duration through ~264 only
+- Phoenix **c0p125** clean through 704 (eng, post-ARP fix) — pair target
+- Vera **c0p125** v3: **pending** — calibrate `n` then full ladder on-node
+- Cancelled: `rlp-vera-c0p125-max1/concurrency_20260825_222112_n30.jsonl` (incomplete)
