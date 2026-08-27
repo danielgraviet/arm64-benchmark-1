@@ -27,6 +27,7 @@ RLP_TARGET_TOOLBOX: dict[str, str] = {
     "arm64-test-1": "https://toolbox.arm64-test-1.rlp.trydaytona.com/toolbox",
     "us-phoenix-1": "https://toolbox.us-phoenix-1.rlp.trydaytona.com/toolbox",
     "vera": "http://127.0.0.1:9000/toolbox",
+    "redswitches": "https://toolbox.redswitches.rlp.trydaytona.com/toolbox",
 }
 
 # Targets whose control plane is not the default RLP_API_URL.
