@@ -1,0 +1,19 @@
+tickets/phoenix-vera-matched-ladder-BROKEN.md
+  s_3dcba2732b72b2::t_43e13ec173872d 1-143
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "0ab074643a69e67f4656d3d3d07700b6e39d00aa",
+  "prompts": {},
+  "sessions": {
+    "s_3dcba2732b72b2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fb669db37ffeEVU6MBhi5fy2HN",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Vedran Jukic <vedran.jukic@gmail.com>"
+    }
+  }
+}
