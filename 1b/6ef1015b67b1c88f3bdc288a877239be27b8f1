@@ -1,0 +1,19 @@
+tickets/redswitches-2k-maxpack-run.md
+  s_3dcba2732b72b2::t_bc81fc8d3edcf9 1-145
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "1b6ef1015b67b1c88f3bdc288a877239be27b8f1",
+  "prompts": {},
+  "sessions": {
+    "s_3dcba2732b72b2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fb669db37ffeEVU6MBhi5fy2HN",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Vedran Jukic <vedran.jukic@gmail.com>"
+    }
+  }
+}
