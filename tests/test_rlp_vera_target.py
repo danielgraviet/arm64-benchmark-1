@@ -53,6 +53,7 @@ def test_vera_cpu_type_mode_arch() -> None:
 def test_validate_vera_target() -> None:
     validate_rlp_target("vera")
     validate_rlp_target("us-phoenix-1")
+    validate_rlp_target("redswitches")
     with pytest.raises(ValueError, match="Unknown RLP target"):
         validate_rlp_target("vera-typo")
 
@@ -98,6 +99,61 @@ def test_resolve_rlp_client_config_phoenix_missing_key(
     monkeypatch.delenv("PHOENIX_RLP_API_KEY", raising=False)
     with pytest.raises(ValueError, match="RLP_API_KEY"):
         resolve_rlp_client_config("us-phoenix-1")
+
+
+def test_resolve_rlp_client_config_redswitches(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RLP_API_KEY", "rlp_test")
+    monkeypatch.delenv("REDSWITCHES_RLP_API_KEY", raising=False)
+    monkeypatch.delenv("RS_KEY", raising=False)
+    monkeypatch.delenv("REDSWITCHES_RLP_API_URL", raising=False)
+    monkeypatch.delenv("REDSWITCHES_RLP_TOOLBOX_URL", raising=False)
+    monkeypatch.delenv("RS_API", raising=False)
+    monkeypatch.delenv("RS_TB", raising=False)
+    cfg = resolve_rlp_client_config("redswitches")
+    assert cfg.target == "redswitches"
+    assert cfg.api_url == "https://api.redswitches.rlp.trydaytona.com"
+    assert cfg.api_key == "rlp_test"
+    assert cfg.toolbox_url == (
+        "https://toolbox.redswitches.rlp.trydaytona.com/toolbox"
+    )
+    routing = getattr(cfg, "region_routing", None)
+    if routing is not None:
+        assert routing is False
+
+
+def test_resolve_rlp_client_config_redswitches_env_overrides(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("REDSWITCHES_RLP_API_URL", "https://api.example.test")
+    monkeypatch.setenv("REDSWITCHES_RLP_API_KEY", "rs_long_key")
+    monkeypatch.setenv(
+        "REDSWITCHES_RLP_TOOLBOX_URL", "https://toolbox.example.test/toolbox"
+    )
+    monkeypatch.delenv("RS_KEY", raising=False)
+    monkeypatch.delenv("RS_API", raising=False)
+    monkeypatch.delenv("RS_TB", raising=False)
+    cfg = resolve_rlp_client_config("redswitches")
+    assert cfg.api_url == "https://api.example.test"
+    assert cfg.api_key == "rs_long_key"
+    assert cfg.toolbox_url == "https://toolbox.example.test/toolbox"
+
+
+def test_resolve_rlp_client_config_redswitches_missing_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("REDSWITCHES_RLP_API_KEY", raising=False)
+    monkeypatch.delenv("RS_KEY", raising=False)
+    monkeypatch.delenv("RLP_API_KEY", raising=False)
+    with pytest.raises(ValueError, match="RLP_API_KEY"):
+        resolve_rlp_client_config("redswitches")
+
+
+def test_rlp_boot_image_hub_on_redswitches() -> None:
+    assert AGENT.boot_image_for_rlp("redswitches") == (
+        "dtgraviet/vera-agent-benchmark:v3"
+    )
 
 
 def test_resolve_rlp_client_config_vera(monkeypatch: pytest.MonkeyPatch) -> None:

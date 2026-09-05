@@ -37,10 +37,12 @@ SERIES_ORDER = (
     "rlp-phoenix",
     "rlp-phoenix-c0p125",
     "rlp-phoenix-c0p125-max1",
+    "rlp-phoenix-c0p125-max1-m512",
     "rlp-arm64",
     "rlp-vera",
     "rlp-vera-c0p125",
     "rlp-vera-c0p125-max1",
+    "rlp-vera-c0p125-max1-m512",
     "rlp",  # legacy folder name (pre split)
     "ec2",
 )
@@ -59,10 +61,12 @@ SERIES_COLORS = {
     "rlp-phoenix": "#7D7D7D",  # gray — OCI Phoenix / Zen 5 Turin
     "rlp-phoenix-c0p125": "#8A6D00",  # darker gold — 0.125 CPU density
     "rlp-phoenix-c0p125-max1": "#B8860B",  # dark goldenrod — burst 0.125/max1
+    "rlp-phoenix-c0p125-max1-m512": "#7D7D7D",  # gray — 512 MiB burst
     "rlp-arm64": "#D62728",  # red
     "rlp-vera": "#76B900",  # NVIDIA green — onsite Vera RLP cell
     "rlp-vera-c0p125": "#C45C7A",  # lighter crimson — 0.125 CPU density
     "rlp-vera-c0p125-max1": "#4CAF50",  # burst 0.125/max1
+    "rlp-vera-c0p125-max1-m512": "#76B900",  # Vera 512 MiB burst
     "ec2": "#8C564B",  # brown
 }
 
@@ -79,9 +83,11 @@ SERIES_LABELS = {
     "rlp-phoenix": "daytona-zen5",
     "rlp-phoenix-c0p125": "daytona-zen5-c0p125",
     "rlp-phoenix-c0p125-max1": "daytona-zen5-burst",
+    "rlp-phoenix-c0p125-max1-m512": "daytona-zen5-m512",
     "rlp-vera": "daytona-vera",
     "rlp-vera-c0p125": "daytona-vera-c0p125",
     "rlp-vera-c0p125-max1": "daytona-vera-burst",
+    "rlp-vera-c0p125-max1-m512": "daytona-vera-m512",
 }
 
 

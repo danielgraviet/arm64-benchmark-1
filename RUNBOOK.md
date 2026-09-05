@@ -1,5 +1,18 @@
 # RUNBOOK
 
+# Zen5 max-pack (match Vera 512 MiB run) — **on Phoenix cell API host only**
+# Pin target: data/agent/rlp-vera-c0p125-max1-m512/concurrency_20260826_230252_n50.jsonl
+# Full runbook: tickets/phoenix-agent-maxpack-run.md
+# Cleanup leftover sandboxes first (paginated — client.list() only returns page 1):
+#   uv run python scripts/phoenix_rlp_cleanup_sandboxes.py
+# --rlp-memory is GiB (0.5 = 512 MiB). SDK must round mem_mib (int(0.5)*1024 == 0 → HTTP 400).
+UV_NO_SYNC=1 uv run main.py --benchmark agent --runner rlp --target us-phoenix-1 \
+  --snapshot dtgraviet/vera-agent-benchmark:v3 \
+  --levels 704 880 1056 1408 1760 2112 2464 2784 \
+  --n 50 --seed 42 -E 8 --hold-then-exec \
+  --rlp-cpu 0.125 --rlp-cpu-max 1 --rlp-memory 0.5 \
+  --output data/agent/rlp-phoenix-c0p125-max1-m512/concurrency_$(date -u +%Y%m%d_%H%M%S)_n50.jsonl
+
 # Agent coding-agent v3 (Vera vs Zen 5) — see tickets/agent-v3-ladder.md
 # Zen5-calibrated --n 30 (~8s idle); prefer :v3 tag; hold-then-exec + dedicated 1 vCPU
 UV_NO_SYNC=1 uv run main.py --benchmark agent --runner rlp --target us-phoenix-1 \

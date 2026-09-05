@@ -76,6 +76,35 @@ img {
   object-fit: contain;
   object-position: left center;
 }
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.45em 0 0.85em;
+  font-size: 8.2pt;
+  line-height: 1.32;
+  table-layout: fixed;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+thead th {
+  background: #f0f0f0;
+  font-weight: 650;
+  vertical-align: bottom;
+}
+th, td {
+  border: 1px solid #bbb;
+  padding: 0.32em 0.4em;
+  vertical-align: top;
+  text-align: left;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+/* Narrow first column for numbered / workload labels */
+table th:first-child,
+table td:first-child {
+  width: 14%;
+}
 """
 
 
@@ -88,20 +117,24 @@ def find_chrome() -> Path:
     )
 
 
-def abs_img(match: re.Match[str], base: Path) -> str:
+def abs_img(match: re.Match[str], md_dir: Path, root: Path) -> str:
     alt, src = match.group(1), match.group(2)
     path = Path(src)
     if not path.is_absolute():
-        path = (base / src).resolve()
-    if not path.is_file():
+        candidates = [(md_dir / src).resolve(), (root / src).resolve()]
+        path = next((p for p in candidates if p.is_file()), None)
+        if path is None:
+            tried = ", ".join(str(p) for p in candidates)
+            raise SystemExit(f"Image not found: {src} (tried {tried})")
+    elif not path.is_file():
         raise SystemExit(f"Image not found: {path}")
     return f"![{alt}]({path.as_uri()})"
 
 
-def markdown_to_html(md_text: str, *, base: Path) -> str:
+def markdown_to_html(md_text: str, *, md_dir: Path, root: Path) -> str:
     md_text = re.sub(
         r"!\[([^\]]*)\]\(([^)]+)\)",
-        lambda m: abs_img(m, base),
+        lambda m: abs_img(m, md_dir, root),
         md_text,
     )
     body = markdown.markdown(md_text, extensions=["extra", "sane_lists"])
@@ -117,7 +150,7 @@ def markdown_to_html(md_text: str, *, base: Path) -> str:
     return (
         "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n"
         '<meta charset="utf-8"/>\n'
-        "<title>NVIDIA Vera compared with AMD EPYC Zen 5</title>\n"
+        "<title>Daytona Sandbox Compute — Chip Evaluation Summary</title>\n"
         f"<style>{CSS}</style>\n</head>\n<body>\n{body}\n</body>\n</html>\n"
     )
 
@@ -152,25 +185,29 @@ def main() -> None:
     if not md_path.is_file():
         raise SystemExit(f"Markdown not found: {md_path}")
 
-    html_doc = markdown_to_html(md_path.read_text(encoding="utf-8"), base=ROOT)
+    html_doc = markdown_to_html(
+        md_path.read_text(encoding="utf-8"), md_dir=md_path.parent, root=ROOT
+    )
     html_path = Path("/tmp/vera-zen5-brief.html")
     html_path.write_text(html_doc, encoding="utf-8")
 
     chrome = Path(args.chrome) if args.chrome else find_chrome()
+    tmp_pdf = pdf_path.with_suffix(pdf_path.suffix + ".tmp")
     subprocess.run(
         [
             str(chrome),
             "--headless=new",
             "--disable-gpu",
             "--no-pdf-header-footer",
-            f"--print-to-pdf={pdf_path}",
-            "--virtual-time-budget=8000",
+            f"--print-to-pdf={tmp_pdf}",
+            "--virtual-time-budget=15000",
             html_path.as_uri(),
         ],
         check=True,
         capture_output=True,
         text=True,
     )
+    tmp_pdf.replace(pdf_path)
     print(f"wrote {pdf_path} ({pdf_path.stat().st_size} bytes)")
 
 

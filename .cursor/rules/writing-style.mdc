@@ -1,0 +1,14 @@
+---
+description: Daniel's voice for briefs, diligence, and partner-facing docs. Always apply.
+alwaysApply: true
+---
+
+# Writing (Daniel)
+
+Follow [docs/writing-learnings.md](docs/writing-learnings.md). Treat `docs/qualcomm-sandbox-compute-brief.md` as the gold-standard voice for this kind of essay.
+
+- Short. Outcomes, learning, future-chip bar. No Investor Day recap, no flattering chip names, no number tables, no graphs unless asked.
+- Name chips and tradeoffs. Do not say "no single ISA wins everything."
+- Direct sentences. No em dashes, no semicolons, no consultant slogans.
+- One or two headline numbers in prose. Production tenancy equals peak performance.
+- Partnership sections only if they are specific technical questions, not "what we can teach you" headings with empty bullets.
