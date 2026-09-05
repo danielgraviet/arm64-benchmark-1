@@ -196,7 +196,7 @@ def test_toolbox_cli_override() -> None:
 
 def test_rlp_boot_image_hub_on_phoenix_and_vera() -> None:
     assert AGENT.boot_image_for_rlp("us-phoenix-1") == (
-        "dtgraviet/vera-agent-benchmark:latest"
+        "dtgraviet/vera-agent-benchmark:v3"
     )
     assert ANALYTICS.boot_image_for_rlp("vera") == (
         "dtgraviet/vera-agent-benchmark-analytics:latest"
