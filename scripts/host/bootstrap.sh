@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # One-time RedSwitches DUT setup: Python 3.13, uv sync, nofile, Codex, gh.
-# Run as root from a clone of this repo. Does not write .env secrets.
+# Run from a clone as root or as ubuntu with passwordless sudo.
+# Does not write .env secrets.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -12,17 +13,33 @@ NOFILE="${NOFILE:-1048576}"
 
 log() { printf '%s\n' "$*"; }
 
-need_root() {
-  if [[ "${EUID}" -ne 0 ]]; then
-    log "bootstrap must run as root on the DUT"
+as_root() {
+  if [[ "${EUID}" -eq 0 ]]; then
+    "$@"
+  elif sudo -n true 2>/dev/null; then
+    sudo "$@"
+  else
+    log "need root or passwordless sudo for: $*"
     exit 1
   fi
 }
 
+need_priv() {
+  if [[ "${EUID}" -eq 0 ]]; then
+    return
+  fi
+  if sudo -n true 2>/dev/null; then
+    log "running as $(whoami), using sudo"
+    return
+  fi
+  log "bootstrap needs root or passwordless sudo"
+  exit 1
+}
+
 apt_base() {
   export DEBIAN_FRONTEND=noninteractive
-  apt-get update -qq
-  apt-get install -y -qq git tmux curl ca-certificates python3-venv build-essential >/dev/null
+  as_root apt-get update -qq
+  as_root apt-get install -y -qq git tmux curl ca-certificates python3-venv build-essential >/dev/null
 }
 
 install_uv() {
@@ -49,19 +66,20 @@ install_python_and_sync() {
 }
 
 raise_nofile() {
-  mkdir -p /etc/security/limits.d
-  cat >/etc/security/limits.d/99-nofile.conf <<EOF
+  as_root mkdir -p /etc/security/limits.d /etc/systemd/system.conf.d
+  as_root tee /etc/security/limits.d/99-nofile.conf >/dev/null <<EOF
 * soft nofile ${NOFILE}
 * hard nofile ${NOFILE}
 root soft nofile ${NOFILE}
 root hard nofile ${NOFILE}
+ubuntu soft nofile ${NOFILE}
+ubuntu hard nofile ${NOFILE}
 EOF
-  mkdir -p /etc/systemd/system.conf.d
-  cat >/etc/systemd/system.conf.d/99-nofile.conf <<EOF
+  as_root tee /etc/systemd/system.conf.d/99-nofile.conf >/dev/null <<EOF
 [Manager]
 DefaultLimitNOFILE=${NOFILE}
 EOF
-  systemctl daemon-reexec || true
+  as_root systemctl daemon-reexec || true
   log "wrote PAM + systemd DefaultLimitNOFILE=${NOFILE} (new logins pick this up)"
 }
 
@@ -71,13 +89,13 @@ install_gh() {
     return
   fi
   curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
-    | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg status=none
-  chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
-  mkdir -p /etc/apt/sources.list.d
+    | as_root dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg status=none
+  as_root chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+  as_root mkdir -p /etc/apt/sources.list.d
   echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
-    >/etc/apt/sources.list.d/github-cli.list
-  apt-get update -qq
-  apt-get install -y -qq gh >/dev/null
+    | as_root tee /etc/apt/sources.list.d/github-cli.list >/dev/null
+  as_root apt-get update -qq
+  as_root apt-get install -y -qq gh >/dev/null
   log "gh $(gh --version | head -n1)"
 }
 
@@ -119,15 +137,16 @@ install_pubkey() {
     log "SSH_PUBKEY unset. Skip authorized_keys."
     return
   fi
-  mkdir -p /root/.ssh
-  chmod 700 /root/.ssh
-  touch /root/.ssh/authorized_keys
-  chmod 600 /root/.ssh/authorized_keys
-  if grep -qxF "${SSH_PUBKEY}" /root/.ssh/authorized_keys; then
-    log "SSH_PUBKEY already in authorized_keys"
+  local sshdir="${HOME}/.ssh"
+  mkdir -p "${sshdir}"
+  chmod 700 "${sshdir}"
+  touch "${sshdir}/authorized_keys"
+  chmod 600 "${sshdir}/authorized_keys"
+  if grep -qxF "${SSH_PUBKEY}" "${sshdir}/authorized_keys"; then
+    log "SSH_PUBKEY already in ${sshdir}/authorized_keys"
   else
-    printf '%s\n' "${SSH_PUBKEY}" >>/root/.ssh/authorized_keys
-    log "appended SSH_PUBKEY to /root/.ssh/authorized_keys"
+    printf '%s\n' "${SSH_PUBKEY}" >>"${sshdir}/authorized_keys"
+    log "appended SSH_PUBKEY to ${sshdir}/authorized_keys"
   fi
 }
 
@@ -142,14 +161,14 @@ bootstrap done. Still manual on this box:
   4. curl -fsS http://127.0.0.1:8088/health
   5. uv run pytest
   6. tmux new-session -s codex
-  7. On the Mac: Host rs-new in ~/.ssh/config with your ed25519 key.
+  7. On the Mac: ssh rs-new  (ubuntu@57.129.148.193)
 
 Do not reboot because MOTD said restart required.
 Do not use UV_NO_SYNC on this host. uv sync already selected Python 3.13.
 EOF
 }
 
-need_root
+need_priv
 apt_base
 install_uv
 install_python_and_sync

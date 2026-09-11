@@ -2,9 +2,7 @@
 
 This repo is the harness. On a RedSwitches DUT, Codex is the operator. GitHub is the sync plane. The Mac only `git pull`s to graph.
 
-## Where you are
-
-Cwd is the clone (usually `/root/arm64-benchmark-1`). The RLP API and toolbox are on localhost. Never drive a ladder from a laptop SSH tunnel. That measures the tunnel.
+Cwd is the clone (usually `/home/ubuntu/arm64-benchmark-1`). The RLP API and toolbox are on localhost. Never drive a ladder from a laptop SSH tunnel. That measures the tunnel.
 
 ## How to run
 

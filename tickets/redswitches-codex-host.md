@@ -7,12 +7,12 @@ The last box was painful because Cursor on the Mac was the operator. Password SS
 
 ## Once per box
 
-1. First login may still be a password. Install the Mac ed25519 pubkey, then stop using the password.
+1. First login may still be a password. This box is `ubuntu@57.129.148.193` (`oh2001`). Pubkey SSH is the path. On the Mac:
 
 ```
 Host rs-new
-  HostName <ip>
-  User root
+  HostName 57.129.148.193
+  User ubuntu
   IdentityFile ~/.ssh/id_ed25519
   IdentitiesOnly yes
 ```
@@ -20,9 +20,8 @@ Host rs-new
 2. Clone, then bootstrap as root:
 
 ```bash
-git clone https://github.com/danielgraviet/arm64-benchmark-1.git /root/arm64-benchmark-1
-cd /root/arm64-benchmark-1
-# optional: SSH_PUBKEY="$(cat ~/.ssh/id_ed25519.pub)"  on the Mac, paste on the box
+git clone https://github.com/danielgraviet/arm64-benchmark-1.git /home/ubuntu/arm64-benchmark-1
+cd /home/ubuntu/arm64-benchmark-1
 bash scripts/host/bootstrap.sh
 ```
 
