@@ -1,5 +1,49 @@
 # RUNBOOK
 
+tmux new-session -d -s vera-dense2k bash -lc "
+  cd /opt/bench
+  export PATH=\"\$HOME/.local/bin:\$PATH\" UV_NO_SYNC=1 PYTHONUNBUFFERED=1
+  set -o pipefail
+  UV_NO_SYNC=1 uv run main.py \
+    --benchmark agent --runner rlp --target vera \
+    --snapshot dtgraviet/vera-agent-benchmark:v3 \
+    --levels 44 88 176 352 528 704 880 1056 1408 1760 2000 \
+    --n 45 --seed 42 -E 8 --hold-then-exec \
+    --rlp-cpu 0.025 --rlp-cpu-max 1 \
+    --rlp-memory 0.0625 --rlp-memory-max 4 --rlp-disk 1 \
+    2>&1 | tee \"$LOG\"
+  echo END_EXIT=\$? | tee -a \"$LOG\"
+"
+
+# Zen5 9575F dense2k — match Vera n=45 / 0.025 / 64 MiB. On the DUT only.
+# Preferred: tickets/redswitches-codex-host.md and scripts/host/run_dense2k.sh
+# (Codex on the box, git push JSONL). Login shells default to ulimit -Sn 1024;
+# that plateaued the 2026-09-06 n=50 ladder at ~1018 with [Errno 24]. main.py
+# now raises NOFILE toward the hard cap and refuses to start if still too low.
+# Still set ulimit in the tmux wrapper so a stale checkout cannot repeat the wall.
+# LOG=/tmp/zen5-dense2k-n45.log
+# Pin localhost API+toolbox (same as Vera's on-node path). Login shells are
+# ulimit -Sn 1024; the wrapper and main.py both raise NOFILE.
+# tmux new-session -d -s zen5-dense2k bash scripts/host/run_dense2k.sh
+tmux new-session -d -s zen5-dense2k bash -lc "
+  cd /root/arm64-benchmark-1
+  ulimit -n 1048576
+  export PATH=\"\$HOME/.local/bin:/usr/local/bin:\$PATH\"
+  export UV_NO_SYNC=1 PYTHONUNBUFFERED=1
+  export REDSWITCHES_RLP_API_URL=http://127.0.0.1:8088
+  export REDSWITCHES_RLP_TOOLBOX_URL=http://127.0.0.1:9000/toolbox
+  set -o pipefail
+  UV_NO_SYNC=1 uv run main.py \
+    --benchmark agent --runner rlp --target redswitches \
+    --snapshot dtgraviet/vera-agent-benchmark:v3 \
+    --levels 44 88 176 352 528 704 880 1056 1408 1760 2000 \
+    --n 45 --seed 42 -E 8 --hold-then-exec \
+    --rlp-cpu 0.025 --rlp-cpu-max 1 \
+    --rlp-memory 0.0625 --rlp-memory-max 4 --rlp-disk 1 \
+    2>&1 | tee \"$LOG\"
+  echo END_EXIT=\$? | tee -a \"$LOG\"
+"
+
 # Zen5 max-pack (match Vera 512 MiB run) — **on Phoenix cell API host only**
 # Pin target: data/agent/rlp-vera-c0p125-max1-m512/concurrency_20260826_230252_n50.jsonl
 # Full runbook: tickets/phoenix-agent-maxpack-run.md
@@ -88,6 +132,13 @@ The harness auto-applies `harness/rlp_client_tuning.py` (SDK pool 100 -> 512,
 throughput plateaus at ~100/(episode+RTT) regardless of `--levels`, and create
 waves flood the link with status polls. Tune via `RLP_HTTP_MAX_CONNECTIONS`,
 `RLP_WAIT_POLL_{START_S,FACTOR,MAX_S}`.
+
+`main.py` also raises `RLIMIT_NOFILE` toward the hard cap (typically
+1,048,576) and records `rlimit_nofile` in JSONL meta. A login-shell default of
+1024 is not a chip result: the 2026-09-06 Zen5 dense ladder plateaued at
+~1018 concurrent sandboxes with `[Errno 24] Too many open files` while Vera
+(same recipe, higher client FD limit) reached 1,947. If the raise still leaves
+`soft < max(--levels) + 64`, the process exits before the first create.
 
 Raising the pool without tempering polls makes ladders worse (measured on
 phoenix: 24/s -> 9.8/s). A 352-wide create wave at 10Hz/sandbox is ~3.5k req/s

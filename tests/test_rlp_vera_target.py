@@ -31,6 +31,11 @@ def test_result_series_rlp_vera() -> None:
         == "rlp-vera-c0p125-max1"
     )
     assert result_series_name("rlp", "arm64-test-1") == "rlp-arm64"
+    assert result_series_name("rlp", "redswitches") == "rlp-redswitches"
+    assert (
+        result_series_name("rlp", "redswitches", rlp_cpu=0.025, rlp_cpu_max=1)
+        == "rlp-redswitches-c0p025-max1"
+    )
     assert result_series_name("rlp", None) == "rlp-x86"
 
 
@@ -196,7 +201,7 @@ def test_toolbox_cli_override() -> None:
 
 def test_rlp_boot_image_hub_on_phoenix_and_vera() -> None:
     assert AGENT.boot_image_for_rlp("us-phoenix-1") == (
-        "dtgraviet/vera-agent-benchmark:latest"
+        "dtgraviet/vera-agent-benchmark:v3"
     )
     assert ANALYTICS.boot_image_for_rlp("vera") == (
         "dtgraviet/vera-agent-benchmark-analytics:latest"

@@ -19,6 +19,7 @@ from pathlib import Path
 from harness.benchmarks import BENCHMARK_IDS, TBENCH, get_benchmark
 from harness.common import run_hold_suite, run_suite
 from harness.paths import default_output_path
+from harness.rlimit_nofile import require_nofile
 from harness.rlp_client_tuning import settings as rlp_client_tuning_settings
 from harness.runners import (
     DAYTONA_FAMILY,
@@ -260,6 +261,18 @@ def main() -> None:
             "(Phase 1 TB-style pack is --benchmark evals)"
         )
 
+    # Dense RLP ladders open ~1 FD per held sandbox. A login-shell 1024
+    # default plateaus near 1018 with [Errno 24] Too many open files — that
+    # is not silicon. Raise toward the hard cap and refuse to start if the
+    # ladder still cannot fit.
+    rlimit = require_nofile(max(args.levels))
+    print(
+        f"rlimit_nofile soft={rlimit['nofile_soft']} "
+        f"hard={rlimit['nofile_hard']} "
+        f"before={rlimit['nofile_soft_before']} "
+        f"raised={rlimit['nofile_raised']}"
+    )
+
     spec = get_benchmark(args.benchmark)
     if args.snapshot:
         artifact = args.snapshot
@@ -321,6 +334,7 @@ def main() -> None:
         "rlp_memory_max": args.rlp_memory_max if args.runner == "rlp" else None,
         "rlp_disk": args.rlp_disk if args.runner == "rlp" else None,
         "hold_then_exec": bool(args.hold_then_exec),
+        "rlimit_nofile": rlimit,
     }
     if args.runner == "rlp":
         meta["rlp_client_tuning"] = rlp_client_tuning_settings()

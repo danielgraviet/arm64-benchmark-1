@@ -20,7 +20,7 @@ Charts plot **three** cells: Vera, Phoenix (**Turin 9J45**, high core-count), an
 
 Daytona's product story is not only "faster sandboxes." It is that **coding-agent reinforcement learning turns sandboxes into part of the training loop**. Agents inspect repos, edit code, run commands, and re-test inside isolated environments; those rollouts feed policy / reward training on expensive accelerators. When the CPU-side environment is slow to start or slow to finish, **GPU trainers wait** — the classic RL "starve the cluster" failure mode.
 
-We measured that **rollout infrastructure tax** in a companion study comparing four execution substrates (single containers, hosted sandboxes, Kubernetes-orchestrated containers, and cloud VMs) under the same coding-agent workloads ([arXiv:2607.01415](https://arxiv.org/abs/2607.01415), _The Rollout Infrastructure Tax in Coding-Agent Reinforcement Learning_, SoCC 2026 submission). Headline results from that paper:
+We measured that **rollout infrastructure tax** in a companion study comparing four execution substrates (single containers, hosted sandboxes, Kubernetes-orchestrated containers, and cloud VMs) under the same coding-agent workloads ([arXiv:2607.01415](https://arxiv.org/abs/2607.01415), *The Rollout Infrastructure Tax in Coding-Agent Reinforcement Learning*, SoCC 2026 submission). Headline results from that paper:
 
 - Cold-start latency varied by up to **110×** across substrates.
 - For **one million** 150-step trajectories, substrate choice produced a **1.8×** spread in projected rollout worker-hours — about **5,316 extra worker-hours** between the slowest and fastest substrate (42.5 s vs 23.4 s per trajectory).
@@ -34,11 +34,13 @@ On this agent task, Vera completes an idle episode in about **7.0 s** vs about *
 
 Using the same 1M-trajectory projection style as the paper — worker-hours = (number of episodes × seconds per episode) / 3600, excluding model inference:
 
+
 | Chip          | Median episode time (this brief, c=1) | Projected worker-hours for 1M episodes |
 | ------------- | ------------------------------------- | -------------------------------------- |
 | Zen5          | ~17.0 s                               | ~**4,710 h**                           |
 | Vera          | ~7.0 s                                | ~**1,940 h**                           |
 | Saved on Vera | ~10 s / episode                       | ~**2,770 worker-hours**                |
+
 
 That is the same compounding math as the white paper's substrate gap: a few seconds per coding-agent episode becomes thousands of worker-hours at post-training scale. Faster episodes also mean **rollout batches arrive sooner to the GPU side**, so accelerators spend less time idle waiting for environments — the infrastructure tax the paper ties to underutilized training hardware.
 
@@ -62,9 +64,10 @@ Successful episodes return a matching checksum on all three cells, so Vera, Phoe
 
 **Throughput (jobs per second)** is completed sandbox episodes divided by the wave's exec wall clock. Higher is better. It answers: how many isolated agent sessions can the platform finish per second as we pack the machine?
 
-**p50 duration_ms** is the median time spent _inside_ the sandbox doing the agent loop. It excludes sandbox create, delete, and client network. Lower is better. It is the chip-facing metric for "how long does one agent episode take?"
+**p50 duration_ms** is the median time spent *inside* the sandbox doing the agent loop. It excludes sandbox create, delete, and client network. Lower is better. It is the chip-facing metric for "how long does one agent episode take?"
 
 ## Configuration
+
 
 | Setting                     | Value                                                                                                |
 | --------------------------- | ---------------------------------------------------------------------------------------------------- |
@@ -78,8 +81,9 @@ Successful episodes return a matching checksum on all three cells, so Vera, Phoe
 | CPU burst ceiling           | **1.0** vCPU (`--rlp-cpu-max 1`)                                                                     |
 | Memory / disk               | **1 GiB** memory through 704; Vera max-pack uses **512 MiB** (`--rlp-memory 0.5`) and **2 GiB** disk |
 | Vera cell                   | On-node client next to the Vera RLP runner (`aarch64`)                                               |
-| Zen5 — Phoenix (9J45)       | `--target us-phoenix-1` · Turin high **core-count** SKU (~384 threads) · **1 GiB** · on-cell client |
-| Zen5 — Redswitches (9575F)    | `--target redswitches` · Turin high **frequency** SKU (64C/128T) · **512 MiB** · RS cell API key     |
+| Zen5 — Phoenix (9J45)       | `--target us-phoenix-1` · Turin high **core-count** SKU (~384 threads) · **1 GiB** · on-cell client  |
+| Zen5 — Redswitches (9575F)  | `--target redswitches` · Turin high **frequency** SKU (64C/128T) · **512 MiB** · RS cell API key     |
+
 
 Matched recipe on both sides (base ladder, 1 GiB):
 
@@ -91,7 +95,7 @@ UV_NO_SYNC=1 uv run main.py --benchmark agent --runner rlp \
   --rlp-cpu 0.125 --rlp-cpu-max 1
 ```
 
-Redswitches (9575F) uses the same ladder and CPU burst; add **`--rlp-memory 0.5`** and **`--target redswitches`** (512 MiB avoids the mem:cpu ratio floor that would halve pack on that smaller cell).
+Redswitches (9575F) uses the same ladder and CPU burst; add `--rlp-memory 0.5` and `--target redswitches` (512 MiB avoids the mem:cpu ratio floor that would halve pack on that smaller cell).
 
 Vera max-pack extension (512 MiB, same CPU burst):
 
@@ -111,13 +115,15 @@ The **0.125 / max 1** CPU settings let both cells pack far past a hard 1-vCPU-pe
 
 Phoenix (9J45) is the primary Zen5 column below (1 GiB ladder). Redswitches (9575F) measured separately at 512 MiB — see charts for all three series.
 
+
 | Concurrency | Vera p50 duration | Phoenix p50 duration | 9575F p50 duration | Vera throughput | Phoenix throughput | 9575F throughput |
-|------------:|------------------:|---------------------:|-------------------:|----------------:|-------------------:|-----------------:|
-| 1 | 6,952 ms | 16,960 ms | 6,874 ms | 0.13 /s | 0.06 /s | 0.13 /s |
-| 88 | 7,032 ms | 17,180 ms | 11,695 ms | 10.59 /s | 4.84 /s | 6.59 /s |
-| 176 | 7,427 ms | 20,296 ms | 23,086 ms | 17.64 /s | 6.48 /s | 7.29 /s |
-| 352 | 13,663 ms | 36,272 ms | 47,416 ms | 23.80 /s | 9.86 /s | 7.19 /s |
-| 704 | 25,190 ms | 53,824 ms | 97,274 ms | 22.44 /s | 10.16 /s | 7.15 /s |
+| ----------- | ----------------- | -------------------- | ------------------ | --------------- | ------------------ | ---------------- |
+| 1           | 6,952 ms          | 16,960 ms            | 6,874 ms           | 0.13 /s         | 0.06 /s            | 0.13 /s          |
+| 88          | 7,032 ms          | 17,180 ms            | 11,695 ms          | 10.59 /s        | 4.84 /s            | 6.59 /s          |
+| 176         | 7,427 ms          | 20,296 ms            | 23,086 ms          | 17.64 /s        | 6.48 /s            | 7.29 /s          |
+| 352         | 13,663 ms         | 36,272 ms            | 47,416 ms          | 23.80 /s        | 9.86 /s            | 7.19 /s          |
+| 704         | 25,190 ms         | 53,824 ms            | 97,274 ms          | 22.44 /s        | 10.16 /s           | 7.15 /s          |
+
 
 Vera and Redswitches finished with **zero failed jobs** through 704. Phoenix had **one** failed job on the 1 GiB ladder.
 
@@ -133,3 +139,4 @@ Vera and Redswitches finished with **zero failed jobs** through 704. Phoenix had
   - Vera (512 MiB max-pack): `data/agent/rlp-vera-c0p125-max1-m512/concurrency_20260826_230252_n50.jsonl`
   - Zen5 Phoenix / 9J45 (1 GiB): `data/agent/rlp-phoenix-c0p125-max1/concurrency_20260826_012143_n50.jsonl`
   - Zen5 Redswitches / 9575F (512 MiB): `data/agent/rlp-redswitches-c0p125-max1/concurrency_20260828_183551_n50.jsonl`
+
