@@ -161,7 +161,7 @@ bootstrap done. Still manual on this box:
   4. curl -fsS http://127.0.0.1:8088/health
   5. uv run pytest
   6. tmux new-session -s codex
-  7. On the Mac: ssh rs-new  (ubuntu@57.129.148.193)
+  7. On the Mac: ssh rs-new  (ubuntu@57.128.100.53)
 
 Do not reboot because MOTD said restart required.
 Do not use UV_NO_SYNC on this host. uv sync already selected Python 3.13.

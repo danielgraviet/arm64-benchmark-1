@@ -1,0 +1,12 @@
+{"type":"meta","benchmark":"agent","runner":"rlp","target":"redswitches","n":45,"seed":42,"episodes_per_sandbox":8,"hold_then_exec":true,"source":"transcribed 2026-09-08 from live Zen5 n=45 ladder with FD limit raised","note":"summary-only tmp file; complete through c=2000"}
+{"type":"summary","concurrency":44,"runs":352,"failures":0,"throughput_per_sec":5.87,"p50_duration_ms":6721.5,"exec_wall_s":59.916}
+{"type":"summary","concurrency":88,"runs":704,"failures":0,"throughput_per_sec":7.4,"p50_duration_ms":9425.0,"exec_wall_s":95.144}
+{"type":"summary","concurrency":176,"runs":1408,"failures":0,"throughput_per_sec":8.31,"p50_duration_ms":19547.0,"exec_wall_s":169.418}
+{"type":"summary","concurrency":352,"runs":2816,"failures":0,"throughput_per_sec":8.21,"p50_duration_ms":40389.0,"exec_wall_s":343.119}
+{"type":"summary","concurrency":528,"runs":4224,"failures":0,"throughput_per_sec":8.18,"p50_duration_ms":61653.0,"exec_wall_s":516.264}
+{"type":"summary","concurrency":704,"runs":5632,"failures":0,"throughput_per_sec":8.14,"p50_duration_ms":82341.0,"exec_wall_s":692.194}
+{"type":"summary","concurrency":880,"runs":7040,"failures":0,"throughput_per_sec":8.1,"p50_duration_ms":103294.0,"exec_wall_s":869.254}
+{"type":"summary","concurrency":1056,"runs":8448,"failures":0,"throughput_per_sec":8.05,"p50_duration_ms":124610.5,"exec_wall_s":1049.796}
+{"type":"summary","concurrency":1408,"runs":11264,"failures":0,"throughput_per_sec":8.06,"p50_duration_ms":167023.0,"exec_wall_s":1398.354}
+{"type":"summary","concurrency":1760,"runs":14080,"failures":0,"throughput_per_sec":8.04,"p50_duration_ms":209551.5,"exec_wall_s":1751.665}
+{"type":"summary","concurrency":2000,"runs":16000,"failures":0,"throughput_per_sec":8.07,"p50_duration_ms":236736.5,"exec_wall_s":1981.899}

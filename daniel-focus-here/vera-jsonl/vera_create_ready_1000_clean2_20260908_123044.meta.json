@@ -1,0 +1,74 @@
+{
+  "meta": {
+    "type": "meta",
+    "benchmark": "create-ready",
+    "runner": "rlp",
+    "target": "vera",
+    "artifact": "dtgraviet/vera-agent-benchmark:v3",
+    "artifact_digest": null,
+    "sandboxes_requested": 1000,
+    "workers": 1000,
+    "probe": "echo ready",
+    "cpu": 0.025,
+    "memory": 0.0625,
+    "disk": 1.0,
+    "timeout_s": 180,
+    "probe_timeout_s": 60,
+    "started_at_utc": "2026-09-08T12:30:44Z",
+    "client_host": "ipp8-d15-c2-vera-1",
+    "ulimit_nofile_soft": 65536,
+    "ulimit_nofile_hard": 65536,
+    "rlp_client_tuning": {
+      "http_max_connections": 1024,
+      "wait_poll_start_s": 0.25,
+      "wait_poll_factor": 1.5,
+      "wait_poll_max_s": 2.0
+    },
+    "git_sha": null,
+    "argv": [
+      "scripts/rlp_light_create_fleet.py",
+      "--target",
+      "vera",
+      "--count",
+      "1000",
+      "--workers",
+      "1000",
+      "--image",
+      "dtgraviet/vera-agent-benchmark:v3",
+      "--probe",
+      "echo ready",
+      "--output",
+      "results/vera-jsonl/vera_create_ready_1000_clean2_20260908_123044.jsonl"
+    ],
+    "socket_pin": {
+      "slice_cpus": "0-87,176-263",
+      "slice_mems": "0",
+      "vms_cpus": "0-87,176-263",
+      "vms_mems": "0"
+    },
+    "env": {
+      "arch": "aarch64",
+      "cpu_model": "Olympus",
+      "cpu_count": 352,
+      "platform": "Linux-6.17.0-1029-nvidia-64k-aarch64-with-glibc2.43",
+      "host_arch": "aarch64",
+      "host_cpu": "Olympus",
+      "sockets": "2",
+      "probe": "create-fleet-host"
+    }
+  },
+  "summary": {
+    "type": "summary",
+    "sandboxes_requested": 1000,
+    "sandboxes_created": 1000,
+    "ok": 1000,
+    "failed": 0,
+    "ready_wall_s": 10.673778799013235,
+    "create_max_s": 10.375453441985883,
+    "create_p50_s": 3.2394071239978075,
+    "create_p95_s": 10.124985379821737,
+    "delete_wall_s": 1.2850802559987642,
+    "ended_at_utc": "2026-09-08T12:30:56Z",
+    "status": "ok"
+  }
+}

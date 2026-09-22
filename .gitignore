@@ -14,3 +14,6 @@ wheels/
 
 # macOS
 .DS_Store
+
+# Generated NVIDIA pack (fresh git repo lives here or in ../daytona-agent-bench)
+.generated/

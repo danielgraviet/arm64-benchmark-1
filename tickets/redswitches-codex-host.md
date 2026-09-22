@@ -5,13 +5,25 @@
 
 The last box was painful because Cursor on the Mac was the operator. Password SSH, `expect`, `/tmp` wrappers, `UV_NO_SYNC=1`, and `scp` of JSONL. This host is self-contained. Codex runs on the box. GitHub holds code and results. The Mac graphs.
 
+## This box
+
+| | |
+|---|---|
+| SSH | `ssh rs-new` or `ubuntu@57.128.100.53` |
+| Chip | AMD EPYC 9755 (higher-frequency Zen5 cell for Vera compare) |
+| Clone | `/home/ubuntu/arm64-benchmark-1` |
+| Python | 3.13 via `uv` (plain `uv run`, no `UV_NO_SYNC`) |
+| Login ulimit | 1048576 |
+
+RLP is **not installed** here yet. Wait until eng has the stack up (`docker ps` shows postgresql and nats) and `curl -fsS http://127.0.0.1:8088/health` returns ok. Then paste `RLP_API_KEY` into `.env`.
+
 ## Once per box
 
-1. First login may still be a password. This box is `ubuntu@57.129.148.193` (`oh2001`). Pubkey SSH is the path. On the Mac:
+1. Pubkey SSH on the Mac:
 
 ```
 Host rs-new
-  HostName 57.129.148.193
+  HostName 57.128.100.53
   User ubuntu
   IdentityFile ~/.ssh/id_ed25519
   IdentitiesOnly yes
@@ -40,10 +52,9 @@ printenv OPENAI_API_KEY | codex login --with-api-key
 
 Or login on the Mac and copy `~/.codex/auth.json` to the box. Treat that file like a password.
 
-6. Smoke:
+6. Smoke (skip `:8088/health` until eng has RLP up):
 
 ```bash
-curl -fsS http://127.0.0.1:8088/health
 uv run pytest
 scripts/host/status.sh
 ```

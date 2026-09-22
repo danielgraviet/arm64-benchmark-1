@@ -1,0 +1,3 @@
+{"type":"failure","target":"zen5","sandboxes_created":2000,"attempt":1,"failure":"create job not picked up by any runner within 60s (no matching capacity)"}
+{"type":"failure","target":"zen5","sandboxes_created":2000,"attempt":2,"failure":"create job not picked up by any runner within 60s (no matching capacity)"}
+{"type":"failure","target":"zen5","sandboxes_created":2000,"attempt":3,"failure":"create job not picked up by any runner within 60s (no matching capacity)"}

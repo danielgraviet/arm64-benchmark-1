@@ -1,0 +1,4 @@
+{"type":"ready","target":"vera","sandboxes_created":1000,"total_time_s":10.801183697010856,"ok":1000,"source":"vera_create_ready_1000_20260908_121324.jsonl"}
+{"type":"ready","target":"vera","sandboxes_created":1000,"total_time_s":10.765178070985712,"ok":1000,"source":"vera_create_ready_1000_rep2_20260908_121545.jsonl"}
+{"type":"ready","target":"vera","sandboxes_created":1000,"total_time_s":10.656738299003337,"ok":1000,"source":"vera_create_ready_1000_clean_20260908_122335.jsonl"}
+{"type":"ready","target":"vera","sandboxes_created":1000,"total_time_s":10.673778799013235,"ok":1000,"source":"vera_create_ready_1000_clean2_20260908_123044.jsonl"}

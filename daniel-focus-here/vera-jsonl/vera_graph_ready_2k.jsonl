@@ -1,0 +1,4 @@
+{"type": "ready", "target": "vera", "sandboxes_created": 2000, "total_time_s": 27.27191844396293, "ok": 2000, "source": "vera_create_ready_2000_rep1_20260908_133315.jsonl"}
+{"type": "ready", "target": "vera", "sandboxes_created": 2000, "total_time_s": 27.764643509988673, "ok": 2000, "source": "vera_create_ready_2000_rep2_20260908_133731.jsonl"}
+{"type": "ready", "target": "vera", "sandboxes_created": 2000, "total_time_s": 27.208611470006872, "ok": 2000, "source": "vera_create_ready_2000_clean_20260908_140442.jsonl"}
+{"type": "stats", "sandboxes_created": 2000, "n": 3, "mean_s": 27.41505780798616, "stddev_s": 0.30440033758409546, "ci95_s": 0.7562333892865758, "ok": 2000}
