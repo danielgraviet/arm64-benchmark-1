@@ -52,7 +52,7 @@ rm -f daniel-focus-here/zen5-9755-jsonl/.gitkeep
     --levels 44 88 176 352 528 704 880 1056 1408 1760 2000 \
     --n 45 --seed 42 -E 8 --hold-then-exec \
     --rlp-cpu 0.025 --rlp-cpu-max 1 \
-    --rlp-memory 0.0625 --rlp-memory-max 4 --rlp-disk 1 \
+    --rlp-memory 0.0625 --rlp-memory-max 0.5 --rlp-disk 1 \
     --output "${OUT}"
   status=$?
   if [[ "${status}" -eq 0 && -f "${OUT}" ]]; then

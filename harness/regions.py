@@ -229,11 +229,15 @@ def resolve_rlp_client_config(
                 "RLP_API_KEY, REDSWITCHES_RLP_API_KEY, or RS_KEY is required for "
                 "--target redswitches"
             )
+        # Create body uses config.target as `region`. This 9755 cell's region id
+        # is `epyc9755`, not the harness alias `redswitches`. Override with
+        # REDSWITCHES_RLP_REGION / RS_REGION when on-box.
+        region = _env_first("REDSWITCHES_RLP_REGION", "RS_REGION") or target
         return _daytona_config(
             api_url=api_url,
             api_key=api_key,
             toolbox_url=resolved_toolbox,
-            target=target,
+            target=region,
             region_routing=False,
         )
 
