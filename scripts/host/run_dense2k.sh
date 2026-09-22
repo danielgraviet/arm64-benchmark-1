@@ -21,11 +21,19 @@ OUT="daniel-focus-here/zen5-9755-jsonl/concurrency_${STAMP}_n45.jsonl"
 OUT_DATA="data/agent/rlp-redswitches-9755-c0p025-max1/concurrency_${STAMP}_n45.jsonl"
 ulimit -n 1048576
 
+# Keep eng editable rlp-sdk (cpu_max / memory_max). Bare uv run reverts to PyPI.
+export UV_NO_SYNC=1
+
 if [[ -f "${ROOT}/.env" ]]; then
   set -a
   # shellcheck disable=SC1091
   source "${ROOT}/.env"
   set +a
+fi
+
+if ! UV_NO_SYNC=1 uv run python -c 'from rlp import Resources; assert "cpu_max" in Resources.__dataclass_fields__'; then
+  echo "eng rlp-sdk missing cpu_max. Run: bash scripts/host/install_eng_rlp_sdk.sh" >&2
+  exit 1
 fi
 
 mkdir -p "$(dirname "${OUT}")" "$(dirname "${OUT_DATA}")"
@@ -34,11 +42,11 @@ rm -f daniel-focus-here/zen5-9755-jsonl/.gitkeep
 
 {
   echo "=== CLEANUP $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
-  uv run python scripts/phoenix_rlp_cleanup_sandboxes.py --target redswitches
+  UV_NO_SYNC=1 uv run python scripts/phoenix_rlp_cleanup_sandboxes.py --target redswitches
   echo "FC=$(pgrep -c firecracker 2>/dev/null || true)"
-  echo "=== START $(date -u +%Y-%m-%dT%H:%M:%SZ) ulimit=$(ulimit -Sn) output=${OUT} ==="
+  echo "=== START $(date -u +%Y-%m-%dT%H:%M:%SZ) ulimit=$(ulimit -Sn) output=${OUT} UV_NO_SYNC=${UV_NO_SYNC} ==="
   set +e
-  uv run main.py \
+  UV_NO_SYNC=1 uv run main.py \
     --benchmark agent --runner rlp --target redswitches \
     --snapshot dtgraviet/vera-agent-benchmark:v3 \
     --levels 44 88 176 352 528 704 880 1056 1408 1760 2000 \

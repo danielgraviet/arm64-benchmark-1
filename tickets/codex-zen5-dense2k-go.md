@@ -10,14 +10,21 @@ Three-way compare this run feeds: **Vera socket0**, **9575F** (already in git), 
 docker ps   # must show postgresql and nats
 curl -fsS http://127.0.0.1:8088/health
 scripts/host/status.sh   # cell empty, no leftover experiment tmux
+# eng rlp-sdk with burst caps (required for --rlp-cpu-max / --rlp-memory-max)
+test -d /home/ubuntu/rlp/clients/python || bash scripts/host/install_eng_rlp_sdk.sh
+UV_NO_SYNC=1 uv run python -c 'from rlp import Resources; assert "cpu_max" in Resources.__dataclass_fields__; print("eng rlp-sdk OK")'
 ```
 
 If `.env` still has an empty `RLP_API_KEY`, ask the human for it and paste it. Never commit `.env`.
+
+**Always use `UV_NO_SYNC=1`.** Plain `uv run` reverts to PyPI `rlp-sdk==0.3.2` (no `cpu_max`). The dense2k wrapper already exports it.
 
 ## Run (agent only)
 
 ```bash
 git pull
+# if pull wiped the editable install:
+bash scripts/host/install_eng_rlp_sdk.sh
 tmux new-session -d -s zen5-dense2k bash scripts/host/run_dense2k.sh
 ```
 
@@ -45,7 +52,8 @@ uv run python eda.py --benchmark agent \
 ## Do not
 
 - Reboot for MOTD
-- Set `UV_NO_SYNC=1`
+- Run without `UV_NO_SYNC=1` / without eng `cpu_max`
 - Invent a different recipe or levels
 - Write into `zen5-9575f-jsonl/` or `data/agent/rlp-redswitches-c0p025-max1/`
 - Leave results only on the DUT
+- `git pull` inside `/home/ubuntu/rlp` onto `main` (that tree renamed away from `rlp-sdk`; stay on pin `660e6e3b`)

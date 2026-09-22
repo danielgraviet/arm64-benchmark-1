@@ -20,7 +20,13 @@ Cleanup is inside the wrappers (`scripts/phoenix_rlp_cleanup_sandboxes.py --targ
 
 ## Python / uv
 
-This host uses `uv python install 3.13` then `uv sync`. Plain `uv run` is enough. Do not set `UV_NO_SYNC=1` here. That flag is a Vera-only workaround for an editable eng `rlp-sdk`.
+This host uses `uv python install 3.13` then `uv sync`, then eng editable `rlp-sdk`:
+
+```bash
+bash scripts/host/install_eng_rlp_sdk.sh
+```
+
+Prefix harness commands with `UV_NO_SYNC=1` (dense2k wrapper already does). Do not bare-`uv sync` without reinstalling the overlay. That reverts to PyPI `0.3.2` and drops `--rlp-cpu-max`.
 
 Do not `reboot` because MOTD said restart required. Do not rotate the root password.
 

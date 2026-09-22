@@ -12,10 +12,13 @@ The last box was painful because Cursor on the Mac was the operator. Password SS
 | SSH | `ssh rs-new` or `ubuntu@57.128.100.53` |
 | Chip | AMD EPYC 9755 (higher-frequency Zen5 cell for Vera compare) |
 | Clone | `/home/ubuntu/arm64-benchmark-1` |
-| Python | 3.13 via `uv` (plain `uv run`, no `UV_NO_SYNC`) |
+| Python | 3.13 via `uv` + eng editable `rlp-sdk` (`UV_NO_SYNC=1`) |
 | Login ulimit | 1048576 |
+| Eng SDK | `/home/ubuntu/rlp` pinned to `660e6e3b` via `scripts/host/install_eng_rlp_sdk.sh` |
 
-RLP is **not installed** here yet. Wait until eng has the stack up (`docker ps` shows postgresql and nats) and `curl -fsS http://127.0.0.1:8088/health` returns ok. Then paste `RLP_API_KEY` into `.env`.
+RLP runner is eng's job. Wait until `docker ps` shows postgresql and nats and `curl -fsS http://127.0.0.1:8088/health` returns ok. Then paste `RLP_API_KEY` into `.env`.
+
+Dense2k needs eng `Resources.cpu_max` / `memory_max`. PyPI `0.3.2` is not enough. After any bare `uv sync`, re-run `bash scripts/host/install_eng_rlp_sdk.sh` and keep `UV_NO_SYNC=1` (the dense2k wrapper already sets it).
 
 ## Once per box
 
@@ -55,11 +58,12 @@ Or login on the Mac and copy `~/.codex/auth.json` to the box. Treat that file li
 6. Smoke (skip `:8088/health` until eng has RLP up):
 
 ```bash
-uv run pytest
+bash scripts/host/install_eng_rlp_sdk.sh
+UV_NO_SYNC=1 uv run pytest
 scripts/host/status.sh
 ```
 
-`UV_NO_SYNC=1` is a Vera-only rule (eng overlay SDK). After 3.13 `uv sync`, this host uses plain `uv run`.
+`UV_NO_SYNC=1` keeps the eng editable `rlp-sdk` (burst caps). After any bare `uv sync`, re-run `install_eng_rlp_sdk.sh`.
 
 Do not reboot because MOTD said restart required.
 
