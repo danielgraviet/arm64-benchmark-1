@@ -78,7 +78,7 @@ A running process is not the same as a subscribed one. The create subject ends i
 
 `/proc/<pid>/environ` is not readable by other users. Opening it in the shell and then piping to `sudo` still fails, and the script reports region empty even when `runner.env` is correct. Read it with `sudo cat /proc/<pid>/environ`.
 
-Binding NATS consumers is not registration. If `SELECT count(*) FROM runners` is 0, the API has not accepted the heartbeat. A `rejecting runner` line in the API log means it heard the heartbeat and refused it (NVMe-oF, unknown region, bad cpu type). No warning at all means the heartbeat never arrived. Compare `NATS_TOKEN` on `rlp-api` with `RLP_NATS_TOKEN` on `rlp-runner`. The runner can bind job consumers with a token the API does not have, and then the `runners` table stays empty.
+Binding NATS consumers is not registration. If `SELECT count(*) FROM runners` is 0, the API has not accepted the heartbeat. A `rejecting runner` line in the API log means it heard the heartbeat and refused it (NVMe-oF, unknown region, bad cpu type). No reject line means the heartbeat never arrived. Compare `NATS_TOKEN` on `rlp-api` with `RLP_NATS_TOKEN` on `rlp-runner`. Also check that the JetStream stream `EVENTS` exists. Heartbeats are published to `events.>`. The runner can bind `JOBS` consumers while `EVENTS` was never created, because the provision script treats a failed `stream add` as "already exists." `journalctl -p warning` will not show the API's tracing output. systemd records that stdout as info.
 
 ## Firecracker started, then the client hung
 

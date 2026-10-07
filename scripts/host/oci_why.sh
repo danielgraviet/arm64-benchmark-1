@@ -108,13 +108,22 @@ EOF
     curl -fsS -m 2 http://127.0.0.1:8088/health >/dev/null 2>&1 && break
     sleep 1
   done
+  # Heartbeats are published to the EVENTS stream. 'stream add' failures are
+  # easy to miss (the provision script treats any error as "already exists").
+  if [[ -n "${runner_tok}" && -x /opt/rlp/deploy/provision-nats.sh ]]; then
+    log "ensuring JetStream streams exist"
+    sudo -n env NATS_URL="nats://127.0.0.1:4222" NATS_TOKEN="${runner_tok}" \
+      bash /opt/rlp/deploy/provision-nats.sh || true
+  fi
   sudo -n systemctl restart rlp-runner
   log "waiting 20s for the runner heartbeat (it registers every 10s)"
   sleep 20
   echo "=== api env flag ==="
   sudo -n systemctl show rlp-api -p Environment --no-pager 2>/dev/null | tr ' ' '\n' | grep -E 'NON_NVMEOF|RLP_ALLOW' || echo "(flag not visible on the unit)"
-  echo "=== api warnings since restart ==="
-  sudo -n journalctl -u rlp-api --since "3 min ago" --no-pager -p warning 2>/dev/null | tail -n 20 || true
+  echo "=== api log since restart ==="
+  # Do not use -p warning. tracing writes to stdout, and systemd records that as info.
+  sudo -n journalctl -u rlp-api --since "3 min ago" --no-pager 2>/dev/null \
+    | grep -Ei 'rejecting runner|event consumer|nats|error' | tail -n 25 || true
   echo "=== runner row after re-register ==="
   sudo -n docker exec rlp-postgres psql -U rlp -d rlplatform -c \
     "SELECT id, region_id, status, cpu_arch, cpu_type FROM runners;" 2>/dev/null || true
