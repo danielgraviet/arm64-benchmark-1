@@ -186,6 +186,7 @@ fi
   echo "=== START $(date -u +%Y-%m-%dT%H:%M:%SZ) target=${TARGET} ulimit=$(ulimit -Sn) count=${COUNT} workers=${WORKERS} http_pool=${RLP_HTTP_MAX_CONNECTIONS} disk_gb=${DISK_GB} ==="
   if [[ "${TARGET}" == "vera" && "${COUNT}" -gt 1 ]]; then
     echo "=== WARMUP $(date -u +%Y-%m-%dT%H:%M:%SZ) one sandbox to build the snapshot template ==="
+    warm_log=/tmp/vera-warmup.out
     UV_NO_SYNC=1 uv run python scripts/rlp_light_create_fleet.py \
       --target "${TARGET}" \
       --count 1 \
@@ -195,21 +196,28 @@ fi
       --memory 0.0625 \
       --disk "${DISK_GB}" \
       --probe "echo ready" \
-      --output "/tmp/vera-template-warmup.jsonl" || true
-    echo "waiting for template build ready"
+      --output "/tmp/vera-template-warmup.jsonl" | tee "${warm_log}" || true
+    # A hit finishes in well under 2s and does not log "template build ready" again.
+    warm_s="$(sed -n 's/.*READY_WALL_S=\([0-9.]*\).*/\1/p' "${warm_log}" | tail -n 1)"
     ready=0
-    for _ in $(seq 1 90); do
-      if sudo -n journalctl -u rlp-runner --since "5 min ago" --no-pager 2>/dev/null | grep -q "template build ready"; then
-        ready=1
-        break
-      fi
-      if sudo -n journalctl -u rlp-runner --since "5 min ago" --no-pager 2>/dev/null | grep -q "template build failed"; then
-        echo "template build failed"
-        sudo -n journalctl -u rlp-runner --since "5 min ago" --no-pager 2>/dev/null | grep "template build failed" | tail -n 3
-        break
-      fi
-      sleep 2
-    done
+    if grep -q 'ok=1 failed=0' "${warm_log}" && awk -v s="${warm_s:-99}" 'BEGIN { exit !(s+0 < 2) }'; then
+      echo "warmup ${warm_s}s is a template hit"
+      ready=1
+    else
+      echo "waiting for template build ready (warmup ${warm_s:-unknown}s)"
+      for _ in $(seq 1 45); do
+        if sudo -n journalctl -u rlp-runner --since "10 min ago" --no-pager 2>/dev/null | grep -q "template build ready"; then
+          ready=1
+          break
+        fi
+        if sudo -n journalctl -u rlp-runner --since "10 min ago" --no-pager 2>/dev/null | grep -q "template build failed"; then
+          echo "template build failed"
+          sudo -n journalctl -u rlp-runner --since "10 min ago" --no-pager 2>/dev/null | grep "template build failed" | tail -n 3
+          break
+        fi
+        sleep 2
+      done
+    fi
     echo "template_ready=${ready}"
     UV_NO_SYNC=1 uv run python scripts/phoenix_rlp_cleanup_sandboxes.py --target "${TARGET}" || true
   fi
