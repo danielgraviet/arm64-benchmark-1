@@ -677,17 +677,21 @@ SQL
     return
   fi
 
-  local minted
-  minted="$(rlp-api mint-key oci-vera-cli --project "${project_id}" 2>&1 || true)"
-  RLP_API_KEY="$(printf '%s\n' "${minted}" | grep -Eo 'dtn_[A-Za-z0-9_-]+|rlp_[A-Za-z0-9_-]+' | head -n1 || true)"
-  if [[ -z "${RLP_API_KEY}" ]]; then
-    # Broader fallback — still prefer dtn_/rlp_ prefixes above.
-    RLP_API_KEY="$(printf '%s\n' "${minted}" | grep -Eo '[A-Za-z0-9_-]{24,}' | head -n1 || true)"
+  # Must export DATABASE_URL; mint-key does not read /etc/rlp/api.env itself.
+  # --permissions all is required or the CLI errors and a UUID gets saved as the key (401).
+  if [[ -z "${DATABASE_URL:-}" && -f /etc/rlp/api.env ]]; then
+    DATABASE_URL="$(as_root grep -E '^DATABASE_URL=' /etc/rlp/api.env | tail -n1 | cut -d= -f2-)"
+    export DATABASE_URL
   fi
+  local minted
+  minted="$(rlp-api mint-key oci-vera-cli --project "${project_id}" --permissions all 2>&1)" || {
+    printf '%s\n' "${minted}" >&2
+    die "mint-key failed"
+  }
+  RLP_API_KEY="$(printf '%s\n' "${minted}" | grep -Eo 'rlp_[0-9a-f]{32}' | head -n1 || true)"
   if [[ -z "${RLP_API_KEY}" ]]; then
-    log "mint-key output:"
-    printf '%s\n' "${minted}"
-    die "could not parse API key from mint-key"
+    printf '%s\n' "${minted}" >&2
+    die "mint-key did not print an rlp_ token"
   fi
   log "minted API key (stored in .env only)"
 }

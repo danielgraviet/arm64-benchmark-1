@@ -20,6 +20,9 @@ case "${cmd}" in
   l|load)    exec bash "${ROOT}/scripts/host/oci" load "$@" ;;
   c|check)   exec bash "${ROOT}/scripts/host/oci" check "$@" ;;
   s|smoke)   exec bash "${ROOT}/scripts/host/oci" smoke "$@" ;;
+  m|mint)
+    exec bash "${ROOT}/scripts/host/oci_remint.sh" "$@"
+    ;;
   1|c1k)     exec bash "${ROOT}/scripts/host/oci" c1k "$@" ;;
   2|c2k)     exec bash "${ROOT}/scripts/host/oci" c2k "$@" ;;
   d|dense)   exec bash "${ROOT}/scripts/host/oci" dense "$@" ;;
@@ -62,6 +65,7 @@ case "${cmd}" in
 ./o r     delete ~/rlp then boot
 ./o l     decrypt secrets → .env.oci
 ./o c     parity check
+./o m     remint API key (fixes smoke 401)
 ./o s     smoke
 ./o 1     create-ready 1000
 ./o 2     create-ready 2000
