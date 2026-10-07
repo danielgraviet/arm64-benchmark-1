@@ -78,7 +78,7 @@ A running process is not the same as a subscribed one. The create subject ends i
 
 `/proc/<pid>/environ` is not readable by other users. Opening it in the shell and then piping to `sudo` still fails, and the script reports region empty even when `runner.env` is correct. Read it with `sudo cat /proc/<pid>/environ`.
 
-Binding NATS consumers is not registration. If `SELECT count(*) FROM runners` is 0, the API rejected the heartbeat and will not treat the box as capacity. On a machine with no NVMe-oF target the reject line is `NVMe-oF capability absent`. Set `RLP_ALLOW_NON_NVMEOF_RUNNERS=1` on `rlp-api` and restart the API, then the runner. The reject text is in `journalctl -u rlp-api`, not the runner log.
+Binding NATS consumers is not registration. If `SELECT count(*) FROM runners` is 0, the API has not accepted the heartbeat. A `rejecting runner` line in the API log means it heard the heartbeat and refused it (NVMe-oF, unknown region, bad cpu type). No warning at all means the heartbeat never arrived. Compare `NATS_TOKEN` on `rlp-api` with `RLP_NATS_TOKEN` on `rlp-runner`. The runner can bind job consumers with a token the API does not have, and then the `runners` table stays empty.
 
 ## Firecracker started, then the client hung
 

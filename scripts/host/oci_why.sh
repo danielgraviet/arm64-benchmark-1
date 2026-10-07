@@ -69,8 +69,31 @@ sudo -n journalctl -u rlp-api --no-pager -n 400 2>/dev/null \
 # A bare cell has no NVMe-oF target. The API refuses to insert the runner
 # until RLP_ALLOW_NON_NVMEOF_RUNNERS=1. Binding NATS consumers is not enough:
 # with zero rows, creates sit until the 60s cap.
+# A second empty result with no "rejecting runner" line means the API never
+# received the heartbeat. That happens when its NATS_TOKEN does not match the
+# token the runner used to bind consumers.
 if [[ "${runner_rows}" == "0" ]]; then
-  log "runners table is empty. Allowing a non-NVMe-oF runner and re-registering."
+  log "runners table is empty. Checking NATS tokens, then re-registering."
+  runner_pid="$(pgrep -nx rlp-runner || true)"
+  api_pid="$(pgrep -nx rlp-api || true)"
+  runner_tok=""
+  api_tok=""
+  if [[ -n "${runner_pid}" ]]; then
+    runner_tok="$(sudo -n cat "/proc/${runner_pid}/environ" | tr '\0' '\n' | sed -n 's/^RLP_NATS_TOKEN=//p' | tail -n1)"
+  fi
+  if [[ -n "${api_pid}" ]]; then
+    api_tok="$(sudo -n cat "/proc/${api_pid}/environ" | tr '\0' '\n' | sed -n 's/^NATS_TOKEN=//p' | tail -n1)"
+  fi
+  log "nats token lengths: api=${#api_tok} runner=${#runner_tok} match=$([[ "${api_tok}" == "${runner_tok}" && -n "${api_tok}" ]] && echo yes || echo no)"
+  if [[ -n "${runner_tok}" && "${api_tok}" != "${runner_tok}" ]]; then
+    log "pointing rlp-api at the runner NATS token and restarting it"
+    sudo -n cp -a /etc/rlp/api.env "/etc/rlp/api.env.bak-nats-$(date -u +%Y%m%d_%H%M%S)"
+    if sudo -n grep -q '^NATS_TOKEN=' /etc/rlp/api.env; then
+      sudo -n sed -i "s|^NATS_TOKEN=.*|NATS_TOKEN=${runner_tok}|" /etc/rlp/api.env
+    else
+      echo "NATS_TOKEN=${runner_tok}" | sudo -n tee -a /etc/rlp/api.env >/dev/null
+    fi
+  fi
   sudo -n mkdir -p /etc/systemd/system/rlp-api.service.d
   sudo -n tee /etc/systemd/system/rlp-api.service.d/no-nvmeof.conf >/dev/null <<'EOF'
 [Service]
