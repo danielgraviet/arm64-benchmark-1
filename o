@@ -95,6 +95,9 @@ case "${cmd}" in
   2|c2k)     exec bash "${ROOT}/scripts/host/oci" c2k "$@" ;;
   d|dense)   exec bash "${ROOT}/scripts/host/oci" dense "$@" ;;
   t|status)  exec bash "${ROOT}/scripts/host/oci" status "$@" ;;
+  x|disk)
+    exec bash "${ROOT}/scripts/host/oci_free_disk.sh" "$@"
+    ;;
   p|pull)
     git pull --ff-only
     if [[ -x /usr/local/bin/rlp-api && -z "${SKIP_BUILD:-}" ]]; then
@@ -147,6 +150,7 @@ case "${cmd}" in
 ./o 2     create-ready 2000
 ./o d     dense2k
 ./o t     status
+./o x     show disk use and delete kernel source
 EOF
     ;;
   *)

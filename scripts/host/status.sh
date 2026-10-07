@@ -16,6 +16,9 @@ fc_count() {
   printf '%s' "${n}"
 }
 
+echo "===DISK==="
+df -h / | tail -n 1
+
 echo "===HOST==="
 hostname
 date -u +"utc=%Y-%m-%dT%H:%M:%SZ"
@@ -63,3 +66,19 @@ for log in /tmp/zen5-dense2k-n45.log /tmp/vera-dense2k-n45.log /tmp/*-create-rea
     tail -n 8 "${log}"
   fi
 done
+
+echo "===CREATE==="
+if pgrep -af 'rlp_light_create_fleet|main.py' 2>/dev/null | grep -v grep; then
+  echo "client=running"
+else
+  echo "client=not_running"
+fi
+if [[ -f /tmp/vera-create-ready-1000.log ]]; then
+  echo "-- progress --"
+  grep -E 'END_EXIT|READY|ERROR|error|fail|toolbox|created|ok=' /tmp/vera-create-ready-1000.log | tail -n 20 || true
+fi
+
+echo "===RUNNER_GATE==="
+sudo -n journalctl -u rlp-runner --no-pager -n 400 2>/dev/null \
+  | grep -Ei 'capacity gate|live vms at cap|toolbox|snapshot|template|no matching|error' \
+  | tail -n 20 || echo "(no runner gate lines)"

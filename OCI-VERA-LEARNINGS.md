@@ -106,3 +106,7 @@ The smoke image is `python:3.12-slim`. The agent image `dtgraviet/vera-agent-ben
 6. `./o 1` then `./o 2` then `./o d` for the benchmark ladders.
 
 Stop at the first red line. Fix that layer. Do not retune CPU knobs while the runner is still warming or the daemon layer is missing.
+
+## Disk full
+
+`no space left on device` on the JSONL writer means the filesystem is full. The JSONL file itself is small. What fills the disk is guest scratch (1 GiB disk per sandbox) plus the Linux source tree `~/erofs-poc` left behind by `./o k`. The Image is already copied to `/var/lib/rlp/kernel`. When the writer dies, the Firecracker processes already started stay up, so `FC` sticks (73 on this box) even though the client has stopped. `./o x` prints usage and deletes `~/erofs-poc`. Then rerun `./o 1`. Its cleanup pass deletes the leftover VMs before it starts again.
