@@ -155,29 +155,49 @@ install_uv_and_go_rust_toolchains() {
 
 clone_rlp() {
   log "RLP tree at ${RLP_ROOT} pin ${RLP_PIN}"
-  if [[ ! -d "${RLP_ROOT}/.git" ]]; then
-    # Never fall through to an interactive username/password prompt on the
-    # Nix typed terminal. Private RLP needs GH_TOKEN in the URL.
-    if [[ -z "${GH_TOKEN:-}" ]]; then
-      die "GH_TOKEN unset. On Mac: OCI_PASS=… GH_TOKEN=… bash scripts/host/oci pack && git push. On Vera: OCI_PASS=… bash scripts/host/oci go"
-    fi
-    export GIT_TERMINAL_PROMPT=0
-    local url="${RLP_GIT_URL}"
-    local auth_url="https://x-access-token:${GH_TOKEN}@${url#https://}"
-    if ! git -c credential.helper= clone "${auth_url}" "${RLP_ROOT}"; then
-      log "clone ${RLP_GIT_URL} failed; trying fallback ${RLP_FALLBACK_GIT_URL}"
-      rm -rf "${RLP_ROOT}"
-      url="${RLP_FALLBACK_GIT_URL}"
-      auth_url="https://x-access-token:${GH_TOKEN}@${url#https://}"
-      git -c credential.helper= clone "${auth_url}" "${RLP_ROOT}" \
-        || die "cannot clone RLP. GH_TOKEN must have Contents:Read on daytona/rlp or danielgraviet/rlp (harness-only token is not enough)"
-    fi
-    # Strip token from remote URL.
-    git -C "${RLP_ROOT}" remote set-url origin "${url}"
+  export GIT_TERMINAL_PROMPT=0
+  if [[ -z "${GH_TOKEN:-}" ]]; then
+    die "GH_TOKEN unset. On Mac: OCI_PASS=… GH_TOKEN=… bash scripts/host/oci pack && git push. On Vera: source .env.oci then re-run."
   fi
-  git -C "${RLP_ROOT}" fetch --all --tags || true
-  git -C "${RLP_ROOT}" checkout --force "${RLP_PIN}"
-  log "RLP HEAD=$(git -C "${RLP_ROOT}" rev-parse --short HEAD)"
+
+  # Prefer the fork the fine-grained PAT can actually read. daytona/rlp often
+  # returns "write access not granted" / 404 for personal tokens.
+  local urls=("${RLP_FALLBACK_GIT_URL}" "${RLP_GIT_URL}")
+  # Allow override order: RLP_GIT_URL first if explicitly forced.
+  if [[ "${RLP_PREFER_UPSTREAM:-0}" == "1" ]]; then
+    urls=("${RLP_GIT_URL}" "${RLP_FALLBACK_GIT_URL}")
+  fi
+
+  local url="" auth_url="" cloned=0
+  if [[ ! -d "${RLP_ROOT}/.git" ]]; then
+    for url in "${urls[@]}"; do
+      auth_url="https://x-access-token:${GH_TOKEN}@${url#https://}"
+      log "cloning ${url}"
+      if git -c credential.helper= clone "${auth_url}" "${RLP_ROOT}"; then
+        cloned=1
+        break
+      fi
+      log "clone ${url} failed"
+      rm -rf "${RLP_ROOT}"
+    done
+    [[ "${cloned}" -eq 1 ]] || die "cannot clone RLP. GH_TOKEN needs Contents:Read on danielgraviet/rlp (or daytona/rlp)"
+  else
+    url="$(git -C "${RLP_ROOT}" remote get-url origin)"
+    case "${url}" in
+      *@github.com/*) url="https://github.com/${url#*@github.com/}" ;;
+    esac
+    log "reusing existing ${RLP_ROOT} (origin ${url})"
+  fi
+
+  # Fetch + checkout WHILE the token is on the remote URL. Stripping first
+  # caused an interactive username prompt on the Nix terminal after a good clone.
+  auth_url="https://x-access-token:${GH_TOKEN}@${url#https://}"
+  git -C "${RLP_ROOT}" remote set-url origin "${auth_url}"
+  git -c credential.helper= -C "${RLP_ROOT}" fetch --all --tags || true
+  git -c credential.helper= -C "${RLP_ROOT}" checkout --force "${RLP_PIN}" \
+    || die "checkout ${RLP_PIN} failed (is that commit on your fork?)"
+  git -C "${RLP_ROOT}" remote set-url origin "${url}"
+  log "RLP HEAD=$(git -C "${RLP_ROOT}" rev-parse --short HEAD) origin=${url}"
 }
 
 raise_nofile_and_sysctl() {

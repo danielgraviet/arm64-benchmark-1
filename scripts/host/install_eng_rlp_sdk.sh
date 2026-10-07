@@ -11,21 +11,30 @@ RLP_PIN="${RLP_PIN:-660e6e3b}"
 
 export PATH="${HOME}/.local/bin:/usr/local/bin:${PATH}"
 
+export GIT_TERMINAL_PROMPT=0
+RLP_GIT_URL="${RLP_GIT_URL:-https://github.com/danielgraviet/rlp.git}"
 if [[ ! -d "${RLP_ROOT}/.git" ]]; then
-  RLP_GIT_URL="${RLP_GIT_URL:-https://github.com/daytona/rlp.git}"
   if [[ -n "${GH_TOKEN:-}" ]]; then
     auth_url="https://x-access-token:${GH_TOKEN}@${RLP_GIT_URL#https://}"
-    git clone "${auth_url}" "${RLP_ROOT}"
+    git -c credential.helper= clone "${auth_url}" "${RLP_ROOT}"
     git -C "${RLP_ROOT}" remote set-url origin "${RLP_GIT_URL}"
   elif command -v gh >/dev/null 2>&1; then
-    gh repo clone daytona/rlp "${RLP_ROOT}"
+    gh repo clone "${RLP_GIT_URL#https://github.com/}" "${RLP_ROOT}" || gh repo clone daytona/rlp "${RLP_ROOT}"
   else
     git clone "${RLP_GIT_URL}" "${RLP_ROOT}"
   fi
 fi
 
-git -C "${RLP_ROOT}" fetch origin || true
-git -C "${RLP_ROOT}" checkout --force "${RLP_PIN}"
+if [[ -n "${GH_TOKEN:-}" ]]; then
+  auth_url="https://x-access-token:${GH_TOKEN}@${RLP_GIT_URL#https://}"
+  git -C "${RLP_ROOT}" remote set-url origin "${auth_url}"
+  git -c credential.helper= -C "${RLP_ROOT}" fetch origin || true
+  git -c credential.helper= -C "${RLP_ROOT}" checkout --force "${RLP_PIN}"
+  git -C "${RLP_ROOT}" remote set-url origin "${RLP_GIT_URL}"
+else
+  git -C "${RLP_ROOT}" fetch origin || true
+  git -C "${RLP_ROOT}" checkout --force "${RLP_PIN}"
+fi
 
 DAYTONA_PY="${RLP_ROOT}/clients/python/src/rlp/daytona.py"
 python3 - <<PY
