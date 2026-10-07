@@ -60,7 +60,7 @@ The stock `rlp-proxy` unit requires `wg-quick@wg0`. This box has no WireGuard. A
 
 `psql` prints `INSERT 0 1` as well as the uuid you asked for. If you capture both into a shell variable, the next query sees `org_id='<uuid>INSERT01'` and Postgres says invalid uuid. Quiet mode (`-qAt`) and a single script that ends in one `SELECT` avoid that.
 
-`rlp-api mint-key` requires `--permissions all`. Without it the command errors. A sloppy parser then saves a uuid into `.env`. Smoke returns `401`. A real key looks like `rlp_` plus 32 hex characters. `./o m` mints one and rewrites `.env`.
+`rlp-api mint-key` requires `--permissions all`. Without it the command errors. A sloppy parser then saves a uuid into `.env`. Smoke returns `401` from `rlp/http.py` (`DaytonaAuth`, unauthorized). That file is only the HTTP wrapper. The failure is still the bearer token. A real key looks like `rlp_` plus 32 hex characters. `./o m` mints one and rewrites `.env`. A later `./o s` probes `GET /vms` first and remints on 401 before it spends time on the runner.
 
 ## cpu_type
 
@@ -78,7 +78,9 @@ A running process is not the same as a subscribed one. The create subject ends i
 
 `/proc/<pid>/environ` is not readable by other users. Opening it in the shell and then piping to `sudo` still fails, and the script reports region empty even when `runner.env` is correct. Read it with `sudo cat /proc/<pid>/environ`.
 
-Binding NATS consumers is not registration. If `SELECT count(*) FROM runners` is 0, the API has not accepted the heartbeat. A `rejecting runner` line in the API log means it heard the heartbeat and refused it (NVMe-oF, unknown region, bad cpu type). No reject line means the heartbeat never arrived. Compare `NATS_TOKEN` on `rlp-api` with `RLP_NATS_TOKEN` on `rlp-runner`. Also check that the JetStream stream `EVENTS` exists. Heartbeats are published to `events.>`. The runner can bind `JOBS` consumers while `EVENTS` was never created. The provision script sends EVENTS errors to `/dev/null` and prints "exists" anyway, so `JOBS`, `STOPS`, and `DELETES` show up and `EVENTS` does not. The API log then says `runner event consumer exited: stream not found` (code 10059). Those consumers do not retry. Create the streams first, then restart `rlp-api`, then the runner. `journalctl -p warning` will not show this. systemd records API stdout as info.
+Binding NATS consumers is not registration. If `SELECT count(*) FROM runners` is 0, the API has not accepted the heartbeat. A `rejecting runner` line in the API log means it heard the heartbeat and refused it (NVMe-oF, unknown region, bad cpu type). No reject line means the heartbeat never arrived. Compare `NATS_TOKEN` on `rlp-api` with `RLP_NATS_TOKEN` on `rlp-runner`. Also check that the JetStream stream `EVENTS` exists. Heartbeats are published to `events.>`. The runner can bind `JOBS` consumers while `EVENTS` was never created. The provision script sends EVENTS errors to `/dev/null` and prints "exists" anyway, so `JOBS`, `STOPS`, and `DELETES` show up and `EVENTS` does not. The API log then says `runner event consumer exited: stream not found` (code 10059). The same line shows up for the volume consumer, the main event consumer, and the overlay tail. Those are four symptoms of one missing stream. The consumers do not retry. Create `EVENTS` first, then restart `rlp-api`, then the runner. `journalctl -p warning` will not show this. systemd records API stdout as info.
+
+This was the fix for the empty `runners` table on the OCI box. After `EVENTS` existed, the table had one row: id `runner-vera-oci-1`, region `vera`, status `online`, arch `arm64`, cpu type `vera`. That row is the gate. Do not run `./o s` while the count is still 0. A stream list of only `JOBS`, `STOPS`, `DELETES`, and `OBJ_contexts` is the broken state. `EVENTS` has to be on that list.
 
 ## Firecracker started, then the client hung
 

@@ -20,6 +20,25 @@ case "${cmd}" in
   l|load)    exec bash "${ROOT}/scripts/host/oci" load "$@" ;;
   c|check)   exec bash "${ROOT}/scripts/host/oci" check "$@" ;;
   s|smoke)
+    # 401 here is the key in .env, not the runner. Remint once before the long smoke.
+    if [[ -f "${ROOT}/.env" ]]; then
+      set -a
+      # shellcheck disable=SC1091
+      source "${ROOT}/.env"
+      set +a
+    fi
+    key_code="$(curl -sS -m 5 -o /dev/null -w '%{http_code}' \
+      -H "Authorization: Bearer ${VERA_RLP_API_KEY:-}" \
+      http://127.0.0.1:8088/vms || echo 000)"
+    echo "api key probe: HTTP ${key_code} (key length ${#VERA_RLP_API_KEY})"
+    if [[ "${key_code}" == "401" || "${key_code}" == "403" ]]; then
+      echo "key rejected. reminting."
+      bash "${ROOT}/scripts/host/oci_remint.sh"
+      set -a
+      # shellcheck disable=SC1091
+      source "${ROOT}/.env"
+      set +a
+    fi
     bash "${ROOT}/scripts/host/oci_seed_cpu.sh"
     bash "${ROOT}/scripts/host/oci_why.sh"
     follow="/tmp/oci-smoke-runner.log"
