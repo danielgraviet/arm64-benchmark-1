@@ -401,10 +401,9 @@ write_cell_env() {
   local pub_ip
   pub_ip="$(detect_public_ip)"
   resolve_guest_paths
-  [[ -n "${RLP_KERNEL:-}" && -f "${RLP_KERNEL}" ]] \
-    || die "RLP_KERNEL missing. Place arm64 guest Image under ${GUEST_DIR}/ or set RLP_KERNEL="
-  [[ -n "${RLP_INITDISK:-}" && -f "${RLP_INITDISK}" ]] \
-    || die "RLP_INITDISK missing. Place initdisk-arm64.ext4 under ${GUEST_DIR}/ or set RLP_INITDISK="
+  if [[ -z "${RLP_KERNEL:-}" || ! -f "${RLP_KERNEL}" || -z "${RLP_INITDISK:-}" || ! -f "${RLP_INITDISK}" ]]; then
+    die "guest Image/initdisk missing under ${GUEST_DIR}/. Type: ./o k   then   ./o g"
+  fi
 
   log "writing /etc/rlp/*.env (parity knobs)"
   local pg_pw="${POSTGRES_PASSWORD}"

@@ -36,9 +36,13 @@ case "${cmd}" in
     rm -rf "${HOME}/rlp"
     exec bash "${ROOT}/scripts/host/oci" go "$@"
     ;;
+  k|kernel|guest)
+    exec bash "${ROOT}/scripts/host/oci_build_guest.sh" "$@"
+    ;;
   h|help|-h|--help)
     cat <<'EOF'
 ./o g     boot / resume (uses .env.oci; sudo docker if needed)
+./o k     build guest Image + initdisk into /var/lib/rlp/kernel/
 ./o p     git pull then boot
 ./o r     delete ~/rlp then boot
 ./o l     decrypt secrets → .env.oci

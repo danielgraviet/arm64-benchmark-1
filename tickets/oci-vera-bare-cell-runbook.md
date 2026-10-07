@@ -70,7 +70,15 @@ OCI_PASS='four words' ./o l
 ./o g
 ```
 
-Stage guest kernel/initdisk under `/var/lib/rlp/kernel/` before `./o g` if missing.
+If bootstrap stops with `RLP_KERNEL missing`:
+
+```bash
+./o k
+./o g
+```
+
+That builds arm64 `Image` + `initdisk` into `/var/lib/rlp/kernel/` on the box
+(kernel compile is often 5–20 min on Vera). Or copy a prebuilt tarball from eng.
 
 Client-only re-run (cell already up): `SKIP_CELL=1 ./o g`
 
