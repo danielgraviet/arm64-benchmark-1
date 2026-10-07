@@ -171,11 +171,13 @@ Environment=RLP_VM_CONCURRENCY=256
 Environment=RLP_NETNS_POOL=2100
 Environment=RLP_MAX_LIVE_VMS=3000
 EOF
-  if ! sudo -n cat "/proc/$(pgrep -nx rlp-runner)/environ" 2>/dev/null | tr '\0' '\n' | grep -qx 'RLP_SNAPSHOTS=1'; then
-    echo "restarting runner with snapshots enabled"
+  runner_env="$(sudo -n cat "/proc/$(pgrep -nx rlp-runner)/environ" 2>/dev/null | tr '\0' '\n' || true)"
+  if ! printf '%s\n' "${runner_env}" | grep -qx 'RLP_SNAPSHOTS=1' \
+    || ! printf '%s\n' "${runner_env}" | grep -qx 'RLP_VM_CONCURRENCY=256'; then
+    echo "restarting runner with snapshots and vm concurrency 256"
     sudo -n systemctl daemon-reload
     sudo -n systemctl restart rlp-runner
-    sleep 5
+    sleep 8
   fi
 fi
 
