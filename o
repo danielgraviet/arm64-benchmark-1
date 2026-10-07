@@ -9,7 +9,14 @@ cd "${ROOT}"
 cmd="${1:-h}"
 shift || true
 case "${cmd}" in
-  g|go|boot) exec bash "${ROOT}/scripts/host/oci" go "$@" ;;
+  g|go|boot)
+    # Resume after a mid-bootstrap failure: skip the long Rust rebuild if bins exist.
+    if [[ -x /usr/local/bin/rlp-api && -z "${SKIP_BUILD:-}" ]]; then
+      export SKIP_BUILD=1
+      echo "SKIP_BUILD=1 (rlp-api already installed)"
+    fi
+    exec bash "${ROOT}/scripts/host/oci" go "$@"
+    ;;
   l|load)    exec bash "${ROOT}/scripts/host/oci" load "$@" ;;
   c|check)   exec bash "${ROOT}/scripts/host/oci" check "$@" ;;
   s|smoke)   exec bash "${ROOT}/scripts/host/oci" smoke "$@" ;;
@@ -19,19 +26,21 @@ case "${cmd}" in
   t|status)  exec bash "${ROOT}/scripts/host/oci" status "$@" ;;
   p|pull)
     git pull --ff-only
+    if [[ -x /usr/local/bin/rlp-api && -z "${SKIP_BUILD:-}" ]]; then
+      export SKIP_BUILD=1
+    fi
     exec bash "${ROOT}/scripts/host/oci" go "$@"
     ;;
   r|reset)
-    # Wipe broken/incomplete ~/rlp from an interrupted clone, then boot.
     echo "removing ${HOME}/rlp"
     rm -rf "${HOME}/rlp"
     exec bash "${ROOT}/scripts/host/oci" go "$@"
     ;;
   h|help|-h|--help)
     cat <<'EOF'
-./o g     boot cell (uses .env.oci)
+./o g     boot / resume (uses .env.oci; sudo docker if needed)
 ./o p     git pull then boot
-./o r     delete ~/rlp then boot (fix bad checkout)
+./o r     delete ~/rlp then boot
 ./o l     decrypt secrets → .env.oci
 ./o c     parity check
 ./o s     smoke

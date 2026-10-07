@@ -62,6 +62,25 @@ as_root() {
   fi
 }
 
+# Docker sock is root-only until re-login after usermod -aG docker. Always fall
+# back to sudo so Nix sessions do not die on "permission denied ... docker.sock".
+run_docker() {
+  if docker info >/dev/null 2>&1; then
+    docker "$@"
+  else
+    as_root docker "$@"
+  fi
+}
+
+run_compose() {
+  # Usage: run_compose up -d postgres nats
+  if docker info >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    docker compose "$@"
+  else
+    as_root docker compose "$@"
+  fi
+}
+
 detect_public_ip() {
   if [[ -n "${RLP_PUBLIC_IP:-}" ]]; then
     printf '%s' "${RLP_PUBLIC_IP}"
@@ -353,28 +372,28 @@ EOF
 
   # Only postgres + NATS. Full compose also starts MinIO on host :9000, which
   # collides with rlp-proxy toolbox (:9000). Blockmount stays off for Vera parity.
+  as_root systemctl enable --now docker || true
   (
     cd /opt/rlp/deploy
-    if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
-      docker compose up -d postgres nats
-    else
-      as_root docker compose up -d postgres nats
-    fi
+    run_compose up -d postgres nats
   )
 
   log "waiting for postgres"
-  for _ in $(seq 1 60); do
-    if docker exec rlp-postgres pg_isready -U rlp >/dev/null 2>&1 \
-      || as_root docker exec rlp-postgres pg_isready -U rlp >/dev/null 2>&1; then
+  local ready=0
+  for _ in $(seq 1 90); do
+    if run_docker exec rlp-postgres pg_isready -U rlp >/dev/null 2>&1; then
+      ready=1
       break
     fi
     sleep 2
   done
+  [[ "${ready}" -eq 1 ]] || die "postgres never became ready (docker/postgres)"
 
   (
     cd /opt/rlp/deploy
-    NATS_TOKEN="${RLP_NATS_TOKEN}" bash ./provision-nats.sh || \
+    if ! NATS_TOKEN="${RLP_NATS_TOKEN}" bash ./provision-nats.sh; then
       as_root env NATS_TOKEN="${RLP_NATS_TOKEN}" bash ./provision-nats.sh
+    fi
   )
 }
 
@@ -535,10 +554,8 @@ wait_api_health() {
 
 seed_region_and_mint_key() {
   log "seed regions.id=${REGION_ID} + mint API key"
-  local psql=(docker exec -i rlp-postgres psql -U rlp -d rlplatform)
-  if ! docker ps --format '{{.Names}}' 2>/dev/null | grep -qx rlp-postgres; then
-    psql=(as_root docker exec -i rlp-postgres psql -U rlp -d rlplatform)
-  fi
+  # Always go through run_docker (sudo) — same docker.sock permission issue.
+  local psql=(run_docker exec -i rlp-postgres psql -U rlp -d rlplatform)
 
   "${psql[@]}" -v ON_ERROR_STOP=1 <<SQL
 -- Partial unique index allows only one is_default=true. Clear first.
