@@ -102,19 +102,23 @@ EOF
   if ! sudo -n grep -q '^RLP_ALLOW_NON_NVMEOF_RUNNERS=1$' /etc/rlp/api.env 2>/dev/null; then
     echo 'RLP_ALLOW_NON_NVMEOF_RUNNERS=1' | sudo -n tee -a /etc/rlp/api.env >/dev/null
   fi
+  # The API's event consumers exit permanently on "stream not found".
+  # Streams must exist before rlp-api starts, or heartbeats never land.
+  if [[ -n "${runner_tok}" && -x /opt/rlp/deploy/provision-nats.sh ]]; then
+    log "ensuring JetStream streams exist before starting the API"
+    sudo -n env NATS_URL="nats://127.0.0.1:4222" NATS_TOKEN="${runner_tok}" \
+      bash /opt/rlp/deploy/provision-nats.sh || true
+  fi
+  echo "=== jetstream streams ==="
+  curl -fsS -m 3 'http://127.0.0.1:8222/jsz?streams=true' 2>/dev/null \
+    | python3 -c 'import json,sys; d=json.load(sys.stdin); print("\n".join(s.get("name","?") for a in d.get("account_details",[]) for s in a.get("stream_detail",[])) or "none")' \
+    || echo "(could not list streams on :8222)"
   sudo -n systemctl daemon-reload
   sudo -n systemctl restart rlp-api
   for _ in $(seq 1 30); do
     curl -fsS -m 2 http://127.0.0.1:8088/health >/dev/null 2>&1 && break
     sleep 1
   done
-  # Heartbeats are published to the EVENTS stream. 'stream add' failures are
-  # easy to miss (the provision script treats any error as "already exists").
-  if [[ -n "${runner_tok}" && -x /opt/rlp/deploy/provision-nats.sh ]]; then
-    log "ensuring JetStream streams exist"
-    sudo -n env NATS_URL="nats://127.0.0.1:4222" NATS_TOKEN="${runner_tok}" \
-      bash /opt/rlp/deploy/provision-nats.sh || true
-  fi
   sudo -n systemctl restart rlp-runner
   log "waiting 20s for the runner heartbeat (it registers every 10s)"
   sleep 20
