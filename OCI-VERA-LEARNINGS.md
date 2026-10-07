@@ -74,7 +74,9 @@ The create was accepted. No runner took it before the 60 second cap. That is rou
 
 On first boot the runner builds a pool of about 2100 network namespaces. Some of those provisions take around 90 seconds. A smoke started during that window expires while the runner is still warming. `ready=2100` in the journal means the pool is full. Run `./o s` again.
 
-A running process is not the same as a subscribed one. The create subject ends in the cpu type (`jobs.vm.create.vera.vera`). An arm64 runner that never loaded `RLP_RUNNER_CPU_TYPE=vera` only listens for `.arm64` and will ignore that job. `./o w` prints the live process env and the subjects it bound. If the live cpu type is empty, restart the runner. The file on disk can be right while the process is still old.
+A running process is not the same as a subscribed one. The create subject ends in the cpu type (`jobs.vm.create.vera.vera`). An arm64 runner that never loaded `RLP_RUNNER_CPU_TYPE=vera` only listens for `.arm64` and will ignore that job. `./o w` prints the live process env and the subjects it bound.
+
+`/proc/<pid>/environ` is not readable by other users. Opening it in the shell and then piping to `sudo` still fails, and the script reports region empty even when `runner.env` is correct. Read it with `sudo cat /proc/<pid>/environ`.
 
 ## Firecracker started, then the client hung
 

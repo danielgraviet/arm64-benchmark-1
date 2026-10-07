@@ -562,6 +562,8 @@ EOF
   as_root tee /etc/systemd/system/rlp-runner.service.d/oci.conf >/dev/null <<EOF
 [Service]
 User=${USER}
+Environment=RLP_RUNNER_REGION=vera
+Environment=RLP_RUNNER_CPU_TYPE=vera
 EOF
 
   # WorkingDirectory=/opt/rlp must be readable by the service User.
