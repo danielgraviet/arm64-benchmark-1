@@ -502,15 +502,40 @@ EOF
   fi
 
   as_root cp -f "${RLP_ROOT}/deploy/rlp-api.service" /etc/systemd/system/
-  as_root cp -f "${RLP_ROOT}/deploy/rlp-proxy.service" /etc/systemd/system/
   as_root cp -f "${RLP_ROOT}/deploy/rlp-runner.service" /etc/systemd/system/
 
-  # Upstream units hard-code User=ubuntu and (proxy) Requires=wg-quick@wg0.
-  # Bare OCI cell is co-located without WireGuard.
+  # Do NOT copy upstream rlp-proxy.service — it Requires=wg-quick@wg0 and breaks
+  # bare OCI cells. Drop-in Clears of Requires= are unreliable across systemd.
+  as_root tee /etc/systemd/system/rlp-proxy.service >/dev/null <<EOF
+[Unit]
+Description=rl-platform toolbox proxy (OCI co-located, no WireGuard)
+After=network-online.target rlp-api.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=${USER}
+EnvironmentFile=/etc/rlp/proxy.env
+ExecStart=/usr/local/bin/rlp-proxy
+Restart=always
+RestartSec=2
+LimitNOFILE=1048576
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/etc/rlp
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+  # Upstream api/runner hard-code User=ubuntu.
   as_root mkdir -p \
     /etc/systemd/system/rlp-api.service.d \
-    /etc/systemd/system/rlp-proxy.service.d \
     /etc/systemd/system/rlp-runner.service.d
+  # Remove any stale proxy drop-in from earlier attempts.
+  as_root rm -rf /etc/systemd/system/rlp-proxy.service.d
 
   as_root tee /etc/systemd/system/rlp-api.service.d/oci.conf >/dev/null <<EOF
 [Service]
@@ -520,16 +545,9 @@ EOF
 [Service]
 User=${USER}
 EOF
-  as_root tee /etc/systemd/system/rlp-proxy.service.d/oci.conf >/dev/null <<EOF
-[Unit]
-# Clear WireGuard dependency for single-box cell.
-Requires=
-After=network-online.target rlp-api.service
-[Service]
-User=${USER}
-EOF
 
   as_root systemctl daemon-reload
+  as_root systemctl reset-failed rlp-proxy 2>/dev/null || true
   as_root systemctl enable rlp.slice 2>/dev/null || true
   as_root systemctl enable --now rlp-api
   sleep 2
