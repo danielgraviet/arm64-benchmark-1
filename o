@@ -45,6 +45,9 @@ case "${cmd}" in
   k|kernel|guest)
     exec bash "${ROOT}/scripts/host/oci_build_guest.sh" "$@"
     ;;
+  a|daemon)
+    exec bash "${ROOT}/scripts/host/oci_build_daemon.sh" "$@"
+    ;;
   j|journal|log)
     sudo systemctl status rlp-api --no-pager -l 2>&1 | head -n 30 || true
     echo '---'
@@ -62,6 +65,7 @@ case "${cmd}" in
     cat <<'EOF'
 ./o g     boot / resume (uses .env.oci; sudo docker if needed)
 ./o k     build guest Image + initdisk into /var/lib/rlp/kernel/
+./o a     build arm64 daemon system layer (toolbox :2280)
 ./o j     show rlp-api journal (when health fails)
 ./o z     wipe postgres/nats volumes (password mismatch fix)
 ./o p     git pull then boot
