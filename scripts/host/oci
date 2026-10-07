@@ -23,19 +23,27 @@ case "${cmd}" in
     exec bash "${SCRIPT_DIR}/oci_pack_secrets.sh" "$@"
     ;;
   load)
-    # shellcheck disable=SC1091
-    source "${SCRIPT_DIR}/oci_load_secrets.sh" --print-keys "$@"
+    # Prefer writing .env.oci; parent interactive shells do not inherit
+    # exports from "bash scripts/host/oci load". Always tell the user that.
+    bash "${SCRIPT_DIR}/oci_load_secrets.sh" --print-keys "$@"
     ;;
   go|boot|bootstrap)
-    if [[ -f "${ROOT}/secrets/oci-vera.enc" && -z "${GH_TOKEN:-}" ]]; then
-      # shellcheck disable=SC1091
-      source "${SCRIPT_DIR}/oci_load_secrets.sh"
-    elif [[ -f "${ROOT}/.env.oci" && -z "${GH_TOKEN:-}" ]]; then
+    # Prefer already-decrypted drop file (survives across typed commands).
+    if [[ -z "${GH_TOKEN:-}" && -f "${ROOT}/.env.oci" ]]; then
       set -a
       # shellcheck disable=SC1091
       source "${ROOT}/.env.oci"
       set +a
     fi
+    if [[ -z "${GH_TOKEN:-}" && -f "${ROOT}/secrets/oci-vera.enc" ]]; then
+      # shellcheck disable=SC1091
+      source "${SCRIPT_DIR}/oci_load_secrets.sh"
+    fi
+    if [[ -z "${GH_TOKEN:-}" ]]; then
+      echo "GH_TOKEN empty. Run: OCI_PASS=… bash scripts/host/oci load" >&2
+      exit 1
+    fi
+    echo "oci go: GH_TOKEN length ${#GH_TOKEN}"
     exec bash "${SCRIPT_DIR}/oci_vera_bootstrap.sh" "$@"
     ;;
   check|parity)

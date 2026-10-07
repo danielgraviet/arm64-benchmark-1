@@ -96,4 +96,18 @@ if [[ -z "${GH_TOKEN:-}" ]]; then
   echo "WARN: GH_TOKEN still empty after load" >&2
   exit 1
 fi
-echo "GH_TOKEN ready. Next: bash scripts/host/oci_vera_bootstrap.sh"
+cat <<EOF
+OK: decrypted into ${OUT} (GH_TOKEN length ${#GH_TOKEN} in this process).
+
+IMPORTANT: if you ran this as "bash scripts/host/oci load", your interactive
+shell still has GH_TOKEN empty. That is normal. Do NOT echo \$GH_TOKEN to check.
+Check the file instead, then boot:
+
+  grep -E '^GH_TOKEN=' .env.oci | wc -c
+  bash scripts/host/oci go
+
+Or import into this shell:
+
+  set -a; source .env.oci; set +a
+  echo \${#GH_TOKEN}
+EOF
