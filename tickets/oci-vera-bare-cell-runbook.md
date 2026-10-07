@@ -52,10 +52,14 @@ Type almost nothing. Repo-root `./o` is the entrypoint.
 ```bash
 cd arm64-benchmark-1
 git pull
-./o g
+./o r
 ```
 
-That reuses `.env.oci` and `~/rlp` (no PAT re-typing, no long git remote lines).
+`./o r` deletes a broken/incomplete `~/rlp` (common after a Nix password prompt
+interrupted the clone), then boots. Eng SDK pin is branch **`bench-pin`** on
+`danielgraviet/rlp` (same commit as `660e6e3b`).
+
+If `~/rlp` is already healthy: `./o g` is enough.
 
 ### Fresh box
 

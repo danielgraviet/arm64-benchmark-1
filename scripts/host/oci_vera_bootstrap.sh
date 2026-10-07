@@ -36,9 +36,11 @@ cd "$ROOT"
 export PATH="${HOME}/.local/bin:/usr/local/bin:${PATH}"
 
 RLP_ROOT="${RLP_ROOT:-${HOME}/rlp}"
-RLP_PIN="${RLP_PIN:-660e6e3b}"
-RLP_GIT_URL="${RLP_GIT_URL:-https://github.com/daytona/rlp.git}"
-RLP_FALLBACK_GIT_URL="${RLP_FALLBACK_GIT_URL:-https://github.com/danielgraviet/rlp.git}"
+# Short branch on danielgraviet/rlp (== 660e6e3b eng SDK pin). Sha alone was
+# missing from incomplete clones / older fork tips on the Nix box.
+RLP_PIN="${RLP_PIN:-bench-pin}"
+RLP_GIT_URL="${RLP_GIT_URL:-https://github.com/danielgraviet/rlp.git}"
+RLP_FALLBACK_GIT_URL="${RLP_FALLBACK_GIT_URL:-https://github.com/daytona/rlp.git}"
 SKIP_CELL="${SKIP_CELL:-0}"
 SKIP_BUILD="${SKIP_BUILD:-0}"
 FC_VERSION="${FC_VERSION:-1.16.1}"
@@ -160,12 +162,10 @@ clone_rlp() {
     die "GH_TOKEN unset. On Mac: OCI_PASS=… GH_TOKEN=… bash scripts/host/oci pack && git push. On Vera: source .env.oci then re-run."
   fi
 
-  # Prefer the fork the fine-grained PAT can actually read. daytona/rlp often
-  # returns "write access not granted" / 404 for personal tokens.
-  local urls=("${RLP_FALLBACK_GIT_URL}" "${RLP_GIT_URL}")
-  # Allow override order: RLP_GIT_URL first if explicitly forced.
+  # Prefer danielgraviet/rlp (fine-grained PAT). Upstream daytona/rlp is fallback.
+  local urls=("${RLP_GIT_URL}" "${RLP_FALLBACK_GIT_URL}")
   if [[ "${RLP_PREFER_UPSTREAM:-0}" == "1" ]]; then
-    urls=("${RLP_GIT_URL}" "${RLP_FALLBACK_GIT_URL}")
+    urls=("${RLP_FALLBACK_GIT_URL}" "${RLP_GIT_URL}")
   fi
 
   local url="" auth_url="" cloned=0
@@ -193,9 +193,18 @@ clone_rlp() {
   # caused an interactive username prompt on the Nix terminal after a good clone.
   auth_url="https://x-access-token:${GH_TOKEN}@${url#https://}"
   git -C "${RLP_ROOT}" remote set-url origin "${auth_url}"
-  git -c credential.helper= -C "${RLP_ROOT}" fetch --all --tags || true
-  git -c credential.helper= -C "${RLP_ROOT}" checkout --force "${RLP_PIN}" \
-    || die "checkout ${RLP_PIN} failed (is that commit on your fork?)"
+  # Explicitly fetch the pin ref (branch or sha). Avoids "pathspec did not match"
+  # on incomplete clones from an interrupted Nix session.
+  git -c credential.helper= -C "${RLP_ROOT}" fetch --force origin \
+    "refs/heads/${RLP_PIN}:refs/remotes/origin/${RLP_PIN}" \
+    "${RLP_PIN}" || true
+  git -c credential.helper= -C "${RLP_ROOT}" fetch --tags origin || true
+  if ! git -c credential.helper= -C "${RLP_ROOT}" checkout --force "${RLP_PIN}"; then
+    if ! git -c credential.helper= -C "${RLP_ROOT}" checkout --force "origin/${RLP_PIN}"; then
+      git -C "${RLP_ROOT}" remote set-url origin "${url}"
+      die "checkout ${RLP_PIN} failed. On Vera type: ./o r"
+    fi
+  fi
   git -C "${RLP_ROOT}" remote set-url origin "${url}"
   log "RLP HEAD=$(git -C "${RLP_ROOT}" rev-parse --short HEAD) origin=${url}"
 }

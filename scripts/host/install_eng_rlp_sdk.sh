@@ -6,8 +6,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-RLP_ROOT="${RLP_ROOT:-/home/ubuntu/rlp}"
-RLP_PIN="${RLP_PIN:-660e6e3b}"
+RLP_ROOT="${RLP_ROOT:-${HOME}/rlp}"
+# bench-pin on danielgraviet/rlp == 660e6e3b (eng SDK with cpu_max).
+RLP_PIN="${RLP_PIN:-bench-pin}"
 
 export PATH="${HOME}/.local/bin:/usr/local/bin:${PATH}"
 

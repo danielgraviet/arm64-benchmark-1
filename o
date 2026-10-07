@@ -21,11 +21,18 @@ case "${cmd}" in
     git pull --ff-only
     exec bash "${ROOT}/scripts/host/oci" go "$@"
     ;;
+  r|reset)
+    # Wipe broken/incomplete ~/rlp from an interrupted clone, then boot.
+    echo "removing ${HOME}/rlp"
+    rm -rf "${HOME}/rlp"
+    exec bash "${ROOT}/scripts/host/oci" go "$@"
+    ;;
   h|help|-h|--help)
     cat <<'EOF'
-./o g     boot cell (uses .env.oci — no long PAT typing)
+./o g     boot cell (uses .env.oci)
 ./o p     git pull then boot
-./o l     decrypt secrets pack → .env.oci
+./o r     delete ~/rlp then boot (fix bad checkout)
+./o l     decrypt secrets → .env.oci
 ./o c     parity check
 ./o s     smoke
 ./o 1     create-ready 1000
