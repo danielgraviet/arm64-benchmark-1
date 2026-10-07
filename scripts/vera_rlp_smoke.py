@@ -35,7 +35,9 @@ def _require(name: str) -> str:
 
 
 def main() -> None:
-    load_dotenv(ROOT / ".env")
+    # Override a stale VERA_RLP_API_KEY exported in the parent shell.
+    # load_dotenv's default leaves that old key in place and the API returns 401.
+    load_dotenv(ROOT / ".env", override=True)
     rlp_client_tuning.apply()
 
     api_url = _require("VERA_RLP_API_URL")

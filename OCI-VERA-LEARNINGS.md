@@ -60,7 +60,7 @@ The stock `rlp-proxy` unit requires `wg-quick@wg0`. This box has no WireGuard. A
 
 `psql` prints `INSERT 0 1` as well as the uuid you asked for. If you capture both into a shell variable, the next query sees `org_id='<uuid>INSERT01'` and Postgres says invalid uuid. Quiet mode (`-qAt`) and a single script that ends in one `SELECT` avoid that.
 
-`rlp-api mint-key` requires `--permissions all`. Without it the command errors. A sloppy parser then saves a uuid into `.env`. Smoke returns `401` from `rlp/http.py` (`DaytonaAuth`, unauthorized). That file is only the HTTP wrapper. The failure is still the bearer token. A real key looks like `rlp_` plus 32 hex characters. `./o m` mints one and rewrites `.env`. A later `./o s` probes `GET /vms` first and remints on 401 before it spends time on the runner.
+`rlp-api mint-key` requires `--permissions all`. Without it the command errors. A sloppy parser then saves a uuid into `.env`. Smoke returns `401` from `rlp/http.py` (`DaytonaAuth`, unauthorized). That file is only the HTTP wrapper. The failure is still the bearer token. A real key looks like `rlp_` plus 32 hex characters. `./o m` mints one and rewrites `.env`. A later `./o s` probes `GET /vms` first and remints on 401 before it spends time on the runner. `load_dotenv` does not replace a `VERA_RLP_API_KEY` already exported in the shell. That stale value wins over the new line in `.env`, and smoke 401s again. Unset the variable, or load the file with `override=True`.
 
 ## cpu_type
 

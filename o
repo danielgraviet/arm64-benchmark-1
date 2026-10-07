@@ -31,14 +31,25 @@ case "${cmd}" in
       -H "Authorization: Bearer ${VERA_RLP_API_KEY:-}" \
       http://127.0.0.1:8088/vms || echo 000)"
     echo "api key probe: HTTP ${key_code} (key length ${#VERA_RLP_API_KEY})"
-    if [[ "${key_code}" == "401" || "${key_code}" == "403" ]]; then
-      echo "key rejected. reminting."
+    if [[ "${key_code}" != "200" ]]; then
+      echo "key probe HTTP ${key_code}. reminting."
       bash "${ROOT}/scripts/host/oci_remint.sh"
       set -a
       # shellcheck disable=SC1091
       source "${ROOT}/.env"
       set +a
+      key_code="$(curl -sS -m 5 -o /tmp/oci-key-probe.txt -w '%{http_code}' \
+        -H "Authorization: Bearer ${VERA_RLP_API_KEY:-}" \
+        http://127.0.0.1:8088/vms || echo 000)"
+      echo "api key probe after mint: HTTP ${key_code} (key length ${#VERA_RLP_API_KEY})"
+      if [[ "${key_code}" != "200" ]]; then
+        echo "key still rejected. body:" >&2
+        cat /tmp/oci-key-probe.txt >&2 || true
+        exit 1
+      fi
     fi
+    # Drop any parent-shell key so smoke reads .env via load_dotenv(override=True).
+    unset VERA_RLP_API_KEY RLP_API_KEY || true
     bash "${ROOT}/scripts/host/oci_seed_cpu.sh"
     bash "${ROOT}/scripts/host/oci_why.sh"
     follow="/tmp/oci-smoke-runner.log"
