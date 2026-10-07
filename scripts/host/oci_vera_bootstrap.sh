@@ -632,11 +632,12 @@ wait_api_health() {
 
 seed_region_and_mint_key() {
   log "seed regions.id=${REGION_ID} + mint API key"
-  # Always go through run_docker (sudo) — same docker.sock permission issue.
-  local psql=(run_docker exec -i rlp-postgres psql -U rlp -d rlplatform)
+  # One quiet SQL script. Capturing INSERT/UPDATE status tags into shell vars
+  # previously glued "INSERT 0 1" onto UUIDs and broke the next query.
 
-  "${psql[@]}" -v ON_ERROR_STOP=1 <<SQL
--- Partial unique index allows only one is_default=true. Clear first.
+  local project_id
+  project_id="$(
+    run_docker exec -i rlp-postgres psql -U rlp -d rlplatform -v ON_ERROR_STOP=1 -qAt <<SQL
 UPDATE regions SET is_default=false WHERE is_default=true;
 INSERT INTO regions (id, name, status, is_default, toolbox_proxy_url)
 VALUES ('${REGION_ID}', 'OCI Vera bare cell', 'active', true, 'http://127.0.0.1:9000/toolbox')
@@ -645,40 +646,48 @@ ON CONFLICT (id) DO UPDATE
       is_default=true,
       toolbox_proxy_url=EXCLUDED.toolbox_proxy_url,
       updated_at=now();
+
+INSERT INTO organizations (name)
+SELECT 'oci-vera-bootstrap'
+WHERE NOT EXISTS (
+  SELECT 1 FROM organizations WHERE name='oci-vera-bootstrap'
+);
+
+INSERT INTO projects (org_id, name)
+SELECT o.id, 'default'
+FROM organizations o
+WHERE o.name='oci-vera-bootstrap'
+  AND NOT EXISTS (
+    SELECT 1 FROM projects p WHERE p.org_id=o.id AND p.name='default'
+  );
+
+SELECT p.id
+FROM projects p
+JOIN organizations o ON o.id=p.org_id
+WHERE o.name='oci-vera-bootstrap' AND p.name='default'
+LIMIT 1;
 SQL
+  )"
+  project_id="$(printf '%s' "${project_id}" | awk 'NF{print; exit}')"
+  [[ "${project_id}" =~ ^[0-9a-fA-F-]{36}$ ]] \
+    || die "bad project_id='${project_id}' (expected uuid). Type: ./o z && ./o g"
 
   if [[ -n "${RLP_API_KEY:-}" ]]; then
     log "using provided RLP_API_KEY"
     return
   fi
 
-  local project_id org_id
-  org_id="$("${psql[@]}" -tAc \
-    "SELECT id FROM organizations WHERE name='oci-vera-bootstrap' LIMIT 1;" \
-    | tr -d '[:space:]')"
-  if [[ -z "${org_id}" ]]; then
-    org_id="$("${psql[@]}" -tAc \
-      "INSERT INTO organizations (name) VALUES ('oci-vera-bootstrap') RETURNING id;" \
-      | tr -d '[:space:]')"
-  fi
-  project_id="$("${psql[@]}" -tAc \
-    "SELECT id FROM projects WHERE org_id='${org_id}' AND name='default' LIMIT 1;" \
-    | tr -d '[:space:]')"
-  if [[ -z "${project_id}" ]]; then
-    project_id="$("${psql[@]}" -tAc \
-      "INSERT INTO projects (org_id, name) VALUES ('${org_id}', 'default') RETURNING id;" \
-      | tr -d '[:space:]')"
-  fi
-  [[ -n "${project_id}" ]] || die "could not create/find bootstrap project"
-
-  # mint-key prints plaintext once
   local minted
   minted="$(rlp-api mint-key oci-vera-cli --project "${project_id}" 2>&1 || true)"
-  RLP_API_KEY="$(printf '%s\n' "${minted}" | grep -Eo 'dtn_[A-Za-z0-9_-]+|rlp_[A-Za-z0-9_-]+|[A-Za-z0-9_-]{20,}' | head -n1 || true)"
+  RLP_API_KEY="$(printf '%s\n' "${minted}" | grep -Eo 'dtn_[A-Za-z0-9_-]+|rlp_[A-Za-z0-9_-]+' | head -n1 || true)"
+  if [[ -z "${RLP_API_KEY}" ]]; then
+    # Broader fallback — still prefer dtn_/rlp_ prefixes above.
+    RLP_API_KEY="$(printf '%s\n' "${minted}" | grep -Eo '[A-Za-z0-9_-]{24,}' | head -n1 || true)"
+  fi
   if [[ -z "${RLP_API_KEY}" ]]; then
     log "mint-key output:"
     printf '%s\n' "${minted}"
-    die "could not parse API key from mint-key; set RLP_API_KEY= and re-run"
+    die "could not parse API key from mint-key"
   fi
   log "minted API key (stored in .env only)"
 }
