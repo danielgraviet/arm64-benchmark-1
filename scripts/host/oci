@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# Ultra-short typed entrypoint for OCI Vera (no paste).
+#
+# On Mac (paste OK):
+#   OCI_PASS='four words' GH_TOKEN=… bash scripts/host/oci pack
+#
+# On Vera after public clone:
+#   OCI_PASS='four words' bash scripts/host/oci go
+#
+# Subcommands: pack | load | go | check | smoke | c1k | c2k | dense | status
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+cd "$ROOT"
+export PATH="${HOME}/.local/bin:/usr/local/bin:${PATH}"
+
+cmd="${1:-}"
+shift || true
+
+case "${cmd}" in
+  pack)
+    exec bash "${SCRIPT_DIR}/oci_pack_secrets.sh" "$@"
+    ;;
+  load)
+    # shellcheck disable=SC1091
+    source "${SCRIPT_DIR}/oci_load_secrets.sh" --print-keys "$@"
+    ;;
+  go|boot|bootstrap)
+    if [[ -f "${ROOT}/secrets/oci-vera.enc" && -z "${GH_TOKEN:-}" ]]; then
+      # shellcheck disable=SC1091
+      source "${SCRIPT_DIR}/oci_load_secrets.sh"
+    elif [[ -f "${ROOT}/.env.oci" && -z "${GH_TOKEN:-}" ]]; then
+      set -a
+      # shellcheck disable=SC1091
+      source "${ROOT}/.env.oci"
+      set +a
+    fi
+    exec bash "${SCRIPT_DIR}/oci_vera_bootstrap.sh" "$@"
+    ;;
+  check|parity)
+    exec bash "${SCRIPT_DIR}/check_vera_parity.sh" "$@"
+    ;;
+  smoke)
+    export UV_NO_SYNC=1
+    exec uv run python scripts/vera_rlp_smoke.py "$@"
+    ;;
+  c1k)
+    exec bash -c 'TARGET=vera bash scripts/host/run_create_ready.sh 1000'
+    ;;
+  c2k)
+    exec bash -c 'TARGET=vera bash scripts/host/run_create_ready.sh 2000'
+    ;;
+  dense)
+    exec bash "${SCRIPT_DIR}/run_dense2k_vera.sh" "$@"
+    ;;
+  status)
+    exec bash "${SCRIPT_DIR}/status.sh" "$@"
+    ;;
+  ""|-h|--help|help)
+    cat <<'EOF'
+oci — short OCI Vera commands
+
+  pack       Mac: encrypt GH_TOKEN into secrets/oci-vera.enc
+  load       Vera: decrypt pack → .env.oci
+  go         Vera: load secrets (if needed) + full cell bootstrap
+  check      parity gate
+  smoke      vera_rlp_smoke.py
+  c1k / c2k  create-ready 1000 / 2000
+  dense      dense2k ladder
+  status     host/tmux/FC snapshot
+
+Typed Vera path after clone:
+  OCI_PASS='four words' bash scripts/host/oci go
+  bash scripts/host/oci check
+  bash scripts/host/oci smoke
+  tmux new -d -s c1k bash scripts/host/oci c1k
+EOF
+    ;;
+  *)
+    echo "unknown: ${cmd} (try: bash scripts/host/oci help)" >&2
+    exit 2
+    ;;
+esac

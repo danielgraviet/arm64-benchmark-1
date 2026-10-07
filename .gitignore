@@ -11,6 +11,12 @@ wheels/
 
 # Local secrets
 .env
+.env.oci
+secrets/*.plain
+secrets/*.env
+secrets/*.tmp
+# Ciphertext packs (*.enc) + sha256 tags ARE committed on purpose so the
+# OCI box only needs a short typed passphrase (see scripts/host/oci_pack_secrets.sh).
 
 # macOS
 .DS_Store

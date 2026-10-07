@@ -12,10 +12,19 @@ RLP_PIN="${RLP_PIN:-660e6e3b}"
 export PATH="${HOME}/.local/bin:/usr/local/bin:${PATH}"
 
 if [[ ! -d "${RLP_ROOT}/.git" ]]; then
-  gh repo clone daytona/rlp "${RLP_ROOT}"
+  RLP_GIT_URL="${RLP_GIT_URL:-https://github.com/daytona/rlp.git}"
+  if [[ -n "${GH_TOKEN:-}" ]]; then
+    auth_url="https://x-access-token:${GH_TOKEN}@${RLP_GIT_URL#https://}"
+    git clone "${auth_url}" "${RLP_ROOT}"
+    git -C "${RLP_ROOT}" remote set-url origin "${RLP_GIT_URL}"
+  elif command -v gh >/dev/null 2>&1; then
+    gh repo clone daytona/rlp "${RLP_ROOT}"
+  else
+    git clone "${RLP_GIT_URL}" "${RLP_ROOT}"
+  fi
 fi
 
-git -C "${RLP_ROOT}" fetch origin
+git -C "${RLP_ROOT}" fetch origin || true
 git -C "${RLP_ROOT}" checkout --force "${RLP_PIN}"
 
 DAYTONA_PY="${RLP_ROOT}/clients/python/src/rlp/daytona.py"
