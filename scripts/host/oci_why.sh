@@ -56,9 +56,38 @@ if [[ "${live_cpu}" != "vera" || "${live_region}" != "vera" ]]; then
 fi
 
 echo "=== runner row in postgres ==="
+runner_rows="$(sudo -n docker exec rlp-postgres psql -U rlp -d rlplatform -tAc \
+  "SELECT count(*) FROM runners;" 2>/dev/null || echo err)"
 sudo -n docker exec rlp-postgres psql -U rlp -d rlplatform -c \
   "SELECT id, region_id, status, cpu_arch, cpu_type, last_seen_at FROM runners ORDER BY last_seen_at DESC NULLS LAST LIMIT 5;" \
   2>/dev/null || echo "(could not query runners table)"
+
+echo "=== api register rejects ==="
+sudo -n journalctl -u rlp-api --no-pager -n 400 2>/dev/null \
+  | grep -E 'rejecting runner' | tail -n 15 || true
+
+# A bare cell has no NVMe-oF target. The API refuses to insert the runner
+# until RLP_ALLOW_NON_NVMEOF_RUNNERS=1. Binding NATS consumers is not enough:
+# with zero rows, creates sit until the 60s cap.
+if [[ "${runner_rows}" == "0" ]]; then
+  log "runners table is empty. Allowing a non-NVMe-oF runner and re-registering."
+  sudo -n mkdir -p /etc/systemd/system/rlp-api.service.d
+  sudo -n tee /etc/systemd/system/rlp-api.service.d/no-nvmeof.conf >/dev/null <<'EOF'
+[Service]
+Environment=RLP_ALLOW_NON_NVMEOF_RUNNERS=1
+EOF
+  sudo -n systemctl daemon-reload
+  sudo -n systemctl restart rlp-api
+  for _ in $(seq 1 30); do
+    curl -fsS -m 2 http://127.0.0.1:8088/health >/dev/null 2>&1 && break
+    sleep 1
+  done
+  sudo -n systemctl restart rlp-runner
+  sleep 5
+  echo "=== runner row after re-register ==="
+  sudo -n docker exec rlp-postgres psql -U rlp -d rlplatform -c \
+    "SELECT id, region_id, status, cpu_arch, cpu_type FROM runners;" 2>/dev/null || true
+fi
 
 echo "=== subjects this process bound ==="
 echo "expect jobs.vm.create.vera.vera (and jobs.vm.create.vera.arm64)"
