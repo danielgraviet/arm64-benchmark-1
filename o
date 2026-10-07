@@ -19,7 +19,10 @@ case "${cmd}" in
     ;;
   l|load)    exec bash "${ROOT}/scripts/host/oci" load "$@" ;;
   c|check)   exec bash "${ROOT}/scripts/host/oci" check "$@" ;;
-  s|smoke)   exec bash "${ROOT}/scripts/host/oci" smoke "$@" ;;
+  s|smoke)
+    bash "${ROOT}/scripts/host/oci_seed_cpu.sh"
+    exec bash "${ROOT}/scripts/host/oci" smoke "$@"
+    ;;
   m|mint)
     exec bash "${ROOT}/scripts/host/oci_remint.sh" "$@"
     ;;
