@@ -60,6 +60,8 @@ The stock `rlp-proxy` unit requires `wg-quick@wg0`. This box has no WireGuard. A
 
 `psql` prints `INSERT 0 1` as well as the uuid you asked for. If you capture both into a shell variable, the next query sees `org_id='<uuid>INSERT01'` and Postgres says invalid uuid. Quiet mode (`-qAt`) and a single script that ends in one `SELECT` avoid that.
 
+`uv sync` or a bare `uv run` puts PyPI `rlp-sdk` back and drops `cpu_max`, or removes `rlp` entirely (`No module named rlp`). Keep `UV_NO_SYNC=1`. The create script reinstalls `~/rlp/clients/python` editable when that import fails.
+
 `rlp-api mint-key` requires `--permissions all`. Without it the command errors. A sloppy parser then saves a uuid into `.env`. Smoke returns `401` from `rlp/http.py` (`DaytonaAuth`, unauthorized). That file is only the HTTP wrapper. The failure is still the bearer token. A real key looks like `rlp_` plus 32 hex characters. `./o m` mints one and rewrites `.env`. A later `./o s` probes `GET /vms` first and remints on 401 before it spends time on the runner. `load_dotenv` does not replace a `VERA_RLP_API_KEY` already exported in the shell. That stale value wins over the new line in `.env`, and smoke 401s again. Unset the variable, or load the file with `override=True`.
 
 A sandbox id followed by `unauthorized` inside `process.exec` is a different 401. Create talks to the API on `:8088`. Exec talks to the toolbox proxy on `:9000`. The proxy checks the same bearer token in Postgres, and it also requires the literal scope `write:sandboxes`. It uses `RLP_DB_URL` from `/etc/rlp/proxy.env`, not the API's `DATABASE_URL`. If those URLs diverge, create works and exec returns 401. The proxy log line is `toolbox auth denied`. Point `RLP_DB_URL` at the API database and restart `rlp-proxy`.

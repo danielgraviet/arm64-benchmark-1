@@ -48,8 +48,9 @@ export RLP_HTTP_MAX_CONNECTIONS="${RLP_HTTP_MAX_CONNECTIONS:-8192}"
 export RLP_HOLD_CREATE_BATCH="${RLP_HOLD_CREATE_BATCH:-512}"
 
 if ! UV_NO_SYNC=1 uv run python -c 'from rlp import Resources; assert "cpu_max" in Resources.__dataclass_fields__'; then
-  echo "eng rlp-sdk missing cpu_max. Run: bash scripts/host/install_eng_rlp_sdk.sh" >&2
-  exit 1
+  echo "eng rlp-sdk missing. reinstalling editable client."
+  UV_NO_SYNC=1 uv pip install -e "${HOME}/rlp/clients/python"
+  UV_NO_SYNC=1 uv run python -c 'from rlp import Resources; assert "cpu_max" in Resources.__dataclass_fields__'
 fi
 
 mkdir -p "$(dirname "${OUT}")" "$(dirname "${OUT_DATA}")"

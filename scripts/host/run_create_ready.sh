@@ -102,9 +102,27 @@ if [[ "${TARGET}" == "vera" && -f /etc/rlp/api.env ]]; then
   fi
 fi
 
-if ! UV_NO_SYNC=1 uv run python -c 'from rlp import Resources; assert "cpu_max" in Resources.__dataclass_fields__'; then
-  echo "eng rlp-sdk missing cpu_max. Run: bash scripts/host/install_eng_rlp_sdk.sh" >&2
-  exit 1
+sdk_ok() {
+  UV_NO_SYNC=1 uv run python -c 'from rlp import Resources; assert "cpu_max" in Resources.__dataclass_fields__'
+}
+
+if ! sdk_ok; then
+  echo "eng rlp-sdk missing (uv sync drops cpu_max). reinstalling editable client."
+  if [[ -d "${HOME}/rlp/clients/python" ]]; then
+    UV_NO_SYNC=1 uv pip install -e "${HOME}/rlp/clients/python"
+  else
+    if [[ -f "${ROOT}/.env.oci" ]]; then
+      set -a
+      # shellcheck disable=SC1091
+      source "${ROOT}/.env.oci"
+      set +a
+    fi
+    RLP_ROOT="${HOME}/rlp" bash "${ROOT}/scripts/host/install_eng_rlp_sdk.sh"
+  fi
+  if ! sdk_ok; then
+    echo "eng rlp-sdk still missing cpu_max" >&2
+    exit 1
+  fi
 fi
 
 mkdir -p "$(dirname "${LOG_NVME}")" 2>/dev/null || true
