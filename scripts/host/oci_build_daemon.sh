@@ -27,7 +27,7 @@ sudo -n chown -R "${USER}:${USER}" /var/lib/rlp
 log "building daytona daemon ${VERSION} for arm64 (downloads Go modules; several minutes)"
 (
   cd "${RLP_ROOT}"
-  RLP_DAEMON_ARCH=arm64 bash tools/daemon/build-daemon.sh --version "${VERSION}" --force
+  RLP_DAEMON_ARCH=arm64 bash tools/daemon/build-daemon.sh --version "${VERSION}"
 )
 
 # Patches rename the artifact dir to v0.190.0-rlp<N>. Do not assume the
