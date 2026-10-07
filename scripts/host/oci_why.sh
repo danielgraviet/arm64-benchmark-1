@@ -76,6 +76,9 @@ if [[ "${runner_rows}" == "0" ]]; then
 [Service]
 Environment=RLP_ALLOW_NON_NVMEOF_RUNNERS=1
 EOF
+  if ! sudo -n grep -q '^RLP_ALLOW_NON_NVMEOF_RUNNERS=1$' /etc/rlp/api.env 2>/dev/null; then
+    echo 'RLP_ALLOW_NON_NVMEOF_RUNNERS=1' | sudo -n tee -a /etc/rlp/api.env >/dev/null
+  fi
   sudo -n systemctl daemon-reload
   sudo -n systemctl restart rlp-api
   for _ in $(seq 1 30); do
@@ -83,10 +86,18 @@ EOF
     sleep 1
   done
   sudo -n systemctl restart rlp-runner
-  sleep 5
+  log "waiting 20s for the runner heartbeat (it registers every 10s)"
+  sleep 20
+  echo "=== api env flag ==="
+  sudo -n systemctl show rlp-api -p Environment --no-pager 2>/dev/null | tr ' ' '\n' | grep -E 'NON_NVMEOF|RLP_ALLOW' || echo "(flag not visible on the unit)"
+  echo "=== api warnings since restart ==="
+  sudo -n journalctl -u rlp-api --since "3 min ago" --no-pager -p warning 2>/dev/null | tail -n 20 || true
   echo "=== runner row after re-register ==="
   sudo -n docker exec rlp-postgres psql -U rlp -d rlplatform -c \
     "SELECT id, region_id, status, cpu_arch, cpu_type FROM runners;" 2>/dev/null || true
+  echo "=== regions and cpu_types ==="
+  sudo -n docker exec rlp-postgres psql -U rlp -d rlplatform -c \
+    "SELECT id, status FROM regions; SELECT id, cpu_arch, tier FROM cpu_types WHERE id='vera';" 2>/dev/null || true
 fi
 
 echo "=== subjects this process bound ==="
