@@ -55,16 +55,16 @@ if [[ "${live_cpu}" != "vera" || "${live_region}" != "vera" ]]; then
   fi
 fi
 
+echo "=== runner row in postgres ==="
+sudo -n docker exec rlp-postgres psql -U rlp -d rlplatform -c \
+  "SELECT id, region_id, status, cpu_arch, cpu_type, last_seen_at FROM runners ORDER BY last_seen_at DESC NULLS LAST LIMIT 5;" \
+  2>/dev/null || echo "(could not query runners table)"
+
 echo "=== subjects this process bound ==="
-# Only lines from the current boot (since the process start).
-if [[ -n "${pid}" ]]; then
-  start="$(ps -o lstart= -p "${pid}" 2>/dev/null || true)"
-  if [[ -n "${start}" ]]; then
-    sudo -n journalctl -u rlp-runner --since "${start}" --no-pager 2>/dev/null \
-      | grep -E 'binding create|consumer bound|register' \
-      | tail -n 20 || true
-  fi
-fi
+echo "expect jobs.vm.create.vera.vera (and jobs.vm.create.vera.arm64)"
+sudo -n journalctl -u rlp-runner --no-pager -n 2000 2>/dev/null \
+  | grep -E 'consumer bound|binding create selector|register' \
+  | tail -n 25 || true
 
 echo "=== recent runner errors ==="
 sudo -n journalctl -u rlp-runner -n 80 --no-pager -p warning 2>/dev/null | tail -n 15 || true

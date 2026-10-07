@@ -22,10 +22,24 @@ case "${cmd}" in
   s|smoke)
     bash "${ROOT}/scripts/host/oci_seed_cpu.sh"
     bash "${ROOT}/scripts/host/oci_why.sh"
-    if ! bash "${ROOT}/scripts/host/oci" smoke "$@"; then
-      echo "=== smoke failed ==="
+    follow="/tmp/oci-smoke-runner.log"
+    : > "${follow}"
+    # sudo only on journalctl. The shell owns the file, so we can read it after.
+    sudo -n journalctl -u rlp-runner -f --since now -o cat \
+      | grep -v 'netns pool gauge' >> "${follow}" &
+    follow_pid=$!
+    set +e
+    bash "${ROOT}/scripts/host/oci" smoke "$@"
+    smoke_rc=$?
+    set -e
+    sudo -n kill "${follow_pid}" 2>/dev/null || kill "${follow_pid}" 2>/dev/null || true
+    wait "${follow_pid}" 2>/dev/null || true
+    echo "=== runner log during smoke (gauges hidden) ==="
+    tail -n 40 "${follow}" 2>/dev/null || true
+    if [[ "${smoke_rc}" -ne 0 ]]; then
+      echo "=== smoke failed (exit ${smoke_rc}) ==="
       bash "${ROOT}/scripts/host/oci_why.sh"
-      exit 1
+      exit "${smoke_rc}"
     fi
     ;;
   m|mint)
