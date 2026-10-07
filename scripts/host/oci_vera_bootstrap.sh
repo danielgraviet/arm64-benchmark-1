@@ -662,9 +662,10 @@ WHERE o.name='oci-vera-bootstrap'
     SELECT 1 FROM projects p WHERE p.org_id=o.id AND p.name='default'
   );
 
-INSERT INTO cpu_types (id, name, cpu_arch)
-VALUES ('vera', 'NVIDIA Vera', 'arm64')
-ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, cpu_arch=EXCLUDED.cpu_arch;
+INSERT INTO cpu_types (id, name, cpu_arch, tier)
+VALUES ('vera', 'NVIDIA Vera', 'arm64', 1)
+ON CONFLICT (id) DO UPDATE
+  SET name=EXCLUDED.name, cpu_arch=EXCLUDED.cpu_arch, tier=EXCLUDED.tier;
 
 SELECT p.id
 FROM projects p
