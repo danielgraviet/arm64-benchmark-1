@@ -352,23 +352,35 @@ EOF
   as_root systemd-tmpfiles --create /etc/tmpfiles.d/rlp-fc.conf 2>/dev/null || true
 }
 
-start_postgres_nats() {
-  log "postgres + NATS via docker compose"
+load_or_create_compose_secrets() {
+  # Reuse passwords across ./o g resumes. Regenerating them while the postgres
+  # docker volume keeps the old password makes rlp-api fail auth forever.
+  as_root mkdir -p /opt/rlp/deploy
+  if [[ -f /opt/rlp/deploy/.env ]]; then
+    set -a
+    # shellcheck disable=SC1091
+    source /opt/rlp/deploy/.env
+    set +a
+    log "reusing /opt/rlp/deploy/.env secrets"
+  fi
   POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-$(openssl rand -hex 16)}"
   RLP_NATS_TOKEN="${RLP_NATS_TOKEN:-$(openssl rand -hex 24)}"
   export POSTGRES_PASSWORD RLP_NATS_TOKEN
-
-  as_root mkdir -p /opt/rlp/deploy
-  as_root cp -f "${RLP_ROOT}/deploy/docker-compose.yml" /opt/rlp/deploy/
-  as_root cp -f "${RLP_ROOT}/deploy/nats.conf" /opt/rlp/deploy/ 2>/dev/null || true
-  as_root cp -f "${RLP_ROOT}/deploy/provision-nats.sh" /opt/rlp/deploy/
-  as_root chown -R "${USER}:${USER}" /opt/rlp/deploy
-
   cat > /opt/rlp/deploy/.env <<EOF
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 RLP_NATS_TOKEN=${RLP_NATS_TOKEN}
 EOF
   chmod 600 /opt/rlp/deploy/.env
+}
+
+start_postgres_nats() {
+  log "postgres + NATS via docker compose"
+  load_or_create_compose_secrets
+
+  as_root cp -f "${RLP_ROOT}/deploy/docker-compose.yml" /opt/rlp/deploy/
+  as_root cp -f "${RLP_ROOT}/deploy/nats.conf" /opt/rlp/deploy/ 2>/dev/null || true
+  as_root cp -f "${RLP_ROOT}/deploy/provision-nats.sh" /opt/rlp/deploy/
+  as_root chown -R "${USER}:${USER}" /opt/rlp/deploy
 
   # Only postgres + NATS. Full compose also starts MinIO on host :9000, which
   # collides with rlp-proxy toolbox (:9000). Blockmount stays off for Vera parity.
@@ -403,6 +415,11 @@ write_cell_env() {
   resolve_guest_paths
   if [[ -z "${RLP_KERNEL:-}" || ! -f "${RLP_KERNEL}" || -z "${RLP_INITDISK:-}" || ! -f "${RLP_INITDISK}" ]]; then
     die "guest Image/initdisk missing under ${GUEST_DIR}/. Type: ./o k   then   ./o g"
+  fi
+
+  # Prefer compose secrets file if this is a resume and env vars were not set.
+  if [[ -z "${POSTGRES_PASSWORD:-}" || -z "${RLP_NATS_TOKEN:-}" ]]; then
+    load_or_create_compose_secrets
   fi
 
   log "writing /etc/rlp/*.env (parity knobs)"
@@ -546,8 +563,15 @@ EOF
 User=${USER}
 EOF
 
+  # WorkingDirectory=/opt/rlp must be readable by the service User.
+  as_root mkdir -p /opt/rlp
+  if [[ ! -e /opt/rlp/rlp-api ]]; then
+    as_root ln -sfn /usr/local/bin/rlp-api /opt/rlp/rlp-api
+  fi
+  as_root chown -R "${USER}:${USER}" /opt/rlp || true
+
   as_root systemctl daemon-reload
-  as_root systemctl reset-failed rlp-proxy 2>/dev/null || true
+  as_root systemctl reset-failed rlp-api rlp-proxy rlp-runner 2>/dev/null || true
   as_root systemctl enable rlp.slice 2>/dev/null || true
   as_root systemctl enable --now rlp-api
   sleep 2
@@ -556,17 +580,54 @@ EOF
   as_root systemctl enable --now rlp-runner
 }
 
+dump_api_diag() {
+  log "=== rlp-api diagnosis ==="
+  as_root systemctl status rlp-api --no-pager -l 2>&1 | head -n 25 || true
+  as_root journalctl -u rlp-api -n 40 --no-pager 2>&1 || true
+  log "=== binaries ==="
+  ls -l /opt/rlp/rlp-api /usr/local/bin/rlp-api 2>&1 || true
+  log "=== db reachability ==="
+  run_docker exec rlp-postgres pg_isready -U rlp 2>&1 || true
+}
+
 wait_api_health() {
   log "waiting for API health"
   local i
-  for i in $(seq 1 90); do
+  for i in $(seq 1 60); do
     if curl -fsS -m 3 http://127.0.0.1:8088/health >/dev/null 2>&1; then
       log "API healthy"
       return 0
     fi
     sleep 2
   done
-  die "API health failed. Check: journalctl -u rlp-api -n 80 --no-pager"
+
+  log "API still down — resync api.env from compose secrets and restart once"
+  load_or_create_compose_secrets
+  # Rewrite DATABASE_URL / NATS_TOKEN only (keep other parity knobs).
+  if [[ -f /etc/rlp/api.env ]]; then
+    as_root cp -a /etc/rlp/api.env "/etc/rlp/api.env.bak-$(date -u +%Y%m%d_%H%M%S)"
+  fi
+  as_root sed -i \
+    -e "s|^DATABASE_URL=.*|DATABASE_URL=postgres://rlp:${POSTGRES_PASSWORD}@127.0.0.1:5439/rlplatform|" \
+    -e "s|^NATS_TOKEN=.*|NATS_TOKEN=${RLP_NATS_TOKEN}|" \
+    /etc/rlp/api.env 2>/dev/null || true
+  # If sed missed (file missing keys), rewrite full file via write_cell_env paths.
+  if ! grep -q "^DATABASE_URL=postgres://rlp:${POSTGRES_PASSWORD}@" /etc/rlp/api.env 2>/dev/null; then
+    resolve_guest_paths || true
+    write_cell_env
+  fi
+  as_root systemctl restart rlp-api
+  sleep 3
+  for i in $(seq 1 30); do
+    if curl -fsS -m 3 http://127.0.0.1:8088/health >/dev/null 2>&1; then
+      log "API healthy after restart"
+      return 0
+    fi
+    sleep 2
+  done
+
+  dump_api_diag
+  die "API health failed. Type: ./o j   or wipe DB with: ./o z && ./o g"
 }
 
 seed_region_and_mint_key() {

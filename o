@@ -39,10 +39,25 @@ case "${cmd}" in
   k|kernel|guest)
     exec bash "${ROOT}/scripts/host/oci_build_guest.sh" "$@"
     ;;
+  j|journal|log)
+    sudo systemctl status rlp-api --no-pager -l 2>&1 | head -n 30 || true
+    echo '---'
+    sudo journalctl -u rlp-api -n 50 --no-pager 2>&1 || true
+    ;;
+  z|zapdb)
+    # Wipe postgres/nats volumes so a fresh password in /opt/rlp/deploy/.env works.
+    echo "wiping rlp postgres/nats docker volumes"
+    sudo docker rm -f rlp-postgres rlp-nats 2>/dev/null || true
+    (cd /opt/rlp/deploy && sudo docker compose down -v) 2>/dev/null || true
+    rm -f /opt/rlp/deploy/.env
+    echo "done. Next: ./o g"
+    ;;
   h|help|-h|--help)
     cat <<'EOF'
 ./o g     boot / resume (uses .env.oci; sudo docker if needed)
 ./o k     build guest Image + initdisk into /var/lib/rlp/kernel/
+./o j     show rlp-api journal (when health fails)
+./o z     wipe postgres/nats volumes (password mismatch fix)
 ./o p     git pull then boot
 ./o r     delete ~/rlp then boot
 ./o l     decrypt secrets → .env.oci
