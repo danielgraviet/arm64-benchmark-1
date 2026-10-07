@@ -726,13 +726,12 @@ print_next() {
 
 [oci-vera] bootstrap finished.
 
-Next (type these):
-  bash scripts/host/check_vera_parity.sh
-  UV_NO_SYNC=1 uv run python scripts/vera_rlp_smoke.py
-  # optional socket pin after rlp.slice exists:
-  bash tickets/vera-pin-single-socket.sh
-  tmux new-session -d -s vera-c1k bash scripts/host/run_create_ready.sh 1000
-  # then 2k + dense — see tickets/oci-vera-bare-cell-runbook.md
+Next (short):
+  ./o c
+  ./o s
+  tmux new -d -s c1k ./o 1
+  # after clean 1k:  tmux new -d -s c2k ./o 2
+  # then dense:      tmux new -d -s dense ./o d
 
 Guest artifacts used:
   RLP_KERNEL=${RLP_KERNEL:-unset}
