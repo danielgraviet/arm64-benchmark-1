@@ -67,7 +67,7 @@ mkdir -p "$(dirname "${LOG_NVME}")" 2>/dev/null || true
     --levels 44 88 176 352 528 704 880 1056 1408 1760 2000 \
     --n 45 --seed 42 -E 8 --hold-then-exec \
     --rlp-cpu 0.025 --rlp-cpu-max 1 \
-    --rlp-memory 0.0625 --rlp-memory-max 4 --rlp-disk 1 \
+    --rlp-memory 0.0625 --rlp-memory-max 4 --rlp-disk 0.015625 \
     --output "${OUT}"
   status=$?
   if [[ "${status}" -eq 0 && -f "${OUT}" ]]; then

@@ -80,6 +80,28 @@ else
   export RLP_HTTP_MAX_CONNECTIONS=4096
 fi
 
+# Onsite recipe is 1 GiB/sandbox, fully allocated by mkfs.ext4.
+# OCI Vera's root disk is ~98 GB, so 1000 x 1 GiB cannot fit.
+# 16 MiB x 1000 = 16 GB. 16 MiB x 2000 = 32 GB. Both fit in ~71 GB free.
+if [[ "${TARGET}" == "vera" ]]; then
+  DISK_GB="${DISK_GB:-0.015625}"
+else
+  DISK_GB="${DISK_GB:-1.0}"
+fi
+
+if [[ "${TARGET}" == "vera" && -f /etc/rlp/api.env ]]; then
+  if ! sudo -n grep -q '^RLP_MIN_SCRATCH_MIB=16$' /etc/rlp/api.env 2>/dev/null; then
+    echo "lowering RLP_MIN_SCRATCH_MIB to 16 so the API does not clamp disks back to 1 GiB"
+    sudo -n sed -i '/^RLP_MIN_SCRATCH_MIB=/d' /etc/rlp/api.env
+    echo 'RLP_MIN_SCRATCH_MIB=16' | sudo -n tee -a /etc/rlp/api.env >/dev/null
+    sudo -n systemctl restart rlp-api
+    for _ in $(seq 1 30); do
+      curl -fsS -m 2 http://127.0.0.1:8088/health >/dev/null 2>&1 && break
+      sleep 1
+    done
+  fi
+fi
+
 if ! UV_NO_SYNC=1 uv run python -c 'from rlp import Resources; assert "cpu_max" in Resources.__dataclass_fields__'; then
   echo "eng rlp-sdk missing cpu_max. Run: bash scripts/host/install_eng_rlp_sdk.sh" >&2
   exit 1
@@ -95,7 +117,7 @@ OUTPUT="${OUT_DIR}/${TARGET}_create_ready_${COUNT}_${STAMP}.jsonl"
   echo "=== CLEANUP $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
   UV_NO_SYNC=1 uv run python scripts/phoenix_rlp_cleanup_sandboxes.py --target "${TARGET}"
   echo "FC=$(pgrep -c firecracker 2>/dev/null || true)"
-  echo "=== START $(date -u +%Y-%m-%dT%H:%M:%SZ) target=${TARGET} ulimit=$(ulimit -Sn) count=${COUNT} workers=${WORKERS} http_pool=${RLP_HTTP_MAX_CONNECTIONS} ==="
+  echo "=== START $(date -u +%Y-%m-%dT%H:%M:%SZ) target=${TARGET} ulimit=$(ulimit -Sn) count=${COUNT} workers=${WORKERS} http_pool=${RLP_HTTP_MAX_CONNECTIONS} disk_gb=${DISK_GB} ==="
   set +e
   UV_NO_SYNC=1 uv run python scripts/rlp_light_create_fleet.py \
     --target "${TARGET}" \
@@ -104,7 +126,7 @@ OUTPUT="${OUT_DIR}/${TARGET}_create_ready_${COUNT}_${STAMP}.jsonl"
     --image dtgraviet/vera-agent-benchmark:v3 \
     --cpu 0.025 \
     --memory 0.0625 \
-    --disk 1.0 \
+    --disk "${DISK_GB}" \
     --probe "echo ready" \
     --output "${OUTPUT}"
   status=$?
