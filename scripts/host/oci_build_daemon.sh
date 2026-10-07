@@ -10,7 +10,9 @@ export GOTOOLCHAIN="${GOTOOLCHAIN:-auto}"
 
 RLP_ROOT="${RLP_ROOT:-${HOME}/rlp}"
 CAS_ROOT="${CAS_ROOT:-/var/lib/rlp/cas}"
-VERSION="${RLP_DAEMON_VERSION:-v0.190.0-rlp6}"
+# v0.190.0 is the public daytonaio/daytona tag. The "-rlp6" suffix is the
+# patched build label, not a GitHub tag (tarball 404).
+VERSION="${RLP_DAEMON_VERSION:-v0.190.0}"
 
 log() { printf '[oci-daemon] %s\n' "$*"; }
 die() { printf '[oci-daemon] ERROR: %s\n' "$*" >&2; exit 1; }
