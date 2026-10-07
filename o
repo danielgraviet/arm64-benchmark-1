@@ -50,6 +50,19 @@ case "${cmd}" in
     fi
     # Drop any parent-shell key so smoke reads .env via load_dotenv(override=True).
     unset VERA_RLP_API_KEY RLP_API_KEY || true
+    # Create uses the API. process.exec uses the toolbox proxy, which
+    # authorizes the same key through its own RLP_DB_URL. A stale URL 401s
+    # exec after create already returned a sandbox id.
+    db_url="$(sudo -n grep -E '^DATABASE_URL=' /etc/rlp/api.env | tail -n1 | cut -d= -f2- || true)"
+    if [[ -n "${db_url}" ]]; then
+      if sudo -n grep -q '^RLP_DB_URL=' /etc/rlp/proxy.env 2>/dev/null; then
+        sudo -n sed -i "s|^RLP_DB_URL=.*|RLP_DB_URL=${db_url}|" /etc/rlp/proxy.env
+      else
+        echo "RLP_DB_URL=${db_url}" | sudo -n tee -a /etc/rlp/proxy.env >/dev/null
+      fi
+      sudo -n systemctl restart rlp-proxy
+      echo "restarted rlp-proxy with the API database URL"
+    fi
     bash "${ROOT}/scripts/host/oci_seed_cpu.sh"
     bash "${ROOT}/scripts/host/oci_why.sh"
     follow="/tmp/oci-smoke-runner.log"
@@ -68,6 +81,9 @@ case "${cmd}" in
     tail -n 40 "${follow}" 2>/dev/null || true
     if [[ "${smoke_rc}" -ne 0 ]]; then
       echo "=== smoke failed (exit ${smoke_rc}) ==="
+      echo "=== proxy log ==="
+      sudo -n journalctl -u rlp-proxy --no-pager -n 30 2>/dev/null \
+        | grep -Ei 'toolbox auth denied|db connect|unauthorized|error' | tail -n 15 || true
       bash "${ROOT}/scripts/host/oci_why.sh"
       exit "${smoke_rc}"
     fi
