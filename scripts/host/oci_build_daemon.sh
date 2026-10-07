@@ -30,8 +30,12 @@ log "building daytona daemon ${VERSION} for arm64 (downloads Go modules; several
   RLP_DAEMON_ARCH=arm64 bash tools/daemon/build-daemon.sh --version "${VERSION}" --force
 )
 
-BIN="${RLP_ROOT}/tools/daemon/dist/daemon/${VERSION}/daemon-arm64"
-[[ -x "${BIN}" ]] || die "build did not produce ${BIN}"
+# Patches rename the artifact dir to v0.190.0-rlp<N>. Do not assume the
+# upstream tag is the directory name.
+BIN="$(find "${RLP_ROOT}/tools/daemon/dist/daemon" -type f -name 'daemon-arm64' | sort | tail -n1)"
+[[ -n "${BIN}" && -x "${BIN}" ]] || die "build did not produce daemon-arm64 under tools/daemon/dist"
+LABEL="$(basename "$(dirname "${BIN}")")"
+log "using ${BIN} (label ${LABEL})"
 
 log "converting to erofs system layer under ${CAS_ROOT}"
 (
@@ -39,7 +43,7 @@ log "converting to erofs system layer under ${CAS_ROOT}"
   RLP_NFS_ROOT="${CAS_ROOT}" \
   RLP_SYSTEM_DIR="${CAS_ROOT}/system" \
   RLP_DAEMON_ARCH=arm64 \
-  bash tools/daemon/convert-system-layer.sh "${BIN}" "${VERSION}"
+  bash tools/daemon/convert-system-layer.sh "${BIN}" "${LABEL}"
 )
 
 [[ -f "${CAS_ROOT}/system/daemon-arm64.json" ]] || die "daemon-arm64.json was not written"
