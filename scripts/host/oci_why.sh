@@ -104,10 +104,23 @@ EOF
   fi
   # The API's event consumers exit permanently on "stream not found".
   # Streams must exist before rlp-api starts, or heartbeats never land.
-  if [[ -n "${runner_tok}" && -x /opt/rlp/deploy/provision-nats.sh ]]; then
-    log "ensuring JetStream streams exist before starting the API"
-    sudo -n env NATS_URL="nats://127.0.0.1:4222" NATS_TOKEN="${runner_tok}" \
-      bash /opt/rlp/deploy/provision-nats.sh || true
+  # provision-nats.sh hides the EVENTS failure (2>/dev/null || echo exists),
+  # which is why JOBS/STOPS/DELETES appear and EVENTS does not.
+  if [[ -n "${runner_tok}" ]]; then
+    log "creating EVENTS stream (heartbeats). Errors are printed."
+    sudo -n docker run --rm --network host natsio/nats-box:latest \
+      nats --server nats://127.0.0.1:4222 --token "${runner_tok}" \
+      stream add EVENTS \
+      --subjects 'events.>' \
+      --storage file \
+      --retention limits \
+      --discard old \
+      --max-age 2h \
+      --max-bytes 4G \
+      --dupe-window 2m \
+      --replicas 1 \
+      --defaults \
+      || log "EVENTS add returned non-zero (ok if it already exists)"
   fi
   echo "=== jetstream streams ==="
   curl -fsS -m 3 'http://127.0.0.1:8222/jsz?streams=true' 2>/dev/null \
