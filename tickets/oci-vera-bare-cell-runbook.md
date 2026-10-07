@@ -45,51 +45,42 @@ never is. Use a passphrase you will not reuse elsewhere.
 
 ## Typed session (on Vera node)
 
-Type as little as possible. Prefer `scripts/host/oci …`.
+Type almost nothing. Repo-root `./o` is the entrypoint.
 
-### 1. Clone harness (public)
+### Already cloned (your case right now)
+
+```bash
+cd arm64-benchmark-1
+git pull
+./o g
+```
+
+That reuses `.env.oci` and `~/rlp` (no PAT re-typing, no long git remote lines).
+
+### Fresh box
 
 ```bash
 git clone https://github.com/danielgraviet/arm64-benchmark-1.git
 cd arm64-benchmark-1
+OCI_PASS='four words' ./o l
+./o g
 ```
 
-### 2. Guest artifacts (if not already on disk)
+Stage guest kernel/initdisk under `/var/lib/rlp/kernel/` before `./o g` if missing.
 
-```bash
-sudo mkdir -p /var/lib/rlp/kernel
-# place Image-arm64 + initdisk-arm64.ext4 there
-```
-
-### 3. One bootstrap (passphrase only — no PAT typing)
-
-```bash
-OCI_PASS='four short words' bash scripts/host/oci go
-```
-
-That decrypts `secrets/oci-vera.enc` (sha256 checked), exports `GH_TOKEN`, then
-runs the full cell bootstrap (RLP@`660e6e3b`, FC 1.16.1, postgres+nats, parity
-env, mint key into `.env`, eng SDK).
-
-If the pack is missing, load then boot separately:
-
-```bash
-OCI_PASS='four short words' bash scripts/host/oci load
-bash scripts/host/oci go
-```
-
-Client-only re-run (cell already up):
-
-```bash
-SKIP_CELL=1 bash scripts/host/oci go
-```
+Client-only re-run (cell already up): `SKIP_CELL=1 ./o g`
 
 **Stop if API health fails.** Do not start ladders.
 
-### 4. Parity gate
+### Parity / runs
 
 ```bash
-bash scripts/host/oci check
+./o c
+./o s
+tmux new -d -s c1k ./o 1
+tmux new -d -s c2k ./o 2
+tmux new -d -s dense ./o d
+./o t
 ```
 
 Must PASS: `RLP_SNAPSHOTS=1`, `RLP_BURST_MAX_CPU=1`, high live/concurrency, localhost

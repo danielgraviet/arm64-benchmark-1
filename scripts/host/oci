@@ -28,7 +28,10 @@ case "${cmd}" in
     bash "${SCRIPT_DIR}/oci_load_secrets.sh" --print-keys "$@"
     ;;
   go|boot|bootstrap)
+    export GIT_TERMINAL_PROMPT=0
     # Prefer already-decrypted drop file (survives across typed commands).
+    # Never prefer re-decrypt when .env.oci already works — incorrect OCI_PASS
+    # typing on Nix is common and blocks boot for no reason.
     if [[ -z "${GH_TOKEN:-}" && -f "${ROOT}/.env.oci" ]]; then
       set -a
       # shellcheck disable=SC1091
@@ -36,11 +39,15 @@ case "${cmd}" in
       set +a
     fi
     if [[ -z "${GH_TOKEN:-}" && -f "${ROOT}/secrets/oci-vera.enc" ]]; then
+      if [[ -z "${OCI_PASS:-}" ]]; then
+        echo "need .env.oci or OCI_PASS. Try: ./o l   then   ./o g" >&2
+        exit 1
+      fi
       # shellcheck disable=SC1091
       source "${SCRIPT_DIR}/oci_load_secrets.sh"
     fi
     if [[ -z "${GH_TOKEN:-}" ]]; then
-      echo "GH_TOKEN empty. Run: OCI_PASS=… bash scripts/host/oci load" >&2
+      echo "GH_TOKEN empty. On Mac pack secrets, push, then: ./o l && ./o g" >&2
       exit 1
     fi
     echo "oci go: GH_TOKEN length ${#GH_TOKEN}"
