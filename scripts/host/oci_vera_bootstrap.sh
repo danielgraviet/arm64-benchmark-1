@@ -156,19 +156,21 @@ install_uv_and_go_rust_toolchains() {
 clone_rlp() {
   log "RLP tree at ${RLP_ROOT} pin ${RLP_PIN}"
   if [[ ! -d "${RLP_ROOT}/.git" ]]; then
-    local url="${RLP_GIT_URL}"
-    local auth_url="${url}"
-    if [[ -n "${GH_TOKEN:-}" ]]; then
-      auth_url="https://x-access-token:${GH_TOKEN}@${url#https://}"
+    # Never fall through to an interactive username/password prompt on the
+    # Nix typed terminal. Private RLP needs GH_TOKEN in the URL.
+    if [[ -z "${GH_TOKEN:-}" ]]; then
+      die "GH_TOKEN unset. On Mac: OCI_PASS=… GH_TOKEN=… bash scripts/host/oci pack && git push. On Vera: OCI_PASS=… bash scripts/host/oci go"
     fi
-    if ! git clone "${auth_url}" "${RLP_ROOT}"; then
+    export GIT_TERMINAL_PROMPT=0
+    local url="${RLP_GIT_URL}"
+    local auth_url="https://x-access-token:${GH_TOKEN}@${url#https://}"
+    if ! git -c credential.helper= clone "${auth_url}" "${RLP_ROOT}"; then
       log "clone ${RLP_GIT_URL} failed; trying fallback ${RLP_FALLBACK_GIT_URL}"
+      rm -rf "${RLP_ROOT}"
       url="${RLP_FALLBACK_GIT_URL}"
-      auth_url="${url}"
-      if [[ -n "${GH_TOKEN:-}" ]]; then
-        auth_url="https://x-access-token:${GH_TOKEN}@${url#https://}"
-      fi
-      git clone "${auth_url}" "${RLP_ROOT}" || die "cannot clone RLP (set GH_TOKEN)"
+      auth_url="https://x-access-token:${GH_TOKEN}@${url#https://}"
+      git -c credential.helper= clone "${auth_url}" "${RLP_ROOT}" \
+        || die "cannot clone RLP. GH_TOKEN must have Contents:Read on daytona/rlp or danielgraviet/rlp (harness-only token is not enough)"
     fi
     # Strip token from remote URL.
     git -C "${RLP_ROOT}" remote set-url origin "${url}"
