@@ -21,7 +21,12 @@ case "${cmd}" in
   c|check)   exec bash "${ROOT}/scripts/host/oci" check "$@" ;;
   s|smoke)
     bash "${ROOT}/scripts/host/oci_seed_cpu.sh"
-    exec bash "${ROOT}/scripts/host/oci" smoke "$@"
+    bash "${ROOT}/scripts/host/oci_why.sh"
+    if ! bash "${ROOT}/scripts/host/oci" smoke "$@"; then
+      echo "=== smoke failed ==="
+      bash "${ROOT}/scripts/host/oci_why.sh"
+      exit 1
+    fi
     ;;
   m|mint)
     exec bash "${ROOT}/scripts/host/oci_remint.sh" "$@"
@@ -48,6 +53,9 @@ case "${cmd}" in
   a|daemon)
     exec bash "${ROOT}/scripts/host/oci_build_daemon.sh" "$@"
     ;;
+  w|why)
+    exec bash "${ROOT}/scripts/host/oci_why.sh" "$@"
+    ;;
   j|journal|log)
     sudo systemctl status rlp-api --no-pager -l 2>&1 | head -n 30 || true
     echo '---'
@@ -73,7 +81,8 @@ case "${cmd}" in
 ./o l     decrypt secrets → .env.oci
 ./o c     parity check
 ./o m     remint API key (fixes smoke 401)
-./o s     smoke
+./o w     why creates are not picked up
+./o s     smoke (prints why first)
 ./o 1     create-ready 1000
 ./o 2     create-ready 2000
 ./o d     dense2k

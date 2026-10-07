@@ -1,0 +1,100 @@
+# OCI Vera bring-up: what broke and how to read it
+
+This is the bare-cell path from the Nix desktop onto a Vera node that had no RLP stack. The harness is public. The eng RLP repo is private. The client has to run on the node. A laptop tunnel measures the tunnel.
+
+Short commands live in `./o`. `git pull` then `./o g` is the usual resume.
+
+## How to diagnose before you change anything
+
+Read the last error line. It names the layer that failed. Do not jump to the next layer.
+
+| What you see | Layer | What it is not |
+| --- | --- | --- |
+| `401` | API key | Not the image, not the chip |
+| `400` validation | Request body (cpu type, arch, disk) | Not "runner is down" |
+| `not picked up within 60s` | No runner subscribed to that job yet | Not a missing image |
+| Firecracker `PUT /actions 204` then hang | Guest never opened the toolbox | Not an arch typo |
+| `permission denied` on `/etc/rlp/*.env` | File is root-only | Not "the knob is unset" |
+
+`systemctl is-active` tells you the process exists. `journalctl -u <unit> -n 40 --no-pager` tells you what it last did. A gauge line like `netns pool ready=2100` means the runner is alive and finished warming its network pool.
+
+## Access and secrets
+
+The Nix desktop cannot paste. Long tokens do not belong in the typed session.
+
+Pack secrets on the Mac, where paste works. `./o` decrypts them into `.env.oci` on the node. You type a short passphrase once.
+
+A script run as `bash ./o l` is a child process. Exports die when it exits. `echo ${#GH_TOKEN}` in your shell stays `0` even when the file is fine. Check the file (`grep` on `.env.oci`) or let `./o g` read `.env.oci` itself.
+
+`GH_TOKEN` must be a fine-grained PAT that can read `danielgraviet/rlp`. A token scoped only to the public harness cannot clone RLP. GitHub will then ask for a username. That prompt is a missing token, not a forgotten password. Ctrl-C. Do not type your GitHub password.
+
+`daytona/rlp` rejects a personal token with "write access not granted." The fork is the right remote.
+
+## Git pin
+
+The eng SDK pin is commit `660e6e3b`. A partial clone does not contain that object, so checkout says the path does not exist. The short branch `bench-pin` on `danielgraviet/rlp` is that same commit. `./o r` deletes a broken `~/rlp` and clones again.
+
+After a successful clone, do not strip the token from `origin` and then `git fetch`. Fetch uses the remote URL. No token means another username prompt.
+
+## Docker
+
+`usermod -aG docker` does not apply to the current session. `permission denied` on `docker.sock` means use `sudo docker`, not "Docker is broken." Postgres and NATS come up only after that.
+
+## Guest kernel
+
+Firecracker needs an arm64 `Image` and an init disk. Those files are not in git. `./o k` builds them on the box. Until they exist, bootstrap stops with `RLP_KERNEL missing`.
+
+Linux `uname` prints `aarch64`. The API and the runner call that same CPU `arm64`. Those names match. A mismatch would be a `400` before any VM starts.
+
+## systemd units copied from upstream
+
+The stock `rlp-proxy` unit requires `wg-quick@wg0`. This box has no WireGuard. A drop-in that clears `Requires=` does not reliably remove that dependency. Replace the unit with one that only waits for the network and the API.
+
+## API health
+
+`./o g` is safe to re-run, but do not mint a new Postgres password while the Docker volume still has the old one. The API then cannot log in and `/health` never returns. Reuse `/opt/rlp/deploy/.env`. If the passwords have already diverged, `./o z` wipes the volumes and the next `./o g` starts clean.
+
+`journalctl -u rlp-api` is the log when health fails. `./o j` prints it.
+
+## SQL and the API key
+
+`psql` prints `INSERT 0 1` as well as the uuid you asked for. If you capture both into a shell variable, the next query sees `org_id='<uuid>INSERT01'` and Postgres says invalid uuid. Quiet mode (`-qAt`) and a single script that ends in one `SELECT` avoid that.
+
+`rlp-api mint-key` requires `--permissions all`. Without it the command errors. A sloppy parser then saves a uuid into `.env`. Smoke returns `401`. A real key looks like `rlp_` plus 32 hex characters. `./o m` mints one and rewrites `.env`.
+
+## cpu_type
+
+`400` with a validation error means the body was rejected before a runner was involved. `cpu_type=vera` must exist in the `cpu_types` table. Fresh databases seed zen and graviton only. The `tier` column is `NOT NULL`, so the insert has to set it.
+
+The runner must advertise the same slug (`RLP_RUNNER_CPU_TYPE=vera`) or it will not subscribe to that job subject.
+
+## "Not picked up within 60s"
+
+The create was accepted. No runner took it before the 60 second cap. That is routing, not the image.
+
+On first boot the runner builds a pool of about 2100 network namespaces. Some of those provisions take around 90 seconds. A smoke started during that window expires while the runner is still warming. `ready=2100` in the journal means the pool is full. Run `./o s` again.
+
+A running process is not the same as a subscribed one. The create subject ends in the cpu type (`jobs.vm.create.vera.vera`). An arm64 runner that never loaded `RLP_RUNNER_CPU_TYPE=vera` only listens for `.arm64` and will ignore that job. `./o w` prints the live process env and the subjects it bound. If the live cpu type is empty, restart the runner. The file on disk can be right while the process is still old.
+
+## Firecracker started, then the client hung
+
+`attaching nic` and `PUT /actions 204` mean the microVM process is running. The MMDS line is normal. This cell does not use the metadata service.
+
+The next wait is the guest toolbox on port 2280. The kernel and init disk can boot Firecracker with an empty userspace. The Daytona daemon is a separate layer, `daemon-arm64.json` plus an erofs blob under `/var/lib/rlp/cas/system`. Without it the toolbox never listens and the client hangs.
+
+`./o a` builds that layer on the box. The public source tag is `v0.190.0`. The name `v0.190.0-rlp6` is a patched build label, not a GitHub tag, so a tarball URL with `-rlp6` returns 404.
+
+The build script then applies every file in `tools/daemon/patches` and renames the output to `v0.190.0-rlpN`, where N is the patch count. Seven patches means the binary is `dist/daemon/v0.190.0-rlp7/daemon-arm64`. An error that says the file is missing under `v0.190.0/` means the compile finished and the next step looked in the wrong directory. Find `daemon-arm64` under `dist/daemon/` before rebuilding.
+
+The smoke image is `python:3.12-slim`. The agent image `dtgraviet/vera-agent-benchmark:v3` matters for the create-ready and dense runs, after the toolbox is already answering.
+
+## Order that actually works
+
+1. `./o g` brings up API, proxy, runner, Postgres, and NATS.
+2. `./o k` builds the guest kernel and init disk.
+3. `./o m` if smoke returns 401.
+4. `./o a` builds the daemon layer.
+5. `./o s` after the netns pool is full.
+6. `./o 1` then `./o 2` then `./o d` for the benchmark ladders.
+
+Stop at the first red line. Fix that layer. Do not retune CPU knobs while the runner is still warming or the daemon layer is missing.
