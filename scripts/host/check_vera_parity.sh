@@ -27,12 +27,26 @@ ok() { printf 'PASS  %s\n' "$*"; PASS=$((PASS + 1)); }
 bad() { printf 'FAIL  %s\n' "$*"; FAIL=$((FAIL + 1)); }
 warn() { printf 'WARN  %s\n' "$*"; WARN=$((WARN + 1)); }
 
+# /etc/rlp/*.env is mode 600 root. Read via sudo into temp copies.
+TMPDIR_PARITY="$(mktemp -d)"
+trap 'rm -rf "${TMPDIR_PARITY}"' EXIT
+read_root_env() {
+  local src="$1" dest="$2"
+  if sudo -n test -f "${src}" 2>/dev/null || [[ -r "${src}" ]]; then
+    if [[ -r "${src}" ]]; then
+      cp "${src}" "${dest}"
+    else
+      sudo -n cat "${src}" > "${dest}" 2>/dev/null || true
+    fi
+  fi
+  [[ -s "${dest}" ]]
+}
+read_root_env /etc/rlp/api.env "${TMPDIR_PARITY}/api.env" || true
+read_root_env /etc/rlp/runner.env "${TMPDIR_PARITY}/runner.env" || true
+
 env_file_has() {
   local file="$1" key="$2" want="$3"
-  if [[ ! -f "${file}" ]]; then
-    return 1
-  fi
-  # Match KEY=value ignoring comments; allow quoted values.
+  [[ -f "${file}" ]] || return 1
   local line
   line="$(grep -E "^${key}=" "${file}" | tail -n1 || true)"
   [[ -n "${line}" ]] || return 1
@@ -46,9 +60,7 @@ env_file_has() {
 
 env_file_int_ge() {
   local file="$1" key="$2" min="$3"
-  if [[ ! -f "${file}" ]]; then
-    return 1
-  fi
+  [[ -f "${file}" ]] || return 1
   local line val
   line="$(grep -E "^${key}=" "${file}" | tail -n1 || true)"
   [[ -n "${line}" ]] || return 1
@@ -98,7 +110,7 @@ else
 fi
 
 # --- Cell env: api ---
-API_ENV="/etc/rlp/api.env"
+API_ENV="${TMPDIR_PARITY}/api.env"
 if env_file_has "${API_ENV}" RLP_BURST_MAX_CPU 1; then
   ok "api.env RLP_BURST_MAX_CPU=1"
 else
@@ -131,11 +143,11 @@ if [[ -f "${API_ENV}" ]]; then
     fi
   fi
 else
-  bad "missing ${API_ENV}"
+  bad "cannot read /etc/rlp/api.env (sudo?)"
 fi
 
 # --- Cell env: runner ---
-RUN_ENV="/etc/rlp/runner.env"
+RUN_ENV="${TMPDIR_PARITY}/runner.env"
 if env_file_has "${RUN_ENV}" RLP_SNAPSHOTS 1; then
   ok "runner.env RLP_SNAPSHOTS=1"
 else
