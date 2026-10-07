@@ -102,9 +102,38 @@ if [[ "${TARGET}" == "vera" && -f /etc/rlp/api.env ]]; then
   fi
 fi
 
+# int(0.015625)*1024 is 0. The API then 400s every create. Round like mem_mib.
+patch_scratch_mib() {
+  python3 - <<'PY'
+from pathlib import Path
+p = Path.home() / "rlp/clients/python/src/rlp/daytona.py"
+if not p.is_file():
+    raise SystemExit(0)
+text = p.read_text()
+old = 'body["scratch_mib"] = int(r.disk) * 1024'
+new = 'body["scratch_mib"] = int(round(float(r.disk) * 1024))'
+if old not in text:
+    raise SystemExit(0)
+p.write_text(text.replace(old, new, 1))
+print("patched scratch_mib")
+raise SystemExit(2)
+PY
+}
+
 sdk_ok() {
   UV_NO_SYNC=1 uv run python -c 'from rlp import Resources; assert "cpu_max" in Resources.__dataclass_fields__'
 }
+
+if patch_scratch_mib; then
+  :
+else
+  patch_rc=$?
+  if [[ "${patch_rc}" -eq 2 ]]; then
+    UV_NO_SYNC=1 uv pip install -e "${HOME}/rlp/clients/python"
+  else
+    exit "${patch_rc}"
+  fi
+fi
 
 if ! sdk_ok; then
   echo "eng rlp-sdk missing (uv sync drops cpu_max). reinstalling editable client."

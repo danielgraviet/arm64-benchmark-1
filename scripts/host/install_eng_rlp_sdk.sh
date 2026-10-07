@@ -42,15 +42,29 @@ python3 - <<PY
 from pathlib import Path
 p = Path("${DAYTONA_PY}")
 text = p.read_text()
-old = 'body["mem_mib"] = int(r.memory) * 1024'
-new = 'body["mem_mib"] = int(round(float(r.memory) * 1024))'
-if new in text:
-    print("mem_mib patch already present")
-elif old in text:
-    p.write_text(text.replace(old, new, 1))
+changed = False
+old_mem = 'body["mem_mib"] = int(r.memory) * 1024'
+new_mem = 'body["mem_mib"] = int(round(float(r.memory) * 1024))'
+old_disk = 'body["scratch_mib"] = int(r.disk) * 1024'
+new_disk = 'body["scratch_mib"] = int(round(float(r.disk) * 1024))'
+if old_mem in text:
+    text = text.replace(old_mem, new_mem, 1)
+    changed = True
     print("applied mem_mib fractional patch")
+elif new_mem in text:
+    print("mem_mib patch already present")
 else:
     raise SystemExit(f"mem_mib assignment not found in {p}")
+if old_disk in text:
+    text = text.replace(old_disk, new_disk, 1)
+    changed = True
+    print("applied scratch_mib fractional patch")
+elif new_disk in text:
+    print("scratch_mib patch already present")
+else:
+    raise SystemExit(f"scratch_mib assignment not found in {p}")
+if changed:
+    p.write_text(text)
 PY
 
 cd "${ROOT}"
