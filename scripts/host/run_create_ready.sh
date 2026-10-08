@@ -205,7 +205,61 @@ Environment=RLP_VM_CONCURRENCY=256
 Environment=RLP_NETNS_POOL=2100
 Environment=RLP_MAX_LIVE_VMS=3000
 Environment=RLP_TEMPLATE_BUILD_AFTER=1
+Environment=RLP_QUIET_PROGRESS=1
 EOF
+  # Each create emits assigned, building, and booting before running. The
+  # client only waits for running. Those three extra events are most of the
+  # 54 started-updates per second. Skip them, keep the running event, rebuild
+  # the runner once.
+  quiet_built=0
+  if ! grep -a -q 'RLP_QUIET_PROGRESS' /usr/local/bin/rlp-runner 2>/dev/null; then
+    echo "patching the runner to emit only the started event"
+    python3 - <<'PY'
+from pathlib import Path
+p = Path.home() / "rlp/runner/internal/runner/vm.go"
+text = p.read_text()
+if "RLP_QUIET_PROGRESS" not in text:
+    pairs = [
+        (
+            '\tr.emitJob(ctx, job.JobID, "running", "")\n'
+            '\tr.emitVm(ctx, contract.VmState{VmID: job.VmID, Status: contract.VmAssigned})\n',
+            '\tif !envIsSet("RLP_QUIET_PROGRESS") {\n'
+            '\t\tr.emitJob(ctx, job.JobID, "running", "")\n'
+            '\t\tr.emitVm(ctx, contract.VmState{VmID: job.VmID, Status: contract.VmAssigned})\n'
+            '\t}\n',
+        ),
+        (
+            '\tr.emitVm(ctx, contract.VmState{VmID: job.VmID, Status: contract.VmBuilding})\n',
+            '\tif !envIsSet("RLP_QUIET_PROGRESS") {\n'
+            '\t\tr.emitVm(ctx, contract.VmState{VmID: job.VmID, Status: contract.VmBuilding})\n'
+            '\t}\n',
+        ),
+        (
+            '\tr.emitVm(ctx, contract.VmState{\n'
+            '\t\tVmID: job.VmID, Status: contract.VmBooting, ManifestName: name,\n'
+            '\t})\n',
+            '\tif !envIsSet("RLP_QUIET_PROGRESS") {\n'
+            '\t\tr.emitVm(ctx, contract.VmState{\n'
+            '\t\t\tVmID: job.VmID, Status: contract.VmBooting, ManifestName: name,\n'
+            '\t\t})\n'
+            '\t}\n',
+        ),
+    ]
+    for old, new in pairs:
+        if old not in text:
+            raise SystemExit(f"runner source does not match the quiet-progress patch: {old!r}")
+        text = text.replace(old, new, 1)
+    p.write_text(text)
+print("runner source has RLP_QUIET_PROGRESS")
+PY
+    echo "building rlp-runner"
+    (
+      cd "${HOME}/rlp/runner"
+      CGO_ENABLED=0 go build -o /tmp/rlp-runner ./cmd/runner
+    )
+    sudo -n install -m0755 -o root -g root /tmp/rlp-runner /usr/local/bin/rlp-runner
+    quiet_built=1
+  fi
   # Resume copies one 16 MiB scratch file per sandbox. On ext4 that is a
   # real read and write, 16 GiB for 1000, on the 98 GB root disk. The first
   # resume fleet paid that cold (46s, 21/s). The next one still wrote 16 GiB
@@ -271,10 +325,11 @@ print(found)
     scratch_moved=1
   fi
   runner_env="$(sudo -n cat "/proc/$(pgrep -nx rlp-runner)/environ" 2>/dev/null | tr '\0' '\n' || true)"
-  if [[ "${scratch_moved}" == "1" || "${jobs_moved}" == "1" ]] \
+  if [[ "${scratch_moved}" == "1" || "${jobs_moved}" == "1" || "${quiet_built}" == "1" ]] \
     || ! printf '%s\n' "${runner_env}" | grep -qx 'RLP_SNAPSHOTS=1' \
     || ! printf '%s\n' "${runner_env}" | grep -qx 'RLP_VM_CONCURRENCY=256' \
-    || ! printf '%s\n' "${runner_env}" | grep -qx 'RLP_TEMPLATE_BUILD_AFTER=1'; then
+    || ! printf '%s\n' "${runner_env}" | grep -qx 'RLP_TEMPLATE_BUILD_AFTER=1' \
+    || ! printf '%s\n' "${runner_env}" | grep -qx 'RLP_QUIET_PROGRESS=1'; then
     echo "restarting runner so the first sandbox builds a snapshot template"
     sudo -n systemctl daemon-reload
     sudo -n systemctl restart rlp-runner
