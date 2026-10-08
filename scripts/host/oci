@@ -61,13 +61,13 @@ case "${cmd}" in
     exec uv run python scripts/vera_rlp_smoke.py "$@"
     ;;
   c1k)
-    exec bash -c 'TARGET=vera bash scripts/host/run_create_ready.sh 1000'
+    exec bash -c 'TARGET=vera OCI_VERA=1 bash scripts/host/run_create_ready.sh 1000'
     ;;
   c2k)
-    exec bash -c 'TARGET=vera bash scripts/host/run_create_ready.sh 2000'
+    exec bash -c 'TARGET=vera OCI_VERA=1 bash scripts/host/run_create_ready.sh 2000'
     ;;
   dense)
-    exec bash "${SCRIPT_DIR}/run_dense2k_vera.sh" "$@"
+    exec env OCI_VERA=1 bash "${SCRIPT_DIR}/run_dense2k_vera.sh" "$@"
     ;;
   status)
     exec bash "${SCRIPT_DIR}/status.sh" "$@"

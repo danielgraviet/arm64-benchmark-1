@@ -55,6 +55,7 @@ ls -lt \
   data/agent/rlp-redswitches-*/concurrency_*.jsonl \
   data/agent/rlp-vera-*/concurrency_*.jsonl \
   daniel-focus-here/vera-jsonl/*.jsonl \
+  daniel-focus-here/oci-vera-jsonl/*.jsonl \
   daniel-focus-here/zen5-*-jsonl/*.jsonl \
   results/zen5-jsonl/*.jsonl \
   2>/dev/null | head -n 12 || echo none

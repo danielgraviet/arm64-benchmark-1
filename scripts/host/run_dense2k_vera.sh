@@ -27,7 +27,11 @@ export RLP_HOLD_CREATE_BATCH="${RLP_HOLD_CREATE_BATCH:-512}"
 STAMP="$(date -u +%Y%m%d_%H%M%S)"
 LOG="${LOG:-/tmp/vera-dense2k-n45.log}"
 LOG_NVME="${LOG_NVME:-/mnt/data/bench-logs/vera-dense2k-${STAMP}.log}"
-OUT="daniel-focus-here/vera-jsonl/concurrency_${STAMP}_n45.jsonl"
+if [[ -n "${OCI_VERA:-}" ]]; then
+  OUT="daniel-focus-here/oci-vera-jsonl/concurrency_${STAMP}_n45.jsonl"
+else
+  OUT="daniel-focus-here/vera-jsonl/concurrency_${STAMP}_n45.jsonl"
+fi
 OUT_DATA="data/agent/rlp-vera-c0p025-max1/concurrency_${STAMP}_n45.jsonl"
 ulimit -n 1048576 || true
 

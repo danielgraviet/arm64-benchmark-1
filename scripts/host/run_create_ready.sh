@@ -22,7 +22,13 @@ TARGET="${TARGET:-epyc9575}"
 case "${TARGET}" in
   epyc9575) OUT_DIR="daniel-focus-here/zen5-9575f-jsonl" ;;
   epyc9755) OUT_DIR="daniel-focus-here/zen5-9755-jsonl" ;;
-  vera) OUT_DIR="daniel-focus-here/vera-jsonl" ;;
+  vera)
+    if [[ -n "${OCI_VERA:-}" ]]; then
+      OUT_DIR="daniel-focus-here/oci-vera-jsonl"
+    else
+      OUT_DIR="daniel-focus-here/vera-jsonl"
+    fi
+    ;;
   *) OUT_DIR="results/zen5-jsonl" ;;
 esac
 LOG="${LOG:-/tmp/${TARGET}-create-ready-${COUNT}.log}"

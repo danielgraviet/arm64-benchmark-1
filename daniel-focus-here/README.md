@@ -8,6 +8,7 @@ daniel-focus-here/
   docs/                 # briefs (final, ivan, metrics, marketing)
   graphs/               # PNGs linked from docs
   vera-jsonl/           # Vera socket0 runs used for these docs
+  oci-vera-jsonl/       # OCI Vera box runs, not the onsite socket
   zen5-9575f-jsonl/     # Zen5 EPYC 9575F (old RedSwitches) — have
   zen5-9755-jsonl/      # Zen5 EPYC 9755 (veraTest) — collect next
 ```

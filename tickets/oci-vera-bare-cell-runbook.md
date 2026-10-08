@@ -140,7 +140,7 @@ bash scripts/host/oci status
 ### 8. Push results → Mac graphs
 
 ```bash
-git add daniel-focus-here/vera-jsonl/*.jsonl data/agent/rlp-vera-c0p025-max1/*.jsonl
+git add daniel-focus-here/oci-vera-jsonl/*.jsonl data/agent/rlp-vera-c0p025-max1/*.jsonl
 git commit -m "oci vera: create-ready / dense JSONL"
 git push
 ```
