@@ -75,7 +75,13 @@ export VERA_RLP_TARGET="vera"
 if [[ -n "${CREATE_READY_HTTP_POOL:-}" ]]; then
   export RLP_HTTP_MAX_CONNECTIONS="${CREATE_READY_HTTP_POOL}"
 elif [[ "${TARGET}" == "vera" && "${COUNT}" -le 1000 ]]; then
-  export RLP_HTTP_MAX_CONNECTIONS=1024
+  # A 1024-wide poll of GET /vms starves the API event consumer. The runner
+  # already finishes a resume in tens of milliseconds. The client time is the
+  # wait until that consumer marks the row started.
+  export RLP_HTTP_MAX_CONNECTIONS=32
+  export RLP_WAIT_POLL_START_S=0.5
+  export RLP_WAIT_POLL_FACTOR=1
+  export RLP_WAIT_POLL_MAX_S=0.5
 else
   export RLP_HTTP_MAX_CONNECTIONS=4096
 fi
@@ -165,6 +171,26 @@ OUTPUT="${OUT_DIR}/${TARGET}_create_ready_${COUNT}_${STAMP}.jsonl"
 # default 2). One warmup is miss 1, so it never builds, and a 0.3s cold boot
 # looks like a hit. Force the build on the first sandbox, then wait for it.
 if [[ "${TARGET}" == "vera" ]]; then
+  # The events table insert is the dominant write in each API batch. Off for
+  # this benchmark. The API reads the flag once at startup, so restart if the
+  # live process does not have it.
+  sudo -n mkdir -p /etc/systemd/system/rlp-api.service.d
+  sudo -n tee /etc/systemd/system/rlp-api.service.d/no-event-audit.conf >/dev/null <<'EOF'
+[Service]
+Environment=RLP_EVENT_AUDIT=0
+EOF
+  api_env="$(sudo -n cat "/proc/$(pgrep -nx rlp-api)/environ" 2>/dev/null | tr '\0' '\n' || true)"
+  if ! printf '%s\n' "${api_env}" | grep -qx 'RLP_EVENT_AUDIT=0'; then
+    echo "restarting rlp-api with event audit off"
+    sudo -n systemctl daemon-reload
+    sudo -n systemctl restart rlp-api
+    for _ in $(seq 1 30); do
+      if curl -fsS -m 2 http://127.0.0.1:8088/health >/dev/null 2>&1; then
+        break
+      fi
+      sleep 1
+    done
+  fi
   sudo -n mkdir -p /etc/systemd/system/rlp-runner.service.d
   sudo -n tee /etc/systemd/system/rlp-runner.service.d/snapshots.conf >/dev/null <<'EOF'
 [Service]
@@ -313,24 +339,33 @@ phases = [
     "load_ms",
     "toolbox_wait_ms",
 ]
+queue_phases = ["deliver_ms", "emits_ms", "manifest_ms"]
 vals = defaultdict(list)
+
+def take(line, name):
+    key = name + "="
+    at = line.find(key)
+    if at < 0:
+        return
+    num = []
+    for ch in line[at + len(key) :]:
+        if ch.isdigit():
+            num.append(ch)
+        else:
+            break
+    if num:
+        vals[name].append(int("".join(num)))
+
 with open(sys.argv[1], encoding="utf-8", errors="replace") as fh:
     for line in fh:
-        if "boot-phases" not in line or "template=hit" not in line:
+        if "boot-phases" not in line:
             continue
-        for name in phases:
-            key = name + "="
-            at = line.find(key)
-            if at < 0:
-                continue
-            num = []
-            for ch in line[at + len(key) :]:
-                if ch.isdigit():
-                    num.append(ch)
-                else:
-                    break
-            if num:
-                vals[name].append(int("".join(num)))
+        if "template=hit" in line:
+            for name in phases:
+                take(line, name)
+        elif "boot-phases create" in line:
+            for name in queue_phases:
+                take(line, name)
 
 def pct(xs, p):
     if not xs:
@@ -356,6 +391,19 @@ for name in phases:
     )
 if slow_name:
     print(f"slowest_p50={slow_name} {slow_p50}ms")
+for name in queue_phases:
+    xs = vals[name]
+    if not xs:
+        continue
+    print(
+        f"  {name} p50={pct(xs, 50)} p95={pct(xs, 95)} max={max(xs)} sum_s={sum(xs)/1000:.1f}"
+    )
+boot_p50 = pct(vals["total_ms"], 50) if vals["total_ms"] else 0
+if vals["total_ms"] and boot_p50 < 1000:
+    print(
+        "gap=api_visibility runner boot p50 is under 1s. "
+        "client create time is the wait until the API row says started."
+    )
 PY
   fi
   echo "END_EXIT=${status}"
