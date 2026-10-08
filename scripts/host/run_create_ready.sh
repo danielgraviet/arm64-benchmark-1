@@ -160,8 +160,10 @@ mkdir -p "${OUT_DIR}"
 STAMP="$(date -u +%Y%m%d_%H%M%S)"
 OUTPUT="${OUT_DIR}/${TARGET}_create_ready_${COUNT}_${STAMP}.jsonl"
 
-# Onsite ~10s/1000 is template resume. A 1000-wide burst all misses the
-# template and cold-boots (~35/s here). Build one template first.
+# Onsite ~11s/1000 is template resume. The runner cold-boots a miss and only
+# starts a background template build on the 2nd miss (RLP_TEMPLATE_BUILD_AFTER
+# default 2). One warmup is miss 1, so it never builds, and a 0.3s cold boot
+# looks like a hit. Force the build on the first sandbox, then wait for it.
 if [[ "${TARGET}" == "vera" ]]; then
   sudo -n mkdir -p /etc/systemd/system/rlp-runner.service.d
   sudo -n tee /etc/systemd/system/rlp-runner.service.d/snapshots.conf >/dev/null <<'EOF'
@@ -170,14 +172,24 @@ Environment=RLP_SNAPSHOTS=1
 Environment=RLP_VM_CONCURRENCY=256
 Environment=RLP_NETNS_POOL=2100
 Environment=RLP_MAX_LIVE_VMS=3000
+Environment=RLP_TEMPLATE_BUILD_AFTER=1
 EOF
   runner_env="$(sudo -n cat "/proc/$(pgrep -nx rlp-runner)/environ" 2>/dev/null | tr '\0' '\n' || true)"
   if ! printf '%s\n' "${runner_env}" | grep -qx 'RLP_SNAPSHOTS=1' \
-    || ! printf '%s\n' "${runner_env}" | grep -qx 'RLP_VM_CONCURRENCY=256'; then
-    echo "restarting runner with snapshots and vm concurrency 256"
+    || ! printf '%s\n' "${runner_env}" | grep -qx 'RLP_VM_CONCURRENCY=256' \
+    || ! printf '%s\n' "${runner_env}" | grep -qx 'RLP_TEMPLATE_BUILD_AFTER=1'; then
+    echo "restarting runner so the first sandbox builds a snapshot template"
     sudo -n systemctl daemon-reload
     sudo -n systemctl restart rlp-runner
-    sleep 8
+    echo "waiting for netns pool"
+    for _ in $(seq 1 40); do
+      ready_ns="$(sudo -n ip netns list 2>/dev/null | grep -c '^rlpns' || true)"
+      echo "netns ready=${ready_ns}"
+      if [[ "${ready_ns}" -ge 2000 ]]; then
+        break
+      fi
+      sleep 3
+    done
   fi
 fi
 
@@ -189,6 +201,7 @@ fi
   if [[ "${TARGET}" == "vera" && "${COUNT}" -gt 1 ]]; then
     echo "=== WARMUP $(date -u +%Y-%m-%dT%H:%M:%SZ) one sandbox to build the snapshot template ==="
     warm_log=/tmp/vera-warmup.out
+    warm_since="$(date -u '+%Y-%m-%d %H:%M:%S')"
     UV_NO_SYNC=1 uv run python scripts/rlp_light_create_fleet.py \
       --target "${TARGET}" \
       --count 1 \
@@ -199,22 +212,32 @@ fi
       --disk "${DISK_GB}" \
       --probe "echo ready" \
       --output "/tmp/vera-template-warmup.jsonl" | tee "${warm_log}" || true
-    # A hit finishes in well under 2s and does not log "template build ready" again.
-    warm_s="$(sed -n 's/.*READY_WALL_S=\([0-9.]*\).*/\1/p' "${warm_log}" | tail -n 1)"
+    # 0.3s is a cold boot of one sandbox. template=hit in the journal is the
+    # only proof the snapshot already existed. Otherwise wait for the build
+    # that miss just started.
     ready=0
-    if grep -q 'ok=1 failed=0' "${warm_log}" && awk -v s="${warm_s:-99}" 'BEGIN { exit !(s+0 < 2) }'; then
-      echo "warmup ${warm_s}s is a template hit"
+    warm_journal() {
+      sudo -n journalctl -u rlp-runner --since "${warm_since}" --no-pager -o cat 2>/dev/null || true
+    }
+    if warm_journal | grep -q 'template=hit'; then
+      echo "warmup used an existing template"
       ready=1
     else
-      echo "waiting for template build ready (warmup ${warm_s:-unknown}s)"
-      for _ in $(seq 1 45); do
-        if sudo -n journalctl -u rlp-runner --since "10 min ago" --no-pager 2>/dev/null | grep -q "template build ready"; then
+      echo "waiting for template build ready"
+      for _ in $(seq 1 60); do
+        log="$(warm_journal)"
+        if printf '%s\n' "${log}" | grep -q "template build ready"; then
           ready=1
           break
         fi
-        if sudo -n journalctl -u rlp-runner --since "10 min ago" --no-pager 2>/dev/null | grep -q "template build failed"; then
+        if printf '%s\n' "${log}" | grep -q "template build failed"; then
           echo "template build failed"
-          sudo -n journalctl -u rlp-runner --since "10 min ago" --no-pager 2>/dev/null | grep "template build failed" | tail -n 3
+          printf '%s\n' "${log}" | grep "template build failed" | tail -n 3
+          break
+        fi
+        if printf '%s\n' "${log}" | grep -q "template build skipped"; then
+          echo "template build skipped"
+          printf '%s\n' "${log}" | grep "template build skipped" | tail -n 3
           break
         fi
         sleep 2
@@ -224,6 +247,7 @@ fi
     UV_NO_SYNC=1 uv run python scripts/phoenix_rlp_cleanup_sandboxes.py --target "${TARGET}" || true
   fi
   set +e
+  fleet_since="$(date -u '+%Y-%m-%d %H:%M:%S')"
   UV_NO_SYNC=1 uv run python scripts/rlp_light_create_fleet.py \
     --target "${TARGET}" \
     --count "${COUNT}" \
@@ -235,6 +259,12 @@ fi
     --probe "echo ready" \
     --output "${OUTPUT}"
   status=$?
+  if [[ "${TARGET}" == "vera" ]]; then
+    fleet_log="$(sudo -n journalctl -u rlp-runner --since "${fleet_since}" --no-pager -o cat 2>/dev/null || true)"
+    hits="$(printf '%s\n' "${fleet_log}" | grep -c 'template=hit' || true)"
+    misses="$(printf '%s\n' "${fleet_log}" | grep -c 'template=miss' || true)"
+    echo "template_hit=${hits} template_miss=${misses}"
+  fi
   echo "END_EXIT=${status}"
   echo "OUTPUT=${OUTPUT}"
   exit "${status}"
