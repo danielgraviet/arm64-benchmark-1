@@ -206,6 +206,49 @@ EOF
   # and landed at 19.8s. A tmpfs keeps those copies in RAM. Mounting hides
   # the on-disk template, so the runner restarts and the warmup builds a new one.
   scratch_moved=0
+  jobs_moved=0
+  # POST /vms waits for the JetStream ack of the create job. JOBS is a file
+  # store on the root disk, and that ack stays near 55/s after Postgres
+  # synchronous_commit=off. Memory storage makes the ack a RAM write.
+  jobs_storage="$(curl -fsS -m 3 'http://127.0.0.1:8222/jsz?streams=true' 2>/dev/null | python3 -c '
+import json,sys
+d=json.load(sys.stdin)
+found=""
+for acct in d.get("account_details",[]):
+    for s in acct.get("stream_detail",[]):
+        if s.get("name")=="JOBS":
+            cfg=s.get("config") or {}
+            found=(cfg.get("storage") or s.get("storage") or "")
+print(found)
+' 2>/dev/null || true)"
+  echo "jobs_storage=${jobs_storage:-unknown}"
+  if [[ -z "${jobs_storage}" ]]; then
+    echo "could not read JOBS storage. leaving the stream."
+  elif [[ "${jobs_storage}" != "memory" && "${jobs_storage}" != "Memory" ]]; then
+    nats_token="$(sudo -n grep -E '^RLP_NATS_TOKEN=' /etc/rlp/runner.env | tail -n1 | cut -d= -f2- || true)"
+    if [[ -z "${nats_token}" ]]; then
+      echo "no NATS token. JOBS stays on disk."
+    else
+      echo "recreating JOBS in memory"
+      nats_box() {
+        sudo -n docker run --rm --network host natsio/nats-box:latest \
+          nats --server nats://127.0.0.1:4222 --token "${nats_token}" "$@"
+      }
+      nats_box stream rm JOBS --force || echo "JOBS remove returned non-zero"
+      if nats_box stream add JOBS \
+        --subjects 'jobs.>' \
+        --storage memory \
+        --retention work \
+        --discard new \
+        --max-msgs=32000 --max-bytes=-1 --max-age=0 \
+        --max-msg-size=-1 --dupe-window=2m \
+        --replicas 1 --defaults; then
+        jobs_moved=1
+      else
+        echo "JOBS memory create failed"
+      fi
+    fi
+  fi
   fstype="$(findmnt -n -o FSTYPE /scratch 2>/dev/null || true)"
   fc_n="$(pgrep -c firecracker 2>/dev/null || true)"
   fc_n="${fc_n:-0}"
@@ -222,7 +265,7 @@ EOF
     scratch_moved=1
   fi
   runner_env="$(sudo -n cat "/proc/$(pgrep -nx rlp-runner)/environ" 2>/dev/null | tr '\0' '\n' || true)"
-  if [[ "${scratch_moved}" == "1" ]] \
+  if [[ "${scratch_moved}" == "1" || "${jobs_moved}" == "1" ]] \
     || ! printf '%s\n' "${runner_env}" | grep -qx 'RLP_SNAPSHOTS=1' \
     || ! printf '%s\n' "${runner_env}" | grep -qx 'RLP_VM_CONCURRENCY=256' \
     || ! printf '%s\n' "${runner_env}" | grep -qx 'RLP_TEMPLATE_BUILD_AFTER=1'; then
