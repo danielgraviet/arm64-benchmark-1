@@ -241,7 +241,17 @@ EOF
   fi
   # GET /vms returns every historical row. 8112 deleted sandboxes is about
   # 82 pages before the fleet starts. Drop those rows. Live rows stay.
+  # Each POST /vms commits one Postgres transaction. On this root disk that
+  # commit waits for a sync, and the disk does about 55 of those a second.
+  # The runner then resumes in ~80ms. The client's 9s median is the queue
+  # for that commit, which is why slowing the status poll did not move it.
+  # synchronous_commit=off returns before the disk flush. A crash can lose
+  # the last moments of rows. This cell is a benchmark.
   if sudo -n docker exec rlp-postgres pg_isready -U rlp >/dev/null 2>&1; then
+    echo "postgres synchronous_commit=off"
+    sudo -n docker exec -i rlp-postgres psql -U rlp -d rlplatform -v ON_ERROR_STOP=1 -c \
+      "ALTER SYSTEM SET synchronous_commit = off; SELECT pg_reload_conf();" \
+      || echo "synchronous_commit change failed"
     echo "dropping deleted sandbox rows"
     sudo -n docker exec -i rlp-postgres psql -U rlp -d rlplatform -v ON_ERROR_STOP=1 <<'SQL' || echo "purge of deleted sandboxes failed"
 DELETE FROM jobs WHERE vm_id IN (SELECT id FROM vms WHERE status = 'deleted');
