@@ -113,6 +113,9 @@ case "${cmd}" in
   k|kernel|guest)
     exec bash "${ROOT}/scripts/host/oci_build_guest.sh" "$@"
     ;;
+  6|pages)
+    exec bash "${ROOT}/scripts/host/oci_64k_kernel.sh" "$@"
+    ;;
   a|daemon)
     exec bash "${ROOT}/scripts/host/oci_build_daemon.sh" "$@"
     ;;
@@ -136,6 +139,8 @@ case "${cmd}" in
     cat <<'EOF'
 ./o g     boot / resume (uses .env.oci; sudo docker if needed)
 ./o k     build guest Image + initdisk into /var/lib/rlp/kernel/
+./o 6     install 64 KB host kernel (keeps 4 KB). then: sudo reboot
+./o 6 undo   next boot back to the 4 KB kernel
 ./o a     build arm64 daemon system layer (toolbox :2280)
 ./o j     show rlp-api journal (when health fails)
 ./o z     wipe postgres/nats volumes (password mismatch fix)
