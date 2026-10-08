@@ -174,8 +174,30 @@ Environment=RLP_NETNS_POOL=2100
 Environment=RLP_MAX_LIVE_VMS=3000
 Environment=RLP_TEMPLATE_BUILD_AFTER=1
 EOF
+  # Resume copies one 16 MiB scratch file per sandbox. On ext4 that is a
+  # real read and write, 16 GiB for 1000, on the 98 GB root disk. The first
+  # resume fleet paid that cold (46s, 21/s). The next one still wrote 16 GiB
+  # and landed at 19.8s. A tmpfs keeps those copies in RAM. Mounting hides
+  # the on-disk template, so the runner restarts and the warmup builds a new one.
+  scratch_moved=0
+  fstype="$(findmnt -n -o FSTYPE /scratch 2>/dev/null || true)"
+  fc_n="$(pgrep -c firecracker 2>/dev/null || true)"
+  fc_n="${fc_n:-0}"
+  avail_kb="$(awk '/MemAvailable:/ {print $2}' /proc/meminfo)"
+  if [[ "${fstype}" == "tmpfs" ]]; then
+    echo "scratch fstype=tmpfs"
+  elif [[ "${fc_n}" != "0" ]]; then
+    echo "firecracker still running (${fc_n}). scratch stays on disk."
+  elif [[ "${avail_kb:-0}" -lt 134217728 ]]; then
+    echo "MemAvailable ${avail_kb:-0} KiB is under 128 GiB. scratch stays on disk."
+  else
+    echo "moving /scratch to a 48G tmpfs so resume copies stay in RAM"
+    sudo -n mount -t tmpfs -o size=48G,mode=1777 tmpfs /scratch
+    scratch_moved=1
+  fi
   runner_env="$(sudo -n cat "/proc/$(pgrep -nx rlp-runner)/environ" 2>/dev/null | tr '\0' '\n' || true)"
-  if ! printf '%s\n' "${runner_env}" | grep -qx 'RLP_SNAPSHOTS=1' \
+  if [[ "${scratch_moved}" == "1" ]] \
+    || ! printf '%s\n' "${runner_env}" | grep -qx 'RLP_SNAPSHOTS=1' \
     || ! printf '%s\n' "${runner_env}" | grep -qx 'RLP_VM_CONCURRENCY=256' \
     || ! printf '%s\n' "${runner_env}" | grep -qx 'RLP_TEMPLATE_BUILD_AFTER=1'; then
     echo "restarting runner so the first sandbox builds a snapshot template"
@@ -190,6 +212,16 @@ EOF
       fi
       sleep 3
     done
+  fi
+  # GET /vms returns every historical row. 8112 deleted sandboxes is about
+  # 82 pages before the fleet starts. Drop those rows. Live rows stay.
+  if sudo -n docker exec rlp-postgres pg_isready -U rlp >/dev/null 2>&1; then
+    echo "dropping deleted sandbox rows"
+    sudo -n docker exec -i rlp-postgres psql -U rlp -d rlplatform -v ON_ERROR_STOP=1 <<'SQL' || echo "purge of deleted sandboxes failed"
+DELETE FROM jobs WHERE vm_id IN (SELECT id FROM vms WHERE status = 'deleted');
+DELETE FROM migrations WHERE vm_id IN (SELECT id FROM vms WHERE status = 'deleted');
+DELETE FROM vms WHERE status = 'deleted';
+SQL
   fi
 fi
 
