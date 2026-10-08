@@ -383,6 +383,7 @@ fi
     echo "template_hit=${hits} template_miss=${misses}"
     sync_commit="$(sudo -n docker exec rlp-postgres psql -U rlp -d rlplatform -qAt -c 'SHOW synchronous_commit;' 2>/dev/null || echo unknown)"
     echo "synchronous_commit=${sync_commit}"
+    echo "jobs_storage=${jobs_storage:-unknown}"
     echo "scratch_fstype=$(findmnt -n -o FSTYPE /scratch 2>/dev/null || echo unknown)"
     printf '%s\n' "${fleet_log}" > /tmp/vera-fleet-journal.txt
     python3 - /tmp/vera-fleet-journal.txt <<'PY'
