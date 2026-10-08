@@ -349,9 +349,30 @@ def main() -> None:
     sandboxes: list = []
     errors: list[str] = []
     create_latencies: list[float] = []
+    post_latencies: list[float] = []
+    wait_latencies: list[float] = []
     probe_latencies: list[float] = []
 
+    # create() is the POST plus the poll until started. Split them so a 9s
+    # median says which side is the queue.
+    import threading
+
+    from rlp.sandbox import Sandbox
+
+    _wait_tls = threading.local()
+    _orig_wait = Sandbox.wait_until_started
+
+    def _timed_wait(self, timeout: int = 60) -> None:  # type: ignore[no-untyped-def]
+        t_wait = time.perf_counter()
+        try:
+            _orig_wait(self, timeout)
+        finally:
+            _wait_tls.wait_s = time.perf_counter() - t_wait
+
+    Sandbox.wait_until_started = _timed_wait  # type: ignore[method-assign]
+
     def one(i: int) -> dict[str, Any]:
+        _wait_tls.wait_s = 0.0
         t_create = time.perf_counter()
         sb = client.create(
             build_params(
@@ -365,6 +386,8 @@ def main() -> None:
             timeout=args.timeout,
         )
         create_s = time.perf_counter() - t_create
+        wait_s = float(getattr(_wait_tls, "wait_s", 0.0))
+        post_s = max(0.0, create_s - wait_s)
         probe_s = None
         if probe:
             t_probe = time.perf_counter()
@@ -387,6 +410,8 @@ def main() -> None:
                 "runner_id": sdk_runner_id(sb),
                 "status": "ok",
                 "create_s": create_s,
+                "post_s": post_s,
+                "wait_s": wait_s,
                 "probe_s": probe_s,
                 "error": None,
             },
@@ -404,6 +429,10 @@ def main() -> None:
                     sandboxes.append(result["sandbox"])
                     record = result["record"]
                     create_latencies.append(float(record["create_s"]))
+                    if record.get("post_s") is not None:
+                        post_latencies.append(float(record["post_s"]))
+                    if record.get("wait_s") is not None:
+                        wait_latencies.append(float(record["wait_s"]))
                     if record.get("probe_s") is not None:
                         probe_latencies.append(float(record["probe_s"]))
                     writer.write(record)
@@ -431,6 +460,8 @@ def main() -> None:
             f"READY_WALL_S={ready_s:.3f} CREATE_MAX_S={create_wall_est:.3f} "
             f"create_p50_s={_percentile(create_latencies, 50):.3f} "
             f"create_p95_s={_percentile(create_latencies, 95):.3f} "
+            f"post_p50_s={_percentile(post_latencies, 50):.3f} "
+            f"wait_p50_s={_percentile(wait_latencies, 50):.3f} "
             f"probe_p50_s={_percentile(probe_latencies, 50):.3f} "
             f"probe_p95_s={_percentile(probe_latencies, 95):.3f} "
             f"ok={ok} failed={len(errors)} rate={rate:.1f}/s",
