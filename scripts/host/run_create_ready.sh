@@ -296,6 +296,67 @@ fi
     hits="$(printf '%s\n' "${fleet_log}" | grep -c 'template=hit' || true)"
     misses="$(printf '%s\n' "${fleet_log}" | grep -c 'template=miss' || true)"
     echo "template_hit=${hits} template_miss=${misses}"
+    echo "scratch_fstype=$(findmnt -n -o FSTYPE /scratch 2>/dev/null || echo unknown)"
+    printf '%s\n' "${fleet_log}" > /tmp/vera-fleet-journal.txt
+    python3 - /tmp/vera-fleet-journal.txt <<'PY'
+import sys
+from collections import defaultdict
+
+phases = [
+    "total_ms",
+    "clone_ms",
+    "netns_get_ms",
+    "adopt_ms",
+    "bind_ms",
+    "scratch_cp_ms",
+    "fc_start_ms",
+    "load_ms",
+    "toolbox_wait_ms",
+]
+vals = defaultdict(list)
+with open(sys.argv[1], encoding="utf-8", errors="replace") as fh:
+    for line in fh:
+        if "boot-phases" not in line or "template=hit" not in line:
+            continue
+        for name in phases:
+            key = name + "="
+            at = line.find(key)
+            if at < 0:
+                continue
+            num = []
+            for ch in line[at + len(key) :]:
+                if ch.isdigit():
+                    num.append(ch)
+                else:
+                    break
+            if num:
+                vals[name].append(int("".join(num)))
+
+def pct(xs, p):
+    if not xs:
+        return 0
+    xs = sorted(xs)
+    i = round((p / 100) * (len(xs) - 1))
+    return xs[i]
+
+n = len(vals["total_ms"])
+print(f"boot_phases n={n}")
+slow_name = ""
+slow_p50 = -1
+for name in phases:
+    xs = vals[name]
+    if not xs:
+        continue
+    p50 = pct(xs, 50)
+    if p50 > slow_p50:
+        slow_name = name
+        slow_p50 = p50
+    print(
+        f"  {name} p50={p50} p95={pct(xs, 95)} max={max(xs)} sum_s={sum(xs)/1000:.1f}"
+    )
+if slow_name:
+    print(f"slowest_p50={slow_name} {slow_p50}ms")
+PY
   fi
   echo "END_EXIT=${status}"
   echo "OUTPUT=${OUTPUT}"

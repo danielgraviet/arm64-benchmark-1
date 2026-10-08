@@ -48,7 +48,7 @@ from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
-from rlp import CreateSandboxFromImageParams, Daytona, DaytonaConfig, Resources
+from rlp import CreateSandboxFromImageParams, Daytona, Resources
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -57,58 +57,15 @@ if str(ROOT) not in sys.path:
 from harness import rlp_client_tuning  # noqa: E402
 from harness.common import JsonlWriter  # noqa: E402
 from harness.env_probe import parse_cpuinfo  # noqa: E402
+from harness.regions import resolve_rlp_client_config, validate_rlp_target  # noqa: E402
 from harness.runner_id import sdk_runner_id  # noqa: E402
 
 AGENT_IMAGE = "dtgraviet/vera-agent-benchmark:v3"
 
 
-def _env(*names: str) -> str:
-    for name in names:
-        val = (os.environ.get(name) or "").strip()
-        if val:
-            return val
-    raise SystemExit(f"Missing env: tried {', '.join(names)}")
-
-
-def _daytona_config(**kwargs) -> DaytonaConfig:
-    """Drop kwargs the installed SDK does not accept (PyPI vs eng overlay)."""
-    fields = getattr(DaytonaConfig, "__dataclass_fields__", {})
-    return DaytonaConfig(**{k: v for k, v in kwargs.items() if k in fields})
-
-
 def build_client(target: str) -> Daytona:
-    if target == "vera":
-        return Daytona(
-            _daytona_config(
-                api_url=_env("VERA_RLP_API_URL"),
-                api_key=_env("VERA_RLP_API_KEY"),
-                toolbox_url=_env("VERA_RLP_TOOLBOX_URL"),
-                target=os.environ.get("VERA_RLP_TARGET", "vera").strip() or "vera",
-                region_routing=False,
-            )
-        )
-    if target == "redswitches":
-        api = (
-            os.environ.get("REDSWITCHES_RLP_API_URL")
-            or os.environ.get("RLP_API_URL")
-            or "http://127.0.0.1:8088"
-        ).strip()
-        key = _env("REDSWITCHES_RLP_API_KEY", "RLP_API_KEY", "RS_KEY")
-        tb = (
-            os.environ.get("REDSWITCHES_RLP_TOOLBOX_URL")
-            or os.environ.get("RLP_TOOLBOX_URL")
-            or "http://127.0.0.1:9000/toolbox"
-        ).strip()
-        return Daytona(
-            _daytona_config(
-                api_url=api,
-                api_key=key,
-                toolbox_url=tb,
-                target="redswitches",
-                region_routing=False,
-            )
-        )
-    raise SystemExit(f"Unknown target {target!r}")
+    validate_rlp_target(target)
+    return Daytona(resolve_rlp_client_config(target))
 
 
 def build_params(
@@ -282,13 +239,28 @@ def _sandbox_id(sandbox: Any) -> str | None:
 
 def _default_output(target: str, count: int) -> Path:
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    folder = "vera-jsonl" if target == "vera" else "zen5-jsonl"
-    return ROOT / "results" / folder / f"{target}_create_ready_{count}_{stamp}.jsonl"
+    if target == "vera":
+        folder = ROOT / "results" / "vera-jsonl"
+        name = f"vera_create_ready_{count}_{stamp}.jsonl"
+    elif target == "epyc9755":
+        folder = ROOT / "daniel-focus-here" / "zen5-9755-jsonl"
+        name = f"epyc9755_create_ready_{count}_{stamp}.jsonl"
+    elif target == "epyc9575":
+        folder = ROOT / "daniel-focus-here" / "zen5-9575f-jsonl"
+        name = f"epyc9575_create_ready_{count}_{stamp}.jsonl"
+    else:
+        folder = ROOT / "results" / "zen5-jsonl"
+        name = f"{target}_create_ready_{count}_{stamp}.jsonl"
+    return folder / name
 
 
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--target", choices=("vera", "redswitches"), required=True)
+    p.add_argument(
+        "--target",
+        choices=("vera", "redswitches", "epyc9755", "epyc9575"),
+        required=True,
+    )
     p.add_argument("--count", type=int, default=2000)
     p.add_argument(
         "--image",
@@ -326,7 +298,8 @@ def main() -> None:
         output = ROOT / output
 
     load_dotenv(ROOT / ".env")
-    os.environ.setdefault("RLP_HTTP_MAX_CONNECTIONS", "4096")
+    # Vera create-ready meta used 1024. Do not raise past an explicit export.
+    os.environ.setdefault("RLP_HTTP_MAX_CONNECTIONS", "1024")
     _raise_nofile_to_vera()
     rlp_client_tuning.apply()
 
@@ -376,6 +349,7 @@ def main() -> None:
     sandboxes: list = []
     errors: list[str] = []
     create_latencies: list[float] = []
+    probe_latencies: list[float] = []
 
     def one(i: int) -> dict[str, Any]:
         t_create = time.perf_counter()
@@ -430,6 +404,8 @@ def main() -> None:
                     sandboxes.append(result["sandbox"])
                     record = result["record"]
                     create_latencies.append(float(record["create_s"]))
+                    if record.get("probe_s") is not None:
+                        probe_latencies.append(float(record["probe_s"]))
                     writer.write(record)
                 except Exception as e:  # noqa: BLE001
                     err = f"{type(e).__name__}:{e}"
@@ -453,6 +429,10 @@ def main() -> None:
         rate = (ok / ready_s) if ready_s > 0 else 0.0
         print(
             f"READY_WALL_S={ready_s:.3f} CREATE_MAX_S={create_wall_est:.3f} "
+            f"create_p50_s={_percentile(create_latencies, 50):.3f} "
+            f"create_p95_s={_percentile(create_latencies, 95):.3f} "
+            f"probe_p50_s={_percentile(probe_latencies, 50):.3f} "
+            f"probe_p95_s={_percentile(probe_latencies, 95):.3f} "
             f"ok={ok} failed={len(errors)} rate={rate:.1f}/s",
             flush=True,
         )
