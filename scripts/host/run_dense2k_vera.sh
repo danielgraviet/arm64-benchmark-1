@@ -57,12 +57,14 @@ export RLP_HOLD_CREATE_BATCH=512
 # Published recipe: n=45, seed 42, -E 8, hold-then-exec, cpu 0.025 / max 1,
 # memory 0.0625 / max 4, levels 44 through 2000, disk 1 GiB.
 # OCI root is 98 GB, so 2000 x 1 GiB does not fit. Scratch stays 16 MiB.
-# Smoke is one wave at 44 with n=1. Low is the published n=45 job at 44, 88, and 176.
+# Smoke is one wave at 44 with n=1. Low is only 44 at n=45.
+# At 44 the episode stays near 11s here and near 6s at Vera HQ. It matches once the
+# socket is full, so low pins the clocks high and leaves the runner up.
 if [[ "${1:-}" == "smoke" ]]; then
   DENSE_LEVELS="${DENSE_LEVELS:-44}"
   DENSE_N="${DENSE_N:-1}"
 elif [[ "${1:-}" == "low" ]]; then
-  DENSE_LEVELS="${DENSE_LEVELS:-44 88 176}"
+  DENSE_LEVELS="${DENSE_LEVELS:-44}"
   DENSE_N="${DENSE_N:-45}"
   DENSE_KEEP_RUNNER=1
 fi
@@ -97,6 +99,26 @@ mkdir -p "$(dirname "${LOG_NVME}")" 2>/dev/null || true
     echo "low run. not restarting the runner."
     SOCKET_PIN_CPUS="${current_cpus}"
     SOCKET_PIN_MEMS="${current_mems}"
+    echo "=== CLOCKS performance on socket 0, runner stays up ==="
+    sudo -n bash -c '
+      for c in $(seq 0 87) $(seq 176 263); do
+        gov="/sys/devices/system/cpu/cpu${c}/cpufreq/scaling_governor"
+        if [[ -f "${gov}" ]]; then
+          echo performance > "${gov}" || true
+        fi
+        pref="/sys/devices/system/cpu/cpu${c}/cpufreq/energy_performance_preference"
+        if [[ -f "${pref}" ]]; then
+          echo performance > "${pref}" || true
+        fi
+        maxf="/sys/devices/system/cpu/cpu${c}/cpufreq/scaling_max_freq"
+        minf="/sys/devices/system/cpu/cpu${c}/cpufreq/scaling_min_freq"
+        if [[ -f "${maxf}" && -f "${minf}" ]]; then
+          cat "${maxf}" > "${minf}" || true
+        fi
+      done
+    ' || echo "clock pin failed"
+    echo "cpu0 governor=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo unread) min_khz=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq 2>/dev/null || echo unread) max_khz=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 2>/dev/null || echo unread)"
+    echo "slice cpu.max=$(sudo -n cat /sys/fs/cgroup/rlp.slice/cpu.max 2>/dev/null || echo unread)"
   elif [[ "${current_cpus}" == "0-87,176-263" && "${current_mems}" == "0" ]]; then
     echo "already pinned to socket 0. not restarting the runner."
     SOCKET_PIN_CPUS="${current_cpus}"
