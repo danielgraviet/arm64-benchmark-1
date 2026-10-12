@@ -58,8 +58,9 @@ export RLP_HOLD_CREATE_BATCH=512
 # memory 0.0625 / max 4, levels 44 through 2000, disk 1 GiB.
 # OCI root is 98 GB, so 2000 x 1 GiB does not fit. Scratch stays 16 MiB.
 # Smoke is one wave at 44 with n=1.
-# Low is the 88 rung. 44 matched Vera HQ once those VMs sat on their own cores.
-# 88 gets the 88 physical cores on socket 0. The runner stays up, on socket 1.
+# Low is the 88 rung. All 88 physical cores ran at 12.6 jobs/s.
+# Vera HQ is 9.5, with the rest of the socket shared. Low keeps 66 cores
+# for the VMs and leaves the runner up on the rest of socket 0.
 if [[ "${1:-}" == "smoke" ]]; then
   DENSE_LEVELS="${DENSE_LEVELS:-44}"
   DENSE_N="${DENSE_N:-1}"
@@ -67,7 +68,7 @@ elif [[ "${1:-}" == "low" ]]; then
   DENSE_LEVELS="${DENSE_LEVELS:-88}"
   DENSE_N="${DENSE_N:-45}"
   DENSE_KEEP_RUNNER=1
-  DENSE_VMS_CPUS="${DENSE_VMS_CPUS:-0-87}"
+  DENSE_VMS_CPUS="${DENSE_VMS_CPUS:-0-65}"
 fi
 DENSE_LEVELS="${DENSE_LEVELS:-44 88 176 352 528 704 880 1056 1408 1760 2000}"
 DENSE_N="${DENSE_N:-45}"
@@ -152,7 +153,7 @@ mkdir -p "$(dirname "${LOG_NVME}")" 2>/dev/null || true
   UV_NO_SYNC=1 uv run python scripts/phoenix_rlp_cleanup_sandboxes.py --target vera
   echo "FC=$(pgrep -c firecracker 2>/dev/null || true)"
   if [[ -n "${DENSE_KEEP_RUNNER:-}" ]]; then
-    echo "=== SPREAD VMs onto ${DENSE_VMS_CPUS}, runner stays up on socket 1 ==="
+    echo "=== SPREAD VMs onto ${DENSE_VMS_CPUS}, runner stays up on socket 0 ==="
     sudo -n env DENSE_VMS_CPUS="${DENSE_VMS_CPUS}" bash -c '
       set -euo pipefail
       slice=/sys/fs/cgroup/rlp.slice
@@ -163,7 +164,6 @@ mkdir -p "$(dirname "${LOG_NVME}")" 2>/dev/null || true
       if ! grep -qw cpuset "${slice}/cgroup.subtree_control" 2>/dev/null; then
         echo +cpuset > "${slice}/cgroup.subtree_control"
       fi
-      # Socket 0 physical cores for the VMs. SMT siblings stay out of this set.
       echo 0-87,176-263 > "${slice}/cpuset.cpus"
       echo 0 > "${slice}/cpuset.mems"
       if [[ ! -d "${vms}" ]]; then
@@ -172,17 +172,12 @@ mkdir -p "$(dirname "${LOG_NVME}")" 2>/dev/null || true
       fi
       echo "${DENSE_VMS_CPUS}" > "${vms}/cpuset.cpus"
       echo 0 > "${vms}/cpuset.mems"
-      # Park the services on socket 1 when the kernel allows it.
-      if echo 0-175,176-263 > "${slice}/cpuset.cpus"; then
-        for child in "${slice}"/*/; do
-          name="$(basename "${child}")"
-          [[ "${name}" == "vms" ]] && continue
-          echo 88-175 > "${child}cpuset.cpus" || echo "could not park ${name}"
-          echo 0 > "${child}cpuset.mems" || true
-        done
-      else
-        echo "socket 1 park skipped"
-      fi
+      for child in "${slice}"/*/; do
+        name="$(basename "${child}")"
+        [[ "${name}" == "vms" ]] && continue
+        echo 0-87,176-263 > "${child}cpuset.cpus" || echo "could not restore ${name}"
+        echo 0 > "${child}cpuset.mems" || true
+      done
     '
     HOST_VMS_CPUS="$(sudo -n cat /sys/fs/cgroup/rlp.slice/vms/cpuset.cpus 2>/dev/null | tr -d '[:space:]' || true)"
     echo "vms_cpus=${HOST_VMS_CPUS:-unread}"
@@ -194,26 +189,14 @@ mkdir -p "$(dirname "${LOG_NVME}")" 2>/dev/null || true
   fi
   echo "=== START $(date -u +%Y-%m-%dT%H:%M:%SZ) target=vera ulimit=$(ulimit -Sn) http_pool=${RLP_HTTP_MAX_CONNECTIONS} levels=${DENSE_LEVELS} n=${DENSE_N} disk=${DENSE_DISK} published_disk=1 output=${OUT} ==="
   set +e
-  if [[ -n "${DENSE_KEEP_RUNNER:-}" ]] && command -v taskset >/dev/null; then
-    echo "client taskset 88-175"
-    UV_NO_SYNC=1 taskset -c 88-175 uv run main.py \
-      --benchmark agent --runner rlp --target vera \
-      --snapshot dtgraviet/vera-agent-benchmark:v3 \
-      --levels ${DENSE_LEVELS} \
-      --n "${DENSE_N}" --seed 42 -E 8 --hold-then-exec \
-      --rlp-cpu 0.025 --rlp-cpu-max 1 \
-      --rlp-memory 0.0625 --rlp-memory-max 4 --rlp-disk "${DENSE_DISK}" \
-      --output "${OUT}"
-  else
-    UV_NO_SYNC=1 uv run main.py \
-      --benchmark agent --runner rlp --target vera \
-      --snapshot dtgraviet/vera-agent-benchmark:v3 \
-      --levels ${DENSE_LEVELS} \
-      --n "${DENSE_N}" --seed 42 -E 8 --hold-then-exec \
-      --rlp-cpu 0.025 --rlp-cpu-max 1 \
-      --rlp-memory 0.0625 --rlp-memory-max 4 --rlp-disk "${DENSE_DISK}" \
-      --output "${OUT}"
-  fi
+  UV_NO_SYNC=1 uv run main.py \
+    --benchmark agent --runner rlp --target vera \
+    --snapshot dtgraviet/vera-agent-benchmark:v3 \
+    --levels ${DENSE_LEVELS} \
+    --n "${DENSE_N}" --seed 42 -E 8 --hold-then-exec \
+    --rlp-cpu 0.025 --rlp-cpu-max 1 \
+    --rlp-memory 0.0625 --rlp-memory-max 4 --rlp-disk "${DENSE_DISK}" \
+    --output "${OUT}"
   status=$?
   if [[ -f "${OUT}" ]]; then
     python3 - "${OUT}" <<'PY'
