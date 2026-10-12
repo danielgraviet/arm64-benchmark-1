@@ -34,7 +34,7 @@ esac
 LOG="${LOG:-/tmp/${TARGET}-create-ready-${COUNT}.log}"
 LOG_NVME="${LOG_NVME:-/mnt/data/bench-logs/${TARGET}-create-ready-${COUNT}-$(date -u +%Y%m%d_%H%M%S).log}"
 
-export PATH="${HOME}/.local/bin:/usr/local/bin:${PATH}"
+export PATH="/usr/local/go/bin:${HOME}/.local/bin:/usr/local/bin:${PATH}"
 export PYTHONUNBUFFERED=1
 # On-box cell routing (not a laptop tunnel).
 export RLP_API_URL="http://127.0.0.1:8088"
@@ -255,7 +255,12 @@ PY
     echo "building rlp-runner"
     (
       cd "${HOME}/rlp/runner"
-      CGO_ENABLED=0 go build -o /tmp/rlp-runner ./cmd/runner
+      export PATH="/usr/local/go/bin:${PATH}"
+      if [[ ! -x /usr/local/go/bin/go ]]; then
+        echo "go is not at /usr/local/go/bin/go" >&2
+        exit 1
+      fi
+      CGO_ENABLED=0 /usr/local/go/bin/go build -o /tmp/rlp-runner ./cmd/runner
     )
     sudo -n install -m0755 -o root -g root /tmp/rlp-runner /usr/local/bin/rlp-runner
     quiet_built=1
