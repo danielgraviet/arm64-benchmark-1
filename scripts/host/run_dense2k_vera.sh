@@ -64,6 +64,7 @@ if [[ "${1:-}" == "smoke" ]]; then
 elif [[ "${1:-}" == "low" ]]; then
   DENSE_LEVELS="${DENSE_LEVELS:-44 88 176}"
   DENSE_N="${DENSE_N:-45}"
+  DENSE_KEEP_RUNNER=1
 fi
 DENSE_LEVELS="${DENSE_LEVELS:-44 88 176 352 528 704 880 1056 1408 1760 2000}"
 DENSE_N="${DENSE_N:-45}"
@@ -91,17 +92,22 @@ mkdir -p "$(dirname "${LOG_NVME}")" 2>/dev/null || true
     current_cpus="$(sudo -n cat /sys/fs/cgroup/rlp.slice/cpuset.cpus 2>/dev/null | tr -d '[:space:]' || true)"
     current_mems="$(sudo -n cat /sys/fs/cgroup/rlp.slice/cpuset.mems 2>/dev/null | tr -d '[:space:]' || true)"
   fi
-  if [[ "${current_cpus}" == "0-87,176-263" && "${current_mems}" == "0" ]]; then
+  # low keeps the running runner. The pin script restarts it and drops the warm caches.
+  if [[ -n "${DENSE_KEEP_RUNNER:-}" ]]; then
+    echo "low run. not restarting the runner."
+    SOCKET_PIN_CPUS="${current_cpus}"
+    SOCKET_PIN_MEMS="${current_mems}"
+  elif [[ "${current_cpus}" == "0-87,176-263" && "${current_mems}" == "0" ]]; then
     echo "already pinned to socket 0. not restarting the runner."
     SOCKET_PIN_CPUS="${current_cpus}"
     SOCKET_PIN_MEMS="${current_mems}"
   else
     bash "${ROOT}/tickets/vera-pin-single-socket.sh" 0
-    SOCKET_PIN_CPUS="$(tr -d '[:space:]' < /sys/fs/cgroup/rlp.slice/cpuset.cpus)"
-    SOCKET_PIN_MEMS="$(tr -d '[:space:]' < /sys/fs/cgroup/rlp.slice/cpuset.mems)"
+    SOCKET_PIN_CPUS="$(sudo -n cat /sys/fs/cgroup/rlp.slice/cpuset.cpus 2>/dev/null | tr -d '[:space:]' || true)"
+    SOCKET_PIN_MEMS="$(sudo -n cat /sys/fs/cgroup/rlp.slice/cpuset.mems 2>/dev/null | tr -d '[:space:]' || true)"
   fi
   export SOCKET_PIN_CPUS SOCKET_PIN_MEMS
-  echo "PINNED cpus=${SOCKET_PIN_CPUS} mems=${SOCKET_PIN_MEMS}"
+  echo "PINNED cpus=${SOCKET_PIN_CPUS:-unread} mems=${SOCKET_PIN_MEMS:-unread}"
   echo "=== CLEANUP $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
   UV_NO_SYNC=1 uv run python scripts/phoenix_rlp_cleanup_sandboxes.py --target vera
   echo "FC=$(pgrep -c firecracker 2>/dev/null || true)"
