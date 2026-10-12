@@ -58,8 +58,9 @@ export RLP_HOLD_CREATE_BATCH=512
 # memory 0.0625 / max 4, levels 44 through 2000, disk 1 GiB.
 # OCI root is 98 GB, so 2000 x 1 GiB does not fit. Scratch stays 16 MiB.
 # Smoke is one wave at 44 with n=1.
-# Low is the 176 rung. The full socket ran at 13.7 jobs/s.
-# Vera HQ is 12.5. Low keeps 80 physical cores for the VMs and leaves the runner up.
+# Low is the 176 rung. 80 physical cores ran at 10.6 jobs/s.
+# The full socket with hyperthreads ran at 13.7. Vera HQ is 12.5.
+# Low uses all 88 physical cores plus 35 hyperthreads, and leaves the runner up.
 if [[ "${1:-}" == "smoke" ]]; then
   DENSE_LEVELS="${DENSE_LEVELS:-44}"
   DENSE_N="${DENSE_N:-1}"
@@ -67,7 +68,7 @@ elif [[ "${1:-}" == "low" ]]; then
   DENSE_LEVELS="${DENSE_LEVELS:-176}"
   DENSE_N="${DENSE_N:-45}"
   DENSE_KEEP_RUNNER=1
-  DENSE_VMS_CPUS="${DENSE_VMS_CPUS:-0-79}"
+  DENSE_VMS_CPUS="${DENSE_VMS_CPUS:-0-87,176-210}"
 fi
 DENSE_LEVELS="${DENSE_LEVELS:-44 88 176 352 528 704 880 1056 1408 1760 2000}"
 DENSE_N="${DENSE_N:-45}"
