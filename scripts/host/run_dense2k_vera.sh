@@ -58,8 +58,10 @@ export RLP_HOLD_CREATE_BATCH=512
 # memory 0.0625 / max 4, levels 44 through 2000, disk 1 GiB.
 # OCI root is 98 GB, so 2000 x 1 GiB does not fit. Scratch stays 16 MiB.
 # Smoke is one wave at 44 with n=1. Low is only 44 at n=45.
-# At 44 the episode stays near 11s here and near 6s at Vera HQ. It matches once the
-# socket is full, so low pins the clocks high and leaves the runner up.
+# Clocks pinned high and the episode stayed near 11s, with create under a second.
+# The same episode is near 6s at Vera HQ, and this box has already run it that fast
+# at higher concurrency. Low spreads the 44 VMs onto 44 physical cores and leaves
+# the runner up.
 if [[ "${1:-}" == "smoke" ]]; then
   DENSE_LEVELS="${DENSE_LEVELS:-44}"
   DENSE_N="${DENSE_N:-1}"
@@ -119,6 +121,52 @@ mkdir -p "$(dirname "${LOG_NVME}")" 2>/dev/null || true
     ' || echo "clock pin failed"
     echo "cpu0 governor=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null || echo unread) min_khz=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq 2>/dev/null || echo unread) max_khz=$(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 2>/dev/null || echo unread)"
     echo "slice cpu.max=$(sudo -n cat /sys/fs/cgroup/rlp.slice/cpu.max 2>/dev/null || echo unread)"
+    echo "=== SPREAD VMs onto cores 0-43, runner stays up ==="
+    sibling="$(tr -d '[:space:]' < /sys/devices/system/cpu/cpu0/topology/thread_siblings_list 2>/dev/null || true)"
+    echo "cpu0 thread_siblings=${sibling:-unread}"
+    case ",${sibling}," in
+      *,1,*|*,2,*|*,3,*)
+        echo "refusing spread. cpu0 shares a core inside 0-43 (${sibling})" >&2
+        exit 1
+        ;;
+    esac
+    sudo -n bash -c '
+      set -euo pipefail
+      if [[ -e /proc/sys/kernel/sched_energy_aware ]]; then
+        echo 0 > /proc/sys/kernel/sched_energy_aware
+      fi
+      if [[ -e /proc/sys/kernel/sched_autogroup_enabled ]]; then
+        echo 0 > /proc/sys/kernel/sched_autogroup_enabled || true
+      fi
+      slice=/sys/fs/cgroup/rlp.slice
+      vms="${slice}/vms"
+      if ! grep -qw cpuset /sys/fs/cgroup/cgroup.subtree_control 2>/dev/null; then
+        echo +cpuset > /sys/fs/cgroup/cgroup.subtree_control
+      fi
+      if ! grep -qw cpuset "${slice}/cgroup.subtree_control" 2>/dev/null; then
+        echo +cpuset > "${slice}/cgroup.subtree_control" || true
+      fi
+      echo 0-87,176-263 > "${slice}/cpuset.cpus"
+      echo 0 > "${slice}/cpuset.mems"
+      if [[ ! -d "${vms}" ]]; then
+        echo "missing ${vms}" >&2
+        exit 1
+      fi
+      echo 0-43 > "${vms}/cpuset.cpus"
+      echo 0 > "${vms}/cpuset.mems"
+    '
+    HOST_SCHED_ENERGY_AWARE="$(tr -d '[:space:]' < /proc/sys/kernel/sched_energy_aware 2>/dev/null || echo missing)"
+    HOST_VMS_CPUS="$(sudo -n cat /sys/fs/cgroup/rlp.slice/vms/cpuset.cpus 2>/dev/null | tr -d '[:space:]' || true)"
+    echo "sched_energy_aware=${HOST_SCHED_ENERGY_AWARE} vms_cpus=${HOST_VMS_CPUS:-unread}"
+    if [[ "${HOST_VMS_CPUS}" != "0-43" ]]; then
+      echo "spread did not stick. vms cpuset=${HOST_VMS_CPUS:-unread}" >&2
+      exit 1
+    fi
+    if [[ -e /proc/sys/kernel/sched_energy_aware && "${HOST_SCHED_ENERGY_AWARE}" != "0" ]]; then
+      echo "energy aware scheduling still on (${HOST_SCHED_ENERGY_AWARE})" >&2
+      exit 1
+    fi
+    export HOST_SCHED_ENERGY_AWARE HOST_VMS_CPUS
   elif [[ "${current_cpus}" == "0-87,176-263" && "${current_mems}" == "0" ]]; then
     echo "already pinned to socket 0. not restarting the runner."
     SOCKET_PIN_CPUS="${current_cpus}"
@@ -174,6 +222,8 @@ with open(path, encoding="utf-8") as fh:
                 "published_disk_gib": 1.0,
                 "socket_cpus": os.environ.get("SOCKET_PIN_CPUS"),
                 "socket_mems": os.environ.get("SOCKET_PIN_MEMS"),
+                "sched_energy_aware": os.environ.get("HOST_SCHED_ENERGY_AWARE"),
+                "vms_cpus": os.environ.get("HOST_VMS_CPUS"),
             }
         elif obj.get("type") == "summary":
             levels.append(
