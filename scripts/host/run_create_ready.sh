@@ -671,6 +671,34 @@ if wall_s and rows:
         fleet = {name: pct(vals[name], 50) for name in phases + queue_phases if vals[name]}
         wait_med = float(median["wait_s"])
         runner_line("fleet_p50", fleet, wait_med)
+
+# If a step holds a global kernel lock, the fleet wall is about
+# count times that step, not the per-sandbox time. Network setup is the
+# step the create path is expected to serialize. Memory move and guest
+# boot can overlap.
+serial_n = n or len(rows)
+serial_buckets = [
+    ("network", ["netns_get_ms", "adopt_ms", "bind_ms"]),
+    ("scratch_disk", ["scratch_cp_ms"]),
+    ("memory_move", ["load_ms"]),
+    ("boot_until_ready", ["fc_start_ms", "toolbox_wait_ms"]),
+]
+if serial_n:
+    print(f"SERIAL_SHARE n={serial_n} p50 times count, if that step cannot overlap")
+    for label, names in serial_buckets:
+        ms = 0
+        seen = False
+        for name in names:
+            if vals[name]:
+                ms += pct(vals[name], 50)
+                seen = True
+        if not seen:
+            continue
+        sec = serial_n * ms / 1000.0
+        if wall_s:
+            print(f"  {label} {sec:.1f}s {share(sec, wall_s):.0f}% of wall")
+        else:
+            print(f"  {label} {sec:.1f}s")
 PY
   fi
   echo "END_EXIT=${status}"
