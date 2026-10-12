@@ -441,7 +441,8 @@ fi
     echo "jobs_storage=${jobs_storage:-unknown}"
     echo "scratch_fstype=$(findmnt -n -o FSTYPE /scratch 2>/dev/null || echo unknown)"
     printf '%s\n' "${fleet_log}" > /tmp/vera-fleet-journal.txt
-    python3 - /tmp/vera-fleet-journal.txt <<'PY'
+    python3 - /tmp/vera-fleet-journal.txt "${OUTPUT}" <<'PY'
+import json
 import sys
 from collections import defaultdict
 
@@ -457,32 +458,70 @@ phases = [
     "toolbox_wait_ms",
 ]
 queue_phases = ["deliver_ms", "emits_ms", "manifest_ms"]
+provision_names = [
+    "netns_get_ms",
+    "adopt_ms",
+    "bind_ms",
+    "fc_start_ms",
+    "scratch_cp_ms",
+]
 vals = defaultdict(list)
+by_vm = {}
 
-def take(line, name):
+def field(line, name):
     key = name + "="
     at = line.find(key)
     if at < 0:
-        return
+        return None
+    rest = line[at + len(key) :]
+    if rest.startswith('"'):
+        end = rest.find('"', 1)
+        return rest[1:end] if end > 0 else None
+    token = rest.split()[0] if rest.split() else ""
+    return token or None
+
+def take_ms(line, name):
+    raw = field(line, name)
+    if raw is None:
+        return None
     num = []
-    for ch in line[at + len(key) :]:
+    for ch in raw:
         if ch.isdigit():
             num.append(ch)
         else:
             break
-    if num:
-        vals[name].append(int("".join(num)))
+    if not num:
+        return None
+    return int("".join(num))
+
+def vm_row(vm_id):
+    row = by_vm.get(vm_id)
+    if row is None:
+        row = {}
+        by_vm[vm_id] = row
+    return row
 
 with open(sys.argv[1], encoding="utf-8", errors="replace") as fh:
     for line in fh:
         if "boot-phases" not in line:
             continue
+        vm_id = field(line, "vm_id")
         if "template=hit" in line:
             for name in phases:
-                take(line, name)
+                ms = take_ms(line, name)
+                if ms is None:
+                    continue
+                vals[name].append(ms)
+                if vm_id:
+                    vm_row(vm_id)[name] = ms
         elif "boot-phases create" in line:
             for name in queue_phases:
-                take(line, name)
+                ms = take_ms(line, name)
+                if ms is None:
+                    continue
+                vals[name].append(ms)
+                if vm_id:
+                    vm_row(vm_id)[name] = ms
 
 def pct(xs, p):
     if not xs:
@@ -490,6 +529,11 @@ def pct(xs, p):
     xs = sorted(xs)
     i = round((p / 100) * (len(xs) - 1))
     return xs[i]
+
+def share(part, whole):
+    if not whole:
+        return 0.0
+    return 100.0 * part / whole
 
 n = len(vals["total_ms"])
 print(f"boot_phases n={n}")
@@ -515,12 +559,113 @@ for name in queue_phases:
     print(
         f"  {name} p50={pct(xs, 50)} p95={pct(xs, 95)} max={max(xs)} sum_s={sum(xs)/1000:.1f}"
     )
+
+rows = []
+wall_s = None
+jsonl_path = sys.argv[2] if len(sys.argv) > 2 else ""
+if jsonl_path:
+    try:
+        with open(jsonl_path, encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                try:
+                    obj = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if obj.get("type") == "summary" and obj.get("ready_wall_s"):
+                    wall_s = float(obj["ready_wall_s"])
+                elif obj.get("type") == "sandbox" and obj.get("status") == "ok":
+                    if obj.get("post_s") is None:
+                        continue
+                    rows.append(obj)
+    except OSError as exc:
+        print(f"WALL_SHARE jsonl unreadable: {exc}")
+
 boot_p50 = pct(vals["total_ms"], 50) if vals["total_ms"] else 0
-if vals["total_ms"] and boot_p50 < 1000:
+if wall_s:
+    print(
+        f"runner_boot_p50_ms={boot_p50} "
+        f"runner_boot_p50_pct_of_wall={share(boot_p50 / 1000.0, wall_s):.2f}"
+    )
+elif vals["total_ms"] and boot_p50 < 1000:
     print(
         "gap=api_visibility runner boot p50 is under 1s. "
         "client create time is the wait until the API row says started."
     )
+
+def finish_s(row):
+    return float(row["create_s"]) + float(row.get("probe_s") or 0.0)
+
+def client_line(label, row, wall):
+    post = float(row["post_s"])
+    wait = float(row["wait_s"])
+    probe = float(row.get("probe_s") or 0.0)
+    print(
+        f"  {label} api_accept={post:.3f}s {share(post, wall):.1f}% "
+        f"told_started={wait:.3f}s {share(wait, wall):.1f}% "
+        f"probe={probe:.3f}s {share(probe, wall):.1f}%"
+    )
+
+def runner_bits(phases_for_vm):
+    deliver = phases_for_vm.get("deliver_ms")
+    total = phases_for_vm.get("total_ms")
+    load = phases_for_vm.get("load_ms")
+    toolbox = phases_for_vm.get("toolbox_wait_ms")
+    provisioning = 0
+    have_provision = False
+    for name in provision_names:
+        if name in phases_for_vm:
+            provisioning += phases_for_vm[name]
+            have_provision = True
+    other = None
+    if total is not None:
+        named = (load or 0) + (toolbox or 0) + (provisioning if have_provision else 0)
+        other = max(0, total - named)
+    return deliver, provisioning if have_provision else None, load, toolbox, other, total
+
+def runner_line(label, phases_for_vm, wait_s):
+    deliver, provisioning, load, toolbox, other, _total = runner_bits(phases_for_vm)
+    parts = [
+        ("queued_before_runner", deliver),
+        ("provisioning", provisioning),
+        ("memory_move", load),
+        ("guest_ready", toolbox),
+        ("other", other),
+    ]
+    bits = []
+    for name, ms in parts:
+        if ms is None:
+            continue
+        sec = ms / 1000.0
+        bits.append(f"{name}={sec:.3f}s {share(sec, wait_s):.1f}% of wait")
+    if bits:
+        print(f"  {label} " + " ".join(bits))
+
+if wall_s and rows:
+    ordered = sorted(rows, key=finish_s)
+    last = ordered[-1]
+    median = ordered[(len(ordered) - 1) // 2]
+    print(f"WALL_SHARE wall_s={wall_s:.3f} n={len(rows)}")
+    client_line("last", last, wall_s)
+    client_line("median", median, wall_s)
+    joined = 0
+    for row in (last, median):
+        sid = str(row.get("sandbox_id") or "")
+        if sid and sid in by_vm:
+            joined += 1
+    if joined:
+        print("WALL_SHARE runner joined to client ids")
+        for label, row in (("last", last), ("median", median)):
+            sid = str(row.get("sandbox_id") or "")
+            hit = by_vm.get(sid)
+            if not hit:
+                print(f"  {label} no runner line for {sid}")
+                continue
+            runner_line(label, hit, float(row["wait_s"]))
+    else:
+        print("WALL_SHARE runner not joined. fleet p50 follows.")
+        fleet = {name: pct(vals[name], 50) for name in phases + queue_phases if vals[name]}
+        wait_med = float(median["wait_s"])
+        runner_line("fleet_p50", fleet, wait_med)
 PY
   fi
   echo "END_EXIT=${status}"
