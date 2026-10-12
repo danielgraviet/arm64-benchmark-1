@@ -21,7 +21,8 @@ export RLP_TOOLBOX_URL="${RLP_TOOLBOX_URL:-http://127.0.0.1:9000/toolbox}"
 export VERA_RLP_API_URL="${VERA_RLP_API_URL:-http://127.0.0.1:8088}"
 export VERA_RLP_TOOLBOX_URL="${VERA_RLP_TOOLBOX_URL:-http://127.0.0.1:9000/toolbox}"
 export VERA_RLP_TARGET="${VERA_RLP_TARGET:-vera}"
-export RLP_HTTP_MAX_CONNECTIONS="${RLP_HTTP_MAX_CONNECTIONS:-8192}"
+# Overridden after .env to the published pool of 512 unless already set.
+export RLP_HTTP_MAX_CONNECTIONS="${RLP_HTTP_MAX_CONNECTIONS:-512}"
 export RLP_HOLD_CREATE_BATCH="${RLP_HOLD_CREATE_BATCH:-512}"
 
 STAMP="$(date -u +%Y%m%d_%H%M%S)"
@@ -48,8 +49,21 @@ export RLP_TOOLBOX_URL="http://127.0.0.1:9000/toolbox"
 export VERA_RLP_API_URL="http://127.0.0.1:8088"
 export VERA_RLP_TOOLBOX_URL="http://127.0.0.1:9000/toolbox"
 export VERA_RLP_TARGET="vera"
-export RLP_HTTP_MAX_CONNECTIONS="${RLP_HTTP_MAX_CONNECTIONS:-8192}"
-export RLP_HOLD_CREATE_BATCH="${RLP_HOLD_CREATE_BATCH:-512}"
+# Published Vera dense file used HTTP pool 512. Do not keep a create-ready pool.
+export RLP_HTTP_MAX_CONNECTIONS=512
+export RLP_HOLD_CREATE_BATCH=512
+
+# Published recipe: n=45, seed 42, -E 8, hold-then-exec, cpu 0.025 / max 1,
+# memory 0.0625 / max 4, levels 44 through 2000, disk 1 GiB.
+# OCI root is 98 GB, so 2000 x 1 GiB does not fit. Scratch stays 16 MiB.
+# Smoke is the same command for one wave at 44 sandboxes.
+if [[ "${1:-}" == "smoke" ]]; then
+  DENSE_LEVELS="${DENSE_LEVELS:-44}"
+  DENSE_N="${DENSE_N:-1}"
+fi
+DENSE_LEVELS="${DENSE_LEVELS:-44 88 176 352 528 704 880 1056 1408 1760 2000}"
+DENSE_N="${DENSE_N:-45}"
+DENSE_DISK="${DENSE_DISK:-0.015625}"
 
 if ! UV_NO_SYNC=1 uv run python -c 'from rlp import Resources; assert "cpu_max" in Resources.__dataclass_fields__'; then
   echo "eng rlp-sdk missing. reinstalling editable client."
@@ -64,22 +78,81 @@ mkdir -p "$(dirname "${LOG_NVME}")" 2>/dev/null || true
   echo "=== CLEANUP $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
   UV_NO_SYNC=1 uv run python scripts/phoenix_rlp_cleanup_sandboxes.py --target vera
   echo "FC=$(pgrep -c firecracker 2>/dev/null || true)"
-  echo "=== START $(date -u +%Y-%m-%dT%H:%M:%SZ) target=vera ulimit=$(ulimit -Sn) http_pool=${RLP_HTTP_MAX_CONNECTIONS} output=${OUT} ==="
+  echo "=== START $(date -u +%Y-%m-%dT%H:%M:%SZ) target=vera ulimit=$(ulimit -Sn) http_pool=${RLP_HTTP_MAX_CONNECTIONS} levels=${DENSE_LEVELS} n=${DENSE_N} disk=${DENSE_DISK} published_disk=1 output=${OUT} ==="
   set +e
   UV_NO_SYNC=1 uv run main.py \
     --benchmark agent --runner rlp --target vera \
     --snapshot dtgraviet/vera-agent-benchmark:v3 \
-    --levels 44 88 176 352 528 704 880 1056 1408 1760 2000 \
-    --n 45 --seed 42 -E 8 --hold-then-exec \
+    --levels ${DENSE_LEVELS} \
+    --n "${DENSE_N}" --seed 42 -E 8 --hold-then-exec \
     --rlp-cpu 0.025 --rlp-cpu-max 1 \
-    --rlp-memory 0.0625 --rlp-memory-max 4 --rlp-disk 0.015625 \
+    --rlp-memory 0.0625 --rlp-memory-max 4 --rlp-disk "${DENSE_DISK}" \
     --output "${OUT}"
   status=$?
+  if [[ -f "${OUT}" ]]; then
+    python3 - "${OUT}" <<'PY'
+import json
+import sys
+
+path = sys.argv[1]
+meta = None
+levels = []
+with open(path, encoding="utf-8") as fh:
+    for line in fh:
+        try:
+            obj = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if obj.get("type") == "meta" and meta is None:
+            meta = {
+                "artifact": obj.get("artifact"),
+                "seed": obj.get("seed"),
+                "n": obj.get("n"),
+                "episodes_per_sandbox": obj.get("episodes_per_sandbox"),
+                "rlp_cpu": obj.get("rlp_cpu"),
+                "rlp_cpu_max": obj.get("rlp_cpu_max"),
+                "rlp_memory": obj.get("rlp_memory"),
+                "rlp_memory_max": obj.get("rlp_memory_max"),
+                "rlp_disk": obj.get("rlp_disk"),
+                "hold_then_exec": obj.get("hold_then_exec"),
+                "published_disk_gib": 1.0,
+            }
+        elif obj.get("type") == "summary":
+            levels.append(
+                {
+                    "concurrency": obj.get("concurrency"),
+                    "runs": obj.get("runs"),
+                    "failures": obj.get("failures"),
+                    "checksum_ok": obj.get("checksum_ok"),
+                    "distinct_checksums": obj.get("distinct_checksums"),
+                    "throughput_per_sec": obj.get("throughput_per_sec"),
+                    "p50_duration_ms": obj.get("p50_duration_ms"),
+                    "exec_wall_s": obj.get("exec_wall_s"),
+                    "create_wall_s": obj.get("create_wall_s"),
+                }
+            )
+record = {"type": "ladder", "meta": meta, "levels": levels}
+with open(path, "a", encoding="utf-8") as fh:
+    fh.write(json.dumps(record) + "\n")
+print("LADDER written", flush=True)
+for row in levels:
+    print(
+        f"  c={row['concurrency']} jobs_s={row['throughput_per_sec']} "
+        f"failures={row['failures']} checksum_ok={row['checksum_ok']} "
+        f"p50_duration_ms={row['p50_duration_ms']}",
+        flush=True,
+    )
+PY
+  fi
   if [[ "${status}" -eq 0 && -f "${OUT}" ]]; then
     cp -f "${OUT}" "${OUT_DATA}"
     echo "MIRRORED=${OUT_DATA}"
   fi
   echo "END_EXIT=${status}"
+  echo "OUTPUT=${OUT}"
+  if [[ -n "${OCI_VERA:-}" ]]; then
+    echo "PUSH_THIS=git add ${OUT}"
+  fi
   exit "${status}"
 } 2>&1 | tee "${LOG}"
 status="${PIPESTATUS[0]}"
