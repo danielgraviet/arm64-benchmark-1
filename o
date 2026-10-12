@@ -153,7 +153,7 @@ case "${cmd}" in
 ./o s     smoke (prints why first)
 ./o 1     create-ready 1000
 ./o 2     create-ready 2000
-./o d     packed agent ladder, 44 through 2000, same recipe as the published Vera file
+./o d     packed agent ladder on socket 0, 44 through 2000
 ./o d smoke   same recipe, one wave at 44 sandboxes
 ./o t     status
 ./o x     show disk use and delete kernel source

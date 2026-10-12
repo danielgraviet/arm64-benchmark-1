@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # OCI / onsite Vera dense ladder: n=45 / 0.025 cpu / max1 / mem_max 4, 44→2000.
-# Matches daniel-focus-here/vera-jsonl dense source (peak ~13.3 jobs/s @ 352).
+# Pins rlp.slice to socket 0 first, matching the published one-socket Vera file
+# (peak ~13.3 jobs/s @ 352). Both sockets on this OCI box peaked at 26.9.
 #
 # Run on the Vera node only, under tmux:
 #   tmux new-session -d -s vera-dense bash scripts/host/run_dense2k_vera.sh
@@ -75,6 +76,17 @@ mkdir -p "$(dirname "${OUT}")" "$(dirname "${OUT_DATA}")"
 mkdir -p "$(dirname "${LOG_NVME}")" 2>/dev/null || true
 
 {
+  echo "=== PIN SOCKET 0 $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+  node0="$(tr -d '[:space:]' < /sys/devices/system/node/node0/cpulist)"
+  if [[ "${node0}" != "0-87,176-263" ]]; then
+    echo "refusing pin. node0 cpulist=${node0}, expected 0-87,176-263" >&2
+    exit 1
+  fi
+  bash "${ROOT}/tickets/vera-pin-single-socket.sh" 0
+  SOCKET_PIN_CPUS="$(tr -d '[:space:]' < /sys/fs/cgroup/rlp.slice/cpuset.cpus)"
+  SOCKET_PIN_MEMS="$(tr -d '[:space:]' < /sys/fs/cgroup/rlp.slice/cpuset.mems)"
+  export SOCKET_PIN_CPUS SOCKET_PIN_MEMS
+  echo "PINNED cpus=${SOCKET_PIN_CPUS} mems=${SOCKET_PIN_MEMS}"
   echo "=== CLEANUP $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
   UV_NO_SYNC=1 uv run python scripts/phoenix_rlp_cleanup_sandboxes.py --target vera
   echo "FC=$(pgrep -c firecracker 2>/dev/null || true)"
@@ -92,6 +104,7 @@ mkdir -p "$(dirname "${LOG_NVME}")" 2>/dev/null || true
   if [[ -f "${OUT}" ]]; then
     python3 - "${OUT}" <<'PY'
 import json
+import os
 import sys
 
 path = sys.argv[1]
@@ -116,6 +129,8 @@ with open(path, encoding="utf-8") as fh:
                 "rlp_disk": obj.get("rlp_disk"),
                 "hold_then_exec": obj.get("hold_then_exec"),
                 "published_disk_gib": 1.0,
+                "socket_cpus": os.environ.get("SOCKET_PIN_CPUS"),
+                "socket_mems": os.environ.get("SOCKET_PIN_MEMS"),
             }
         elif obj.get("type") == "summary":
             levels.append(
