@@ -57,10 +57,13 @@ export RLP_HOLD_CREATE_BATCH=512
 # Published recipe: n=45, seed 42, -E 8, hold-then-exec, cpu 0.025 / max 1,
 # memory 0.0625 / max 4, levels 44 through 2000, disk 1 GiB.
 # OCI root is 98 GB, so 2000 x 1 GiB does not fit. Scratch stays 16 MiB.
-# Smoke is the same command for one wave at 44 sandboxes.
+# Smoke is one wave at 44 with n=1. Low is the published n=45 job at 44, 88, and 176.
 if [[ "${1:-}" == "smoke" ]]; then
   DENSE_LEVELS="${DENSE_LEVELS:-44}"
   DENSE_N="${DENSE_N:-1}"
+elif [[ "${1:-}" == "low" ]]; then
+  DENSE_LEVELS="${DENSE_LEVELS:-44 88 176}"
+  DENSE_N="${DENSE_N:-45}"
 fi
 DENSE_LEVELS="${DENSE_LEVELS:-44 88 176 352 528 704 880 1056 1408 1760 2000}"
 DENSE_N="${DENSE_N:-45}"
@@ -82,9 +85,21 @@ mkdir -p "$(dirname "${LOG_NVME}")" 2>/dev/null || true
     echo "refusing pin. node0 cpulist=${node0}, expected 0-87,176-263" >&2
     exit 1
   fi
-  bash "${ROOT}/tickets/vera-pin-single-socket.sh" 0
-  SOCKET_PIN_CPUS="$(tr -d '[:space:]' < /sys/fs/cgroup/rlp.slice/cpuset.cpus)"
-  SOCKET_PIN_MEMS="$(tr -d '[:space:]' < /sys/fs/cgroup/rlp.slice/cpuset.mems)"
+  current_cpus="$(tr -d '[:space:]' < /sys/fs/cgroup/rlp.slice/cpuset.cpus 2>/dev/null || true)"
+  current_mems="$(tr -d '[:space:]' < /sys/fs/cgroup/rlp.slice/cpuset.mems 2>/dev/null || true)"
+  if [[ -z "${current_cpus}" ]]; then
+    current_cpus="$(sudo -n cat /sys/fs/cgroup/rlp.slice/cpuset.cpus 2>/dev/null | tr -d '[:space:]' || true)"
+    current_mems="$(sudo -n cat /sys/fs/cgroup/rlp.slice/cpuset.mems 2>/dev/null | tr -d '[:space:]' || true)"
+  fi
+  if [[ "${current_cpus}" == "0-87,176-263" && "${current_mems}" == "0" ]]; then
+    echo "already pinned to socket 0. not restarting the runner."
+    SOCKET_PIN_CPUS="${current_cpus}"
+    SOCKET_PIN_MEMS="${current_mems}"
+  else
+    bash "${ROOT}/tickets/vera-pin-single-socket.sh" 0
+    SOCKET_PIN_CPUS="$(tr -d '[:space:]' < /sys/fs/cgroup/rlp.slice/cpuset.cpus)"
+    SOCKET_PIN_MEMS="$(tr -d '[:space:]' < /sys/fs/cgroup/rlp.slice/cpuset.mems)"
+  fi
   export SOCKET_PIN_CPUS SOCKET_PIN_MEMS
   echo "PINNED cpus=${SOCKET_PIN_CPUS} mems=${SOCKET_PIN_MEMS}"
   echo "=== CLEANUP $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="

@@ -154,6 +154,7 @@ case "${cmd}" in
 ./o 1     create-ready 1000
 ./o 2     create-ready 2000
 ./o d     packed agent ladder on socket 0, 44 through 2000
+./o d low    same recipe, only 44 88 176, n=45
 ./o d smoke   same recipe, one wave at 44 sandboxes
 ./o t     status
 ./o x     show disk use and delete kernel source
