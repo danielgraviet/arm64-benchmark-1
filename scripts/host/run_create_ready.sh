@@ -703,6 +703,9 @@ PY
   fi
   echo "END_EXIT=${status}"
   echo "OUTPUT=${OUTPUT}"
+  if [[ -n "${OCI_VERA:-}" ]]; then
+    echo "PUSH_THIS=git add ${OUTPUT}"
+  fi
   exit "${status}"
 } 2>&1 | tee "${LOG}"
 status="${PIPESTATUS[0]}"
