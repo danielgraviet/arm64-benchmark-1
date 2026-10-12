@@ -699,6 +699,73 @@ if serial_n:
             print(f"  {label} {sec:.1f}s {share(sec, wall_s):.0f}% of wall")
         else:
             print(f"  {label} {sec:.1f}s")
+
+record = {
+    "type": "wall_share",
+    "wall_s": wall_s,
+    "runner_boot_p50_ms": boot_p50,
+    "runner_boot_p50_pct_of_wall": (
+        share(boot_p50 / 1000.0, wall_s) if wall_s else None
+    ),
+    "phase_p50_ms": {name: pct(vals[name], 50) for name in phases + queue_phases if vals[name]},
+}
+if wall_s and rows:
+    ordered = sorted(rows, key=finish_s)
+    last = ordered[-1]
+    median = ordered[(len(ordered) - 1) // 2]
+
+    def client_rec(row):
+        post = float(row["post_s"])
+        wait = float(row["wait_s"])
+        probe = float(row.get("probe_s") or 0.0)
+        return {
+            "sandbox_id": row.get("sandbox_id"),
+            "post_s": post,
+            "wait_s": wait,
+            "probe_s": probe,
+            "post_pct_of_wall": share(post, wall_s),
+            "wait_pct_of_wall": share(wait, wall_s),
+            "probe_pct_of_wall": share(probe, wall_s),
+        }
+
+    record["last"] = client_rec(last)
+    record["median"] = client_rec(median)
+    for label, row in (("last", last), ("median", median)):
+        sid = str(row.get("sandbox_id") or "")
+        hit = by_vm.get(sid)
+        if not hit:
+            continue
+        deliver, provisioning, load, toolbox, other, total = runner_bits(hit)
+        record[label]["runner"] = {
+            "queued_before_runner_ms": deliver,
+            "provisioning_ms": provisioning,
+            "memory_move_ms": load,
+            "guest_ready_ms": toolbox,
+            "other_ms": other,
+            "total_ms": total,
+        }
+if serial_n:
+    serial = {}
+    for label, names in serial_buckets:
+        ms = 0
+        seen = False
+        for name in names:
+            if vals[name]:
+                ms += pct(vals[name], 50)
+                seen = True
+        if not seen:
+            continue
+        sec = serial_n * ms / 1000.0
+        serial[label] = {
+            "p50_ms": ms,
+            "serialized_s": sec,
+            "pct_of_wall": share(sec, wall_s) if wall_s else None,
+        }
+    record["serial_share"] = serial
+if jsonl_path and (wall_s or vals["total_ms"] or serial_n):
+    with open(jsonl_path, "a", encoding="utf-8") as fh:
+        fh.write(json.dumps(record) + "\n")
+    print(f"WALL_SHARE written to {jsonl_path}")
 PY
   fi
   echo "END_EXIT=${status}"
