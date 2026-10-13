@@ -315,10 +315,11 @@ stop_samplers() {
 }
 
 psql_q() {
-  if docker exec rlp-postgres true >/dev/null 2>&1; then
-    docker exec rlp-postgres psql -U rlp -d rlplatform -tAc "$1" 2>/dev/null || true
+  # docker exec with no timeout will sit forever if Postgres is locked, and the probe prints nothing.
+  if timeout 20 docker exec rlp-postgres true >/dev/null 2>&1; then
+    timeout 30 docker exec rlp-postgres psql -U rlp -d rlplatform -tAc "$1" 2>/dev/null || true
   else
-    as_root docker exec rlp-postgres psql -U rlp -d rlplatform -tAc "$1" 2>/dev/null || true
+    as_root timeout 30 docker exec rlp-postgres psql -U rlp -d rlplatform -tAc "$1" 2>/dev/null || true
   fi
 }
 
@@ -328,20 +329,29 @@ wait_clean() {
   if [[ -z "${key}" ]]; then
     key="$(grep -E '^RLP_API_KEY=' .env | tail -1 | cut -d= -f2- || true)"
   fi
-  for i in $(seq 1 240); do
+  say "cleanup before the next wave"
+  for i in $(seq 1 60); do
     while IFS= read -r id; do
       [[ -n "${id}" ]] || continue
-      curl -s -o /dev/null -m 30 -X DELETE -H "Authorization: Bearer ${key}" \
+      curl -s -o /dev/null -m 15 -X DELETE -H "Authorization: Bearer ${key}" \
         "http://127.0.0.1:8088/vms/${id}" || true
-    done < <(psql_q "select id from vms where status='running'")
+    done < <(psql_q "select id from vms where status not in ('deleted','failed','lost')")
     fc="$(pgrep -c firecracker || true)"
     live="$(psql_q "select count(*) from vms where status not in ('deleted','failed','lost')")"
-    if [[ "${fc:-0}" == "0" && "${live:-0}" == "0" ]]; then
+    live="$(echo "${live}" | tr -d '[:space:]')"
+    say "cleanup ${i} fc=${fc:-0} live=${live:-unread}"
+    if [[ "${live:-unread}" == "0" && "${fc:-0}" != "0" ]]; then
+      say "killing ${fc} firecracker processes the API no longer tracks"
+      as_root pkill -9 firecracker || true
+      sleep 2
+      fc="$(pgrep -c firecracker || true)"
+    fi
+    if [[ "${fc:-0}" == "0" && "${live:-1}" == "0" ]]; then
       return 0
     fi
     sleep 5
   done
-  say "WARN host not clean"
+  say "WARN host not clean fc=${fc:-?} live=${live:-?}"
 }
 
 run_level() {
