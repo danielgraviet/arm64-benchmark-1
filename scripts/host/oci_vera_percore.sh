@@ -203,6 +203,15 @@ Environment=RLP_VM_CONCURRENCY=512
 Environment=RLP_VM_MAXACK=2048
 Environment=RLP_MAX_LIVE_VMS=3000
 EOF
+  # The unit loads /etc/rlp/runner.env after drop-in Environment= lines, so the
+  # file's 256 wins unless it is changed too. snapshots.conf repeats that 256.
+  set_runner_kv RLP_VM_CONCURRENCY 512
+  set_runner_kv RLP_VM_MAXACK 2048
+  set_runner_kv RLP_MAX_LIVE_VMS 3000
+  if [[ -f /etc/systemd/system/rlp-runner.service.d/snapshots.conf ]]; then
+    as_root sed -i 's/^Environment=RLP_VM_CONCURRENCY=.*/Environment=RLP_VM_CONCURRENCY=512/' \
+      /etc/systemd/system/rlp-runner.service.d/snapshots.conf
+  fi
   as_root systemctl daemon-reload
   if ! grep -qw cpuset /sys/fs/cgroup/cgroup.subtree_control 2>/dev/null; then
     echo +cpuset | as_root tee /sys/fs/cgroup/cgroup.subtree_control >/dev/null
@@ -238,8 +247,26 @@ EOF
   fi
 }
 
+set_runner_kv() {
+  local key="$1" value="$2" file=/etc/rlp/runner.env
+  if [[ ! -f "${file}" ]]; then
+    echo "${key}=${value}" | as_root tee "${file}" >/dev/null
+    return
+  fi
+  if as_root grep -q "^${key}=" "${file}"; then
+    as_root sed -i "s|^${key}=.*|${key}=${value}|" "${file}"
+  else
+    echo "${key}=${value}" | as_root tee -a "${file}" >/dev/null
+  fi
+}
+
 restore_pin() {
   as_root rm -f /etc/systemd/system/rlp-runner.service.d/zz-probe.conf
+  if [[ -f /etc/systemd/system/rlp-runner.service.d/snapshots.conf ]]; then
+    as_root sed -i 's/^Environment=RLP_VM_CONCURRENCY=.*/Environment=RLP_VM_CONCURRENCY=256/' \
+      /etc/systemd/system/rlp-runner.service.d/snapshots.conf || true
+  fi
+  set_runner_kv RLP_VM_CONCURRENCY 256 || true
   as_root systemctl daemon-reload >/dev/null 2>&1 || true
   if [[ -d "$SLICE/vms" ]]; then
     echo "$ALL_CPUS" | as_root tee "$SLICE/vms/cpuset.cpus" >/dev/null || true
