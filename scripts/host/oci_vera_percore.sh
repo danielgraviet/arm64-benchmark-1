@@ -171,28 +171,83 @@ done
 BW=""
 say "counters: base=cycles,instructions topdown=${TD:-none} topdown_l2=${TD2:-none} dram_bw=${BW:-none}"
 
-write_cpuset() {
-  local cpus="$1"
+same_cpus() {
+  python3 - "$1" "$2" <<'PY'
+import sys
+def expand(text):
+    out=set()
+    for part in text.replace(" ", "").split(","):
+        if not part:
+            continue
+        if "-" in part:
+            a,b=part.split("-", 1)
+            out.update(range(int(a), int(b)+1))
+        else:
+            out.add(int(part))
+    return out
+sys.exit(0 if expand(sys.argv[1])==expand(sys.argv[2]) else 1)
+PY
+}
+
+# CPUAffinity is what stuck on this host. A cpuset write on the slice did not,
+# and the 352-wide wave then ran on every core and died with no matching capacity.
+apply_pin() {
+  local cpus="$1" affinity runner_now vms_now conc
+  affinity="${cpus//,/ }"
+  as_root mkdir -p /etc/systemd/system/rlp-runner.service.d
+  as_root tee /etc/systemd/system/rlp-runner.service.d/zz-probe.conf >/dev/null <<EOF
+[Service]
+CPUAffinity=${affinity}
+AllowedMemoryNodes=0
+Environment=RLP_VM_CONCURRENCY=512
+Environment=RLP_VM_MAXACK=2048
+Environment=RLP_MAX_LIVE_VMS=3000
+EOF
+  as_root systemctl daemon-reload
   if ! grep -qw cpuset /sys/fs/cgroup/cgroup.subtree_control 2>/dev/null; then
     echo +cpuset | as_root tee /sys/fs/cgroup/cgroup.subtree_control >/dev/null
   fi
   if ! grep -qw cpuset "$SLICE/cgroup.subtree_control" 2>/dev/null; then
     echo +cpuset | as_root tee "$SLICE/cgroup.subtree_control" >/dev/null
   fi
-  echo "$cpus" | as_root tee "$SLICE/cpuset.cpus" >/dev/null
-  if [[ -d "$SLICE/vms" ]]; then
-    if ! grep -qw cpuset "$SLICE/vms/cgroup.subtree_control" 2>/dev/null; then
-      echo +cpuset | as_root tee "$SLICE/vms/cgroup.subtree_control" >/dev/null 2>&1 || true
-    fi
-    echo "$cpus" | as_root tee "$SLICE/vms/cpuset.cpus" >/dev/null || true
+  echo "$ALL_CPUS" | as_root tee "$SLICE/cpuset.cpus" >/dev/null
+  echo "0-1" | as_root tee "$SLICE/cpuset.mems" >/dev/null
+  if [[ ! -d "$SLICE/vms" ]]; then
+    echo "missing ${SLICE}/vms. sandboxes would not be pinned." >&2
+    exit 1
   fi
+  if ! grep -qw cpuset "$SLICE/vms/cgroup.subtree_control" 2>/dev/null; then
+    echo +cpuset | as_root tee "$SLICE/vms/cgroup.subtree_control" >/dev/null
+  fi
+  echo "$cpus" | as_root tee "$SLICE/vms/cpuset.cpus" >/dev/null
+  echo "0" | as_root tee "$SLICE/vms/cpuset.mems" >/dev/null
   as_root systemctl restart rlp-runner
   sleep 15
+  runner_now="$(awk '/Cpus_allowed_list/{print $2}' /proc/"$(pgrep -nx rlp-runner)"/status)"
+  vms_now="$(tr -d '[:space:]' < "$SLICE/vms/cpuset.cpus.effective" 2>/dev/null || echo unread)"
+  conc="$(tr '\0' '\n' < /proc/"$(pgrep -nx rlp-runner)"/environ | awk -F= '/^RLP_VM_CONCURRENCY=/{print $2}')"
+  say "pin want=${cpus} runner=${runner_now} vms=${vms_now} vm_concurrency=${conc:-missing}"
+  if ! same_cpus "${runner_now}" "${cpus}" || ! same_cpus "${vms_now}" "${cpus}"; then
+    echo "pin did not stick. runner=${runner_now} vms=${vms_now} wanted=${cpus}" >&2
+    exit 1
+  fi
+  if [[ "${conc}" != "512" ]]; then
+    echo "runner concurrency is ${conc:-missing}, wanted 512. a 352-wide wave will be rejected." >&2
+    exit 1
+  fi
 }
 
 restore_pin() {
-  write_cpuset "$ALL_CPUS"
-  say "pin restored slice=$(cat $SLICE/cpuset.cpus.effective 2>/dev/null || echo unread)"
+  as_root rm -f /etc/systemd/system/rlp-runner.service.d/zz-probe.conf
+  as_root systemctl daemon-reload >/dev/null 2>&1 || true
+  if [[ -d "$SLICE/vms" ]]; then
+    echo "$ALL_CPUS" | as_root tee "$SLICE/vms/cpuset.cpus" >/dev/null || true
+    echo "0-1" | as_root tee "$SLICE/vms/cpuset.mems" >/dev/null || true
+  fi
+  echo "$ALL_CPUS" | as_root tee "$SLICE/cpuset.cpus" >/dev/null || true
+  as_root systemctl restart rlp-runner || true
+  sleep 10
+  say "pin restored runner=$(awk '/Cpus_allowed_list/{print $2}' /proc/$(pgrep -nx rlp-runner)/status 2>/dev/null || echo unread)"
 }
 trap restore_pin EXIT
 
@@ -276,15 +331,33 @@ run_level() {
   set -e
   echo "${tag} end $(date +%s.%N) rc=${rc}" >> "$OUT/runs.txt"
   stop_samplers "$tag"
-  say "END ${tag} rc=${rc}"
+  local fails
+  fails="$(python3 - "$OUT/${tag}.jsonl" <<'PY'
+import json, sys
+fails = None
+for line in open(sys.argv[1], encoding="utf-8"):
+    try:
+        row = json.loads(line)
+    except json.JSONDecodeError:
+        continue
+    if row.get("type") == "summary":
+        fails = row.get("failures")
+print("" if fails is None else fails)
+PY
+)"
+  say "END ${tag} rc=${rc} failures=${fails:-unread}"
+  if [[ "${rc}" != "0" || "${fails}" != "0" ]]; then
+    echo "level ${tag} did not finish clean. rc=${rc} failures=${fails:-unread}" >&2
+    exit 1
+  fi
 }
 
 set -e
 for r in $RUNS; do
   case "$r" in
-    L) write_cpuset "$FULL_CPUS"; run_level L "$LIGHT" "$CORES" ;;
-    P) write_cpuset "$FULL_CPUS"; run_level P 352 "$CORES" ;;
-    H) write_cpuset "$HALF_CPUS"; run_level H 176 "$HALF" ;;
+    L) apply_pin "$FULL_CPUS"; run_level L "$LIGHT" "$CORES" ;;
+    P) apply_pin "$FULL_CPUS"; run_level P 352 "$CORES" ;;
+    H) apply_pin "$HALF_CPUS"; run_level H 176 "$HALF" ;;
     *) echo "unknown run ${r}" >&2; exit 2 ;;
   esac
 done
