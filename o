@@ -139,6 +139,9 @@ case "${cmd}" in
   w|why)
     exec bash "${ROOT}/scripts/host/oci_why.sh" "$@"
     ;;
+  gap)
+    exec bash "${ROOT}/scripts/host/oci_vera_gap.sh" "$@"
+    ;;
   j|journal|log)
     sudo systemctl status rlp-api --no-pager -l 2>&1 | head -n 30 || true
     echo '---'
@@ -178,6 +181,11 @@ case "${cmd}" in
 ./o d smoke   same recipe, one wave at 44 sandboxes
 ./o t     status
 ./o x     show disk use and delete kernel source
+./o gap state   record OCI host. stops if the weight-floor loop is up
+./o gap A       shared cores, 1 through 2000, three rounds
+./o gap B       same runs with sandboxes on 75% of the cores
+./o gap sum     table and runner gap after both arms
+./o gap undo    put every core back on rlp.slice
 EOF
     ;;
   *)
