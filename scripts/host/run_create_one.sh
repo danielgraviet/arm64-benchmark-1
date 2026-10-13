@@ -55,6 +55,19 @@ export EPYC9575_RLP_API_URL="http://127.0.0.1:8088"
 export REDSWITCHES_RLP_API_URL="http://127.0.0.1:8088"
 export REDSWITCHES_RLP_TOOLBOX_URL="http://127.0.0.1:9000/toolbox"
 export REDSWITCHES_RLP_REGION="epyc9575"
+# The 1k client waits 250ms before it looks. A single start is already done
+# by then. Poll every 10ms so this test records the sandbox, not the sleep.
+export RLP_WAIT_POLL_START_S=0.01
+export RLP_WAIT_POLL_FACTOR=1
+export RLP_WAIT_POLL_MAX_S=0.01
+
+# One POST commits one Postgres row. Zen5 already has synchronous_commit off.
+# Leaving it on makes Vera's accept wait for the root disk.
+if as_root docker exec rlp-postgres pg_isready -U rlp >/dev/null 2>&1; then
+  as_root docker exec -i rlp-postgres psql -U rlp -d rlplatform -v ON_ERROR_STOP=1 -c \
+    "ALTER SYSTEM SET synchronous_commit = off; SELECT pg_reload_conf();" \
+    >/dev/null || echo "synchronous_commit change failed"
+fi
 
 SINCE="$(date -u '+%Y-%m-%d %H:%M:%S')"
 echo "=== ONE ${REPEATS} $(date -u +%Y-%m-%dT%H:%M:%SZ) output=${OUT} ==="
@@ -187,6 +200,8 @@ meta = {
     "disk": 0.015625,
     "probe": "echo ready",
     "target": target,
+    "wait_poll_s": 0.01,
+    "synchronous_commit": "off",
 }
 with open(out, "w", encoding="utf-8") as fh:
     fh.write(json.dumps(meta) + "\n")
