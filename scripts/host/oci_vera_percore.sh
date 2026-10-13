@@ -225,7 +225,8 @@ EOF
   sleep 15
   runner_now="$(awk '/Cpus_allowed_list/{print $2}' /proc/"$(pgrep -nx rlp-runner)"/status)"
   vms_now="$(tr -d '[:space:]' < "$SLICE/vms/cpuset.cpus.effective" 2>/dev/null || echo unread)"
-  conc="$(tr '\0' '\n' < /proc/"$(pgrep -nx rlp-runner)"/environ | awk -F= '/^RLP_VM_CONCURRENCY=/{print $2}')"
+  # /proc/<pid>/environ is root-only. A direct read prints "permission denied" and looks like a missing limit.
+  conc="$(as_root cat /proc/"$(pgrep -nx rlp-runner)"/environ | tr '\0' '\n' | awk -F= '/^RLP_VM_CONCURRENCY=/{print $2}' | tail -1)"
   say "pin want=${cpus} runner=${runner_now} vms=${vms_now} vm_concurrency=${conc:-missing}"
   if ! same_cpus "${runner_now}" "${cpus}" || ! same_cpus "${vms_now}" "${cpus}"; then
     echo "pin did not stick. runner=${runner_now} vms=${vms_now} wanted=${cpus}" >&2
