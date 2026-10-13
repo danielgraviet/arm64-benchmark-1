@@ -91,7 +91,12 @@ case "${cmd}" in
   m|mint)
     exec bash "${ROOT}/scripts/host/oci_remint.sh" "$@"
     ;;
-  n|one)     exec env OCI_VERA=1 bash "${ROOT}/scripts/host/run_create_one.sh" "$@" ;;
+  n|one)
+    for _round in 1 2 3; do
+      echo "=== round ${_round} of 3 ==="
+      env OCI_VERA=1 bash "${ROOT}/scripts/host/run_create_one.sh" "$@"
+    done
+    ;;
   1|c1k)     exec bash "${ROOT}/scripts/host/oci" c1k "$@" ;;
   2|c2k)     exec bash "${ROOT}/scripts/host/oci" c2k "$@" ;;
   d|dense)   exec bash "${ROOT}/scripts/host/oci" dense "$@" ;;
@@ -152,7 +157,7 @@ case "${cmd}" in
 ./o m     remint API key (fixes smoke 401)
 ./o w     why creates are not picked up
 ./o s     smoke (prints why first)
-./o n     15 single creates, one at a time. prints the file to git add
+./o n     3 rounds of 15 single creates. prints each file to git add
 ./o 1     create-ready 1000
 ./o 2     create-ready 2000
 ./o d     packed agent ladder on socket 0, 44 through 2000
