@@ -78,6 +78,107 @@ echo "=== prime ARP accept ==="
 as_root sysctl -w net.ipv4.conf.all.arp_accept=1 >/dev/null || echo "arp_accept all failed"
 as_root sysctl -w net.ipv4.conf.default.arp_accept=1 >/dev/null || echo "arp_accept default failed"
 
+# ./o n 10 and ./o n 100 start that many sandboxes together, then delete them.
+WAVE="${1:-}"
+if [[ "${WAVE}" == "10" || "${WAVE}" == "100" ]]; then
+  OUT="${OUT_DIR}/single_create_${WAVE}_${STAMP}.jsonl"
+  mkdir -p "$(dirname "${OUT}")"
+  echo "=== WAVE ${WAVE} $(date -u +%Y-%m-%dT%H:%M:%SZ) output=${OUT} ==="
+  since_w="$(date -u '+%Y-%m-%d %H:%M:%S')"
+  if ! UV_NO_SYNC=1 uv run python scripts/rlp_light_create_fleet.py \
+      --target "${TARGET}" --count "${WAVE}" --workers "${WAVE}" \
+      --image dtgraviet/vera-agent-benchmark:v3 \
+      --cpu 0.025 --memory 0.0625 --disk 0.015625 \
+      --probe 'echo ready' \
+      --output "/tmp/one-${TARGET}-${STAMP}-wave.jsonl"; then
+    echo "wave ${WAVE} failed" >&2
+    exit 1
+  fi
+  as_root journalctl -u rlp-runner --since "${since_w}" --no-pager -o cat > "/tmp/one-${TARGET}-${STAMP}-wave.log" || true
+  python3 - "${OUT}" "/tmp/one-${TARGET}-${STAMP}-wave.jsonl" "/tmp/one-${TARGET}-${STAMP}-wave.log" "${WAVE}" "${TARGET}" <<'PY'
+import json, sys
+out, fleet, log, wave, target = sys.argv[1:]
+wave = int(wave)
+
+def take(line, name):
+    key = name + "="
+    at = line.find(key)
+    if at < 0:
+        return None
+    rest = line[at + len(key):].split()
+    if not rest:
+        return None
+    num = []
+    for ch in rest[0]:
+        if ch.isdigit():
+            num.append(ch)
+        else:
+            break
+    return int("".join(num)) if num else None
+
+names = ["total_ms","clone_ms","netns_get_ms","scratch_cp_ms","fc_start_ms","load_ms","toolbox_wait_ms"]
+phases = []
+for line in open(log, encoding="utf-8", errors="replace"):
+    if "template=hit" not in line or "clone_ms=" not in line:
+        continue
+    rec = {n: take(line, n) for n in names}
+    named = sum(rec[n] or 0 for n in ("netns_get_ms","scratch_cp_ms","fc_start_ms","load_ms","toolbox_wait_ms"))
+    rec["gap_ms"] = None if rec["clone_ms"] is None else rec["clone_ms"] - named
+    rec["boot_line"] = line.strip()
+    phases.append(rec)
+
+clients = []
+for line in open(fleet, encoding="utf-8"):
+    o = json.loads(line)
+    if o.get("type") == "sandbox" and o.get("status") == "ok":
+        clients.append(o)
+
+def mean(xs):
+    xs = [v for v in xs if v is not None]
+    return None if not xs else sum(xs) / len(xs)
+
+summary = {
+    "type": "summary",
+    "wave": wave,
+    "ok": len(clients),
+    "boot_lines": len(phases),
+    "post_s_mean": mean([c.get("post_s") for c in clients]),
+    "wait_s_mean": mean([c.get("wait_s") for c in clients]),
+    "create_s_mean": mean([c.get("create_s") for c in clients]),
+    "probe_s_mean": mean([c.get("probe_s") for c in clients]),
+    "total_ms_mean": mean([p.get("total_ms") for p in phases]),
+    "scratch_cp_ms_mean": mean([p.get("scratch_cp_ms") for p in phases]),
+    "load_ms_mean": mean([p.get("load_ms") for p in phases]),
+    "fc_start_ms_mean": mean([p.get("fc_start_ms") for p in phases]),
+    "toolbox_wait_ms_mean": mean([p.get("toolbox_wait_ms") for p in phases]),
+    "gap_ms_mean": mean([p.get("gap_ms") for p in phases]),
+}
+meta = {
+    "type": "meta",
+    "kind": "wave-create",
+    "wave": wave,
+    "image": "dtgraviet/vera-agent-benchmark:v3",
+    "cpu": 0.025,
+    "memory": 0.0625,
+    "disk": 0.015625,
+    "probe": "echo ready",
+    "target": target,
+    "wait_poll_s": 0.01,
+}
+with open(out, "w", encoding="utf-8") as fh:
+    fh.write(json.dumps(meta) + "\n")
+    for c in clients:
+        fh.write(json.dumps({"type": "client", **{k: c.get(k) for k in ("sandbox_id","post_s","wait_s","create_s","probe_s")}}) + "\n")
+    for p in phases:
+        p["type"] = "boot"
+        fh.write(json.dumps(p) + "\n")
+    fh.write(json.dumps(summary) + "\n")
+print("saved", out)
+print("summary", json.dumps(summary))
+PY
+  exit 0
+fi
+
 SINCE="$(date -u '+%Y-%m-%d %H:%M:%S')"
 echo "=== ONE ${REPEATS} $(date -u +%Y-%m-%dT%H:%M:%SZ) output=${OUT} ==="
 
