@@ -1,6 +1,8 @@
-# On-box operator (RedSwitches / Codex)
+# On-box operator (RedSwitches / Vera HQ / Codex)
 
-This repo is the harness. On a RedSwitches DUT, Codex is the operator. GitHub is the sync plane. The Mac only `git pull`s to graph.
+This repo is the harness. On a RedSwitches DUT or Vera HQ, Codex is the operator. GitHub is the sync plane. The Mac only `git pull`s to graph (and leave notes under `codex-direction-log/`).
+
+Vera HQ is Axis-only (`ssh.axisapps.io`). Agents on the Mac cannot usefully Remote-SSH it. See `tickets/vera-codex-host.md`. RedSwitches: `tickets/redswitches-codex-host.md`.
 
 Cwd is the clone (usually `/home/ubuntu/arm64-benchmark-1`). The RLP API and toolbox are on localhost. Never drive a ladder from a laptop SSH tunnel. That measures the tunnel.
 
@@ -41,4 +43,4 @@ Do not `reboot` because MOTD said restart required. Do not rotate the root passw
 
 Run on the host, not inside a Codex container. The harness must see `http://127.0.0.1:8088` and raise `RLIMIT_NOFILE` in the same process.
 
-See `tickets/redswitches-codex-host.md`.
+See `tickets/redswitches-codex-host.md` (x86 cells) and `tickets/vera-codex-host.md` (Vera HQ / Axis).
