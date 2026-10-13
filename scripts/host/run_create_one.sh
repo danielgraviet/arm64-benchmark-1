@@ -18,14 +18,24 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$ROOT"
 
-export PATH="${HOME}/.local/bin:/usr/local/bin:${PATH}"
+export PATH="/home/ubuntu/.local/bin:${HOME}/.local/bin:/usr/local/bin:${PATH}"
 export PYTHONUNBUFFERED=1
 export UV_NO_SYNC=1
 
+# ./o n is Vera. TARGET=epyc9575 runs the same loop on the 9575F.
+TARGET="${TARGET:-vera}"
 REPEATS="${REPEATS:-15}"
 STAMP="$(date -u +%Y%m%d_%H%M%S)"
-OUT="daniel-focus-here/oci-vera-jsonl/single_create_${REPEATS}_${STAMP}.jsonl"
-RAW="/tmp/vera-one-${STAMP}.txt"
+case "${TARGET}" in
+  vera) OUT_DIR="daniel-focus-here/oci-vera-jsonl" ;;
+  epyc9575) OUT_DIR="daniel-focus-here/zen5-9575f-jsonl" ;;
+  *)
+    echo "unknown TARGET=${TARGET}" >&2
+    exit 1
+    ;;
+esac
+OUT="${OUT_DIR}/single_create_${REPEATS}_${STAMP}.jsonl"
+RAW="/tmp/one-${TARGET}-${STAMP}.txt"
 mkdir -p "$(dirname "${OUT}")"
 : > "${RAW}"
 
@@ -41,25 +51,30 @@ export RLP_TOOLBOX_URL="http://127.0.0.1:9000/toolbox"
 export VERA_RLP_API_URL="http://127.0.0.1:8088"
 export VERA_RLP_TOOLBOX_URL="http://127.0.0.1:9000/toolbox"
 export VERA_RLP_TARGET="vera"
+export EPYC9575_RLP_API_URL="http://127.0.0.1:8088"
+export REDSWITCHES_RLP_API_URL="http://127.0.0.1:8088"
+export REDSWITCHES_RLP_TOOLBOX_URL="http://127.0.0.1:9000/toolbox"
+export REDSWITCHES_RLP_REGION="epyc9575"
 
 SINCE="$(date -u '+%Y-%m-%d %H:%M:%S')"
 echo "=== ONE ${REPEATS} $(date -u +%Y-%m-%dT%H:%M:%SZ) output=${OUT} ==="
 
 for i in $(seq 1 "${REPEATS}"); do
-  log="/tmp/vera-one-${STAMP}-${i}.log"
+  since_i="$(date -u '+%Y-%m-%d %H:%M:%S')"
+  log="/tmp/one-${TARGET}-${STAMP}-${i}.log"
   if ! UV_NO_SYNC=1 uv run python scripts/rlp_light_create_fleet.py \
-      --target vera --count 1 --workers 1 \
+      --target "${TARGET}" --count 1 --workers 1 \
       --image dtgraviet/vera-agent-benchmark:v3 \
       --cpu 0.025 --memory 0.0625 --disk 0.015625 \
       --probe 'echo ready' \
-      --output "/tmp/vera-one-${STAMP}-${i}.jsonl" > "${log}" 2>&1; then
+      --output "/tmp/one-${TARGET}-${STAMP}-${i}.jsonl" > "${log}" 2>&1; then
     echo "run ${i} failed" >&2
     tail -n 30 "${log}" >&2
     exit 1
   fi
   sid="$(python3 -c "
 import json
-p='/tmp/vera-one-${STAMP}-${i}.jsonl'
+p='/tmp/one-${TARGET}-${STAMP}-${i}.jsonl'
 sid=''
 for line in open(p):
     o=json.loads(line)
@@ -67,18 +82,18 @@ for line in open(p):
         sid=o.get('sandbox_id') or ''
 print(sid)
 ")"
-  phase="$(as_root journalctl -u rlp-runner --since "${SINCE}" --no-pager -o cat 2>/dev/null | grep "vm_id=${sid}" | grep 'template=hit' | tail -n 1 || true)"
+  phase="$(as_root journalctl -u rlp-runner --since "${since_i}" --no-pager -o cat 2>/dev/null | grep 'template=hit' | tail -n 1 || true)"
   printf '%s\t%s\n' "${i}" "${phase}" >> "${RAW}"
   echo "run ${i} sandbox=${sid}"
   echo "  ${phase:-no boot-phases line}"
 done
 
-python3 - "${OUT}" "${RAW}" "${REPEATS}" <<'PY'
+python3 - "${OUT}" "${RAW}" "${REPEATS}" "${STAMP}" "${TARGET}" <<'PY'
 import json
 import sys
 from pathlib import Path
 
-out, raw, repeats = sys.argv[1], sys.argv[2], int(sys.argv[3])
+out, raw, repeats, stamp, target = sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4], sys.argv[5]
 
 def take(line, name):
     key = name + "="
@@ -101,14 +116,13 @@ def pct(xs, p):
     i = round((p / 100) * (len(xs) - 1))
     return xs[i]
 
-stamp = Path(raw).name[len("vera-one-"):-len(".txt")]
 rows = []
 for row in Path(raw).read_text(encoding="utf-8").splitlines():
     if not row.strip():
         continue
     idx_s, _, phase = row.partition("\t")
     idx = int(idx_s)
-    client_path = Path(f"/tmp/vera-one-{stamp}-{idx}.jsonl")
+    client_path = Path(f"/tmp/one-{target}-{stamp}-{idx}.jsonl")
     client = {}
     if client_path.exists():
         for line in client_path.read_text(encoding="utf-8").splitlines():
@@ -172,7 +186,7 @@ meta = {
     "memory": 0.0625,
     "disk": 0.015625,
     "probe": "echo ready",
-    "target": "vera",
+    "target": target,
 }
 with open(out, "w", encoding="utf-8") as fh:
     fh.write(json.dumps(meta) + "\n")
