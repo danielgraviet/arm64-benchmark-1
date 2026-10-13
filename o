@@ -92,12 +92,19 @@ case "${cmd}" in
     exec bash "${ROOT}/scripts/host/oci_remint.sh" "$@"
     ;;
   n|one)
+    # The 9575F box has no git remote workflow. Same ./o n works on both hosts.
+    if grep -qi '9575' /proc/cpuinfo 2>/dev/null; then
+      one_target="epyc9575"
+    else
+      one_target="vera"
+      export OCI_VERA=1
+    fi
     if [[ "${1:-}" == "10" || "${1:-}" == "100" ]]; then
-      env OCI_VERA=1 bash "${ROOT}/scripts/host/run_create_one.sh" "$1"
+      env TARGET="${one_target}" bash "${ROOT}/scripts/host/run_create_one.sh" "$1"
     else
       for _round in 1 2 3; do
         echo "=== round ${_round} of 3 ==="
-        env OCI_VERA=1 bash "${ROOT}/scripts/host/run_create_one.sh"
+        env TARGET="${one_target}" bash "${ROOT}/scripts/host/run_create_one.sh"
       done
     fi
     ;;
@@ -161,7 +168,7 @@ case "${cmd}" in
 ./o m     remint API key (fixes smoke 401)
 ./o w     why creates are not picked up
 ./o s     smoke (prints why first)
-./o n       3 rounds of 15 single creates. prints each file to git add
+./o n       3 rounds of 15 single creates. On the 9575F this targets that host
 ./o n 10    10 sandboxes at once
 ./o n 100   100 sandboxes at once
 ./o 1     create-ready 1000
