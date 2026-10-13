@@ -64,8 +64,9 @@ export RLP_WAIT_POLL_MAX_S=0.01
 # One POST commits one Postgres row. Zen5 already has synchronous_commit off.
 # Leaving it on makes Vera's accept wait for the root disk.
 if as_root docker exec rlp-postgres pg_isready -U rlp >/dev/null 2>&1; then
-  as_root docker exec -i rlp-postgres psql -U rlp -d rlplatform -v ON_ERROR_STOP=1 -c \
-    "ALTER SYSTEM SET synchronous_commit = off; SELECT pg_reload_conf();" \
+  as_root docker exec -i rlp-postgres psql -U rlp -d rlplatform -v ON_ERROR_STOP=1 \
+    -c "ALTER SYSTEM SET synchronous_commit = off;" \
+    -c "SELECT pg_reload_conf();" \
     >/dev/null || echo "synchronous_commit change failed"
 fi
 
