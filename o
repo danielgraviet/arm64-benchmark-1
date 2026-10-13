@@ -142,6 +142,9 @@ case "${cmd}" in
   gap)
     exec bash "${ROOT}/scripts/host/oci_vera_gap.sh" "$@"
     ;;
+  probe)
+    exec bash "${ROOT}/scripts/host/oci_vera_percore.sh" "$@"
+    ;;
   j|journal|log)
     sudo systemctl status rlp-api --no-pager -l 2>&1 | head -n 30 || true
     echo '---'
@@ -186,6 +189,7 @@ case "${cmd}" in
 ./o gap B       three 1,000s, runner and sandboxes on socket 0
 ./o gap sum     table and runner gap after both arms
 ./o gap undo    put every core back
+./o probe       packed agent probe on one Vera socket. about 20 minutes
 EOF
     ;;
   *)
