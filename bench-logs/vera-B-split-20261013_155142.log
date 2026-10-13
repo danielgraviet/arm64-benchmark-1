@@ -1,0 +1,10 @@
+MARK start 2026-10-13 15:51:42
+15:51:42 ARM=B-split rlp_slice=0-351 runner_cpus=0-87,176-263 api_cpus=88-175,264-351 floor=0 runner=a6d930d345ce
+client taskset 88-175,264-351
+FILE B-split 1000 1 rc=0 daniel-focus-here/oci-vera-jsonl/vera_create_ready_1000_20261013_155144.jsonl
+client taskset 88-175,264-351
+FILE B-split 1000 2 rc=0 daniel-focus-here/oci-vera-jsonl/vera_create_ready_1000_20261013_155241.jsonl
+client taskset 88-175,264-351
+FILE B-split 1000 3 rc=0 daniel-focus-here/oci-vera-jsonl/vera_create_ready_1000_20261013_155332.jsonl
+MARK end 2026-10-13 15:54:11
+15:54:11 ALL DONE

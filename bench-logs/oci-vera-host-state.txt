@@ -1,0 +1,36 @@
+== date: Tue Oct 13 03:49:38 PM UTC 2026
+== host: vera-0191
+Model name:                              Olympus
+Thread(s) per core:                      2
+Core(s) per socket:                      88
+Socket(s):                               2
+NUMA node(s):                            4
+NUMA node0 CPU(s):                       0-87,176-263
+NUMA node1 CPU(s):                       88-175,264-351
+NUMA node2 CPU(s):                       
+NUMA node3 CPU(s):                       
+== sibling of cpu0: 0,176
+== nproc: 352
+== kernel: 7.0.0-38-generic-64k  page size: 65536
+== cmdline: BOOT_IMAGE=/vmlinuz-7.0.0-38-generic-64k root=/dev/mapper/ubuntu--vg-ubuntu--lv ro console=tty0 crashkernel=2G-4G:320M,4G-32G:512M,32G-64G:1024M,64G-128G:2048M,128G-:4096M
+== numa_balancing: 1  governor: performance
+== runner sha: a6d930d345ce  mtime: 2026-10-12 16:05:16.893268537 +0000
+== runner revision: build	vcs.revision=660e6e3bd8e90258f5695307d84f6b481832ff2b
+none
+== sudo-storm fix in runner: 0
+== quiet-progress patch in runner: 1
+== api env:
+RLP_EVENT_AUDIT=0
+RLP_BURST_MAX_CPU=1
+RLP_BURST_MAX_MEM_MIB=4096
+RLP_MIN_CPU=0.025
+RLP_MIN_MEM_MIB=64
+RLP_MIN_SCRATCH_MIB=16
+== runner env:
+== floor script running: 0
+== rlp.slice cpuset: 0-351
+== disk:
+Filesystem                         Size  Used Avail Use% Mounted on
+/dev/mapper/ubuntu--vg-ubuntu--lv   98G   30G   64G  32% /
+== memory:
+Mem:            1513          80        1445           1          29        1433

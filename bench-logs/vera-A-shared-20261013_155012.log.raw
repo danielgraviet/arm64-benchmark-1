@@ -1,0 +1,66 @@
+jobs_storage=unknown
+could not read JOBS storage. leaving the stream.
+scratch fstype=tmpfs
+postgres synchronous_commit=off
+ERROR:  ALTER SYSTEM cannot run inside a transaction block
+synchronous_commit change failed
+dropping deleted sandbox rows
+DELETE 0
+DELETE 0
+DELETE 0
+=== CLEANUP 2026-10-13T15:50:15Z ===
+target='vera' api_url='http://127.0.0.1:8088'
+page 1: +0 (total 0) next_cursor=no
+listed=0 live=0 already_deleted=0
+no live sandboxes to delete
+FC=0
+=== START 2026-10-13T15:50:16Z target=vera ulimit=65536 count=1000 workers=1000 http_pool=32 disk_gb=0.015625 ===
+=== WARMUP 2026-10-13T15:50:16Z one sandbox to build the snapshot template ===
+target=vera count=1 image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 mem=0.0625GiB workers=1 probe='echo ready' output=/tmp/vera-template-warmup.jsonl
+READY_WALL_S=4.570 CREATE_MAX_S=4.556 create_p50_s=4.556 create_p95_s=4.556 post_p50_s=0.019 wait_p50_s=4.537 probe_p50_s=0.013 probe_p95_s=0.013 ok=1 failed=0 rate=0.2/s
+DELETE_WALL_S=0.007
+wrote /tmp/vera-template-warmup.jsonl
+warmup used an existing template
+template_ready=1
+target='vera' api_url='http://127.0.0.1:8088'
+page 1: +1 (total 1) next_cursor=no
+listed=1 live=0 already_deleted=1
+no live sandboxes to delete
+target=vera count=1000 image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 mem=0.0625GiB workers=1000 probe='echo ready' output=/home/ubuntu/arm64-benchmark-1/daniel-focus-here/oci-vera-jsonl/vera_create_ready_1000_20261013_155014.jsonl
+READY_WALL_S=23.889 CREATE_MAX_S=23.559 create_p50_s=11.078 create_p95_s=21.875 post_p50_s=3.602 wait_p50_s=7.688 probe_p50_s=0.012 probe_p95_s=0.017 ok=1000 failed=0 rate=41.9/s
+DELETE_WALL_S=3.055
+wrote /home/ubuntu/arm64-benchmark-1/daniel-focus-here/oci-vera-jsonl/vera_create_ready_1000_20261013_155014.jsonl
+template_hit=1001 template_miss=0
+synchronous_commit=off
+jobs_storage=unknown
+scratch_fstype=tmpfs
+boot_phases n=1001
+  total_ms p50=101 p95=201 max=4377 sum_s=119.4
+  clone_ms p50=101 p95=201 max=4376 sum_s=119.2
+  netns_get_ms p50=0 p95=102 max=133 sum_s=15.6
+  adopt_ms p50=0 p95=0 max=0 sum_s=0.0
+  bind_ms p50=0 p95=0 max=0 sum_s=0.0
+  scratch_cp_ms p50=11 p95=17 max=42 sum_s=11.6
+  fc_start_ms p50=29 p95=40 max=83 sum_s=27.0
+  load_ms p50=37 p95=77 max=4323 sum_s=45.1
+  toolbox_wait_ms p50=4 p95=10 max=842 sum_s=12.8
+slowest_p50=total_ms 101ms
+  deliver_ms p50=9285 p95=17794 max=18257 sum_s=9190.5
+  emits_ms p50=0 p95=0 max=6 sum_s=0.0
+  manifest_ms p50=0 p95=0 max=5 sum_s=0.0
+runner_boot_p50_ms=101 runner_boot_p50_pct_of_wall=0.42
+WALL_SHARE wall_s=23.889 n=1000
+  last api_accept=6.007s 25.1% told_started=17.552s 73.5% probe=0.012s 0.0%
+  median api_accept=3.502s 14.7% told_started=7.584s 31.7% probe=0.014s 0.1%
+WALL_SHARE runner joined to client ids
+  last queued_before_runner=17.569s 100.1% of wait provisioning=0.046s 0.3% of wait memory_move=0.012s 0.1% of wait guest_ready=0.010s 0.1% of wait other=0.010s 0.1% of wait
+  median queued_before_runner=9.276s 122.3% of wait provisioning=0.048s 0.6% of wait memory_move=0.070s 0.9% of wait guest_ready=0.011s 0.1% of wait other=0.008s 0.1% of wait
+SERIAL_SHARE n=1001 p50 times count, if that step cannot overlap
+  network 0.0s 0% of wall
+  scratch_disk 11.0s 46% of wall
+  memory_move 37.0s 155% of wall
+  boot_until_ready 33.0s 138% of wall
+WALL_SHARE written to daniel-focus-here/oci-vera-jsonl/vera_create_ready_1000_20261013_155014.jsonl
+END_EXIT=0
+OUTPUT=daniel-focus-here/oci-vera-jsonl/vera_create_ready_1000_20261013_155014.jsonl
+PUSH_THIS=git add daniel-focus-here/oci-vera-jsonl/vera_create_ready_1000_20261013_155014.jsonl
