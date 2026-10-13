@@ -70,6 +70,19 @@ if as_root docker exec rlp-postgres pg_isready -U rlp >/dev/null 2>&1; then
     >/dev/null || echo "synchronous_commit change failed"
 fi
 
+# A resumed sandbox sometimes has no neighbour entry. The toolbox dial then
+# waits out the ARP retry, and toolbox_wait lands on 850 ms. arp_accept lets
+# the guest's announcement create the entry.
+echo "=== prime ARP accept ==="
+as_root bash -c '
+  sysctl -w net.ipv4.conf.all.arp_accept=1 >/dev/null
+  sysctl -w net.ipv4.conf.default.arp_accept=1 >/dev/null
+  for ns in $(ip netns list | awk "{print \$1}"); do
+    ip netns exec "$ns" sysctl -w net.ipv4.conf.all.arp_accept=1 >/dev/null 2>&1 || true
+    ip netns exec "$ns" ip neigh flush nud failed >/dev/null 2>&1 || true
+  done
+' || echo "arp prime failed"
+
 SINCE="$(date -u '+%Y-%m-%d %H:%M:%S')"
 echo "=== ONE ${REPEATS} $(date -u +%Y-%m-%dT%H:%M:%SZ) output=${OUT} ==="
 
