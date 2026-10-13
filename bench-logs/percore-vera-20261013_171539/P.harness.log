@@ -1,0 +1,707 @@
+rlimit_nofile soft=1048576 hard=1048576 before=1048576 raised=False
+benchmark=agent runner=rlp target='vera' artifact='dtgraviet/vera-agent-benchmark:v3' episodes_per_sandbox=8 host_cpus=None numa_node=None cpuset_mems=None rlp_cpu=0.025 rlp_cpu_max=1.0 rlp_memory=0.0625 rlp_memory_max=4.0 rlp_disk=0.125 hold_then_exec=True output=/home/ubuntu/arm64-benchmark-1/bench-logs/percore-vera-20261013_171539/P.jsonl
+rlp client: target='vera' api_url='http://127.0.0.1:8088' toolbox_url='http://127.0.0.1:9000/toolbox' region_routing=False benchmark='agent' episodes_per_sandbox=8 resources=cpu=0.025,cpu_max=1.0,memory=0.0625GiB,memory_max=4.0,disk=0.125GiB omit_dedicated=True client_tuning={'http_max_connections': 8192, 'wait_poll_start_s': 0.25, 'wait_poll_factor': 1.5, 'wait_poll_max_s': 2.0}
+rlp boot image: 'dtgraviet/vera-agent-benchmark:v3' -> 'dtgraviet/vera-agent-benchmark:v3' (app_dir=/app)
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create started: id='59872986-1443-44d6-ae55-c25338fe898e'
+region probe: target='vera' arch='aarch64'
+env={"arch":"aarch64","cpu_model":"0x010","cpu_count":1,"platform":"Linux-6.12.34-aarch64-with-glibc2.36","host_arch":"aarch64","host_cpu":null,"probe":"rlp"}
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create started: id='5d392197-c7c5-402b-9f3e-3e595546a5e6'
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create started: id='ba2d8324-58ab-4d11-ac2b-5b30de59049c'
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create started: id='548db1d7-0c77-4350-b17d-9809fe420c37'
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create started: id='fd759416-5b00-457a-b9ee-11261f959237'
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create started: id='96ce9426-0b34-4425-a070-0326018a3a86'
+
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create started: id='fbb388d6-892d-4868-9c85-c3eb96e11bf8'
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create: region='vera' cpu_arch='arm64' cpu_type='vera' mode=None image='dtgraviet/vera-agent-benchmark:v3' cpu=0.025 cpu_max=1.0 memory=0.0625 memory_max=4.0 disk=0.125
+rlp create started: id='1de402b5-40ea-40fd-a123-2642b25a0293'
+rlp create started: id='584ac8b0-673f-433a-a6a3-9b4c2b2f73d5'
+rlp create started: id='f57992b6-4650-4c7c-8aa0-edcf17935cc7'
+rlp create started: id='2161cd7f-9605-48a1-8e27-1f266267037a'
+rlp create started: id='f18b4130-e39d-44bb-ac64-9dda7ebf71fa'
+rlp create started: id='f121d430-2a58-4f2d-a56d-2d08debd89ae'
+rlp create started: id='84dd33f1-10b5-47b8-b3fd-9cc6643d7b5d'
+rlp create started: id='c51cd678-ad40-4687-a1ef-9f0e7572dfb7'
+rlp create started: id='1f220016-22a3-4b62-aadd-e64d1c0aff4d'
+rlp create started: id='77d38497-1236-4021-8c60-65960ca96ace'
+rlp create started: id='d2a0a517-a85c-4a04-9252-c9c69151f130'
+rlp create started: id='b1d0bd43-c0a3-4b00-a5dc-7ce6345b65cc'
+rlp create started: id='3833dbf6-2068-4aaa-8add-c4ce4182b895'
+rlp create started: id='496c9bed-d7db-42e2-b219-a6316d8a58fa'
+rlp create started: id='c50a5a7c-ecd6-4229-be48-09f123a39467'
+rlp create started: id='41fd9039-ee25-4fbc-80b5-646b930b5fd2'
+rlp create started: id='1cb81f0f-c26d-400f-8632-e220177fd686'
+rlp create started: id='6e133d2c-f7e7-4346-8f80-8c6364161c84'
+rlp create started: id='fce986da-5427-48ee-ade6-0f29f8383d8b'
+rlp create started: id='fde96d99-3402-46d4-a6ff-acfd097da7d9'
+rlp create started: id='b844ad45-1e89-42b6-9379-636dd4e1c569'
+rlp create started: id='7ae2a7b2-e933-41e9-b1e0-c230febbb98b'
+rlp create started: id='5ad8b1ab-dbf1-46cd-9a68-5c2daba269bb'
+rlp create started: id='ff112196-45f1-458b-befe-6457dc3d14dc'
+rlp create started: id='b211b880-2bb1-4846-91bb-285c453914ea'
+rlp create started: id='94ff0afa-ba56-48fe-80f7-ce9055b3f1c9'
+rlp create started: id='32f13ebf-50ea-4eff-aa0a-e5e6e86e6de8'
+rlp create started: id='ad736d1d-0898-436c-b668-dddb0e93521d'
+rlp create started: id='dc546040-0b67-4ed8-94b7-777128a133d5'
+rlp create started: id='c5ee3ba4-a387-44d1-be8c-31b769af0c21'
+rlp create started: id='c747d89d-5540-4d73-b38d-2967ff681357'
+rlp create started: id='8fa68ffd-4555-4243-bc0f-fb254f49174e'
+rlp create started: id='d3c6218d-89fb-4d51-93b2-c0211ef2da9a'
+rlp create started: id='19b54679-970a-4e0e-ba64-e6ba6f51e0bd'
+rlp create started: id='91158d31-bda0-4cc2-a763-26a72257f8bd'
+rlp create started: id='3a59ea59-0622-4df4-a280-d943836fb72a'
+rlp create started: id='dd81259b-1895-4da9-8f9d-65a46465a54b'
+rlp create started: id='ef6a11b5-1c1f-4116-a65f-231d23223762'
+rlp create started: id='76652bc2-cb8c-4002-b750-08c0d2f538da'
+rlp create started: id='368a1f8a-ec05-44a5-9324-5a1db1d555b2'
+rlp create started: id='c24a2a3f-2346-47f1-9e9c-1181a57f1a62'
+rlp create started: id='51395c56-f0d2-41c7-b871-a210adebd495'
+rlp create started: id='f8fc5de6-ebff-4bc3-8871-f9f80ae1c086'
+rlp create started: id='91bc0270-c3c1-4544-8634-39dd0d02aebd'
+rlp create started: id='8b17ef06-1c13-407d-b04b-732a19421d57'
+rlp create started: id='12a30312-8db5-4314-9daf-fcac4b7abb67'
+rlp create started: id='4ab1503b-7f27-4e9a-9506-a7090354a726'rlp create started: id='ec22c181-6aad-44f7-bf0e-7a4898b58714'
+
+rlp create started: id='98e36bac-9fd2-4c66-9186-944bced6cde1'
+rlp create started: id='ee7f8a13-6605-4687-8b10-15918b0f5e9f'
+rlp create started: id='a1e2a83b-d503-46b8-b1ac-8847ee00c38a'
+rlp create started: id='dc5f03fa-3c53-486b-b99c-19712601850c'
+rlp create started: id='3e7fb6ec-ed38-4dee-9413-7c44be8b78a4'
+rlp create started: id='5d9a6296-f9f1-4988-a506-76a728f0bb34'
+rlp create started: id='f2e32efb-f484-4095-86f1-11f74e60c377'
+rlp create started: id='e40d72dc-de49-415b-8aa5-5444c7345d2d'
+rlp create started: id='6bf27b6f-412c-446d-a345-ed6003d5d881'
+rlp create started: id='a7bc0ca2-8311-424a-b219-5bb127c593cb'
+rlp create started: id='474cd678-64ab-4d01-8834-12de7f0aa548'
+rlp create started: id='38d5ccea-26a0-4628-84a4-318331363acd'
+rlp create started: id='5ad47123-5893-420d-94e2-adabf40412f9'
+rlp create started: id='57cc7568-4781-400b-89ad-fa1ea147105b'
+rlp create started: id='7ff1d0ee-3808-4db0-be5c-69a406c9a714'
+rlp create started: id='295c8d79-bfc5-47a7-b479-57687db5520d'
+rlp create started: id='22d2537d-eb23-4222-bd19-556e5dde4ca1'
+rlp create started: id='627fc961-1c21-4158-87b3-b0cb86e29d5b'
+rlp create started: id='74f3cb1d-d045-4273-9fdf-f6ee5053294b'
+rlp create started: id='5e4e281f-845d-471b-9d2d-089883199705'
+rlp create started: id='416b22a8-749e-4ad9-be83-308277884aab'
+rlp create started: id='dec08d06-58ef-4854-a6ee-6df79abfa28f'
+rlp create started: id='30db623b-c8c0-4b50-a6ca-cce1d96b9fc0'
+rlp create started: id='17b505ce-a097-489a-9c81-1e7c66b6ac43'
+rlp create started: id='bbeb9464-e832-4b43-8d6d-bd485d14e775'
+rlp create started: id='afcffb99-6d63-45f0-94d7-717271a73b33'
+rlp create started: id='64e07c14-4f57-45b2-845a-496b5602ee35'
+rlp create started: id='9cbd7374-42d2-498f-af27-8f1f75c16bab'
+rlp create started: id='adfbd32e-e7fe-46bd-a7ef-682d1254c942'
+rlp create started: id='a003ed38-596e-416f-a0e5-6e09476081fa'
+rlp create started: id='fb9b9384-3313-40d1-8b6d-2c9e5b831bc6'rlp create started: id='f555535f-4811-460a-86af-c702472e3277'
+
+rlp create started: id='772fcbe7-4156-487e-b171-509bce2e012b'rlp create started: id='c6f1c0d7-58d9-4a09-910d-524b845e3913'
+
+rlp create started: id='2c53804e-e01c-4649-b907-bb326c34dee3'
+rlp create started: id='030603c4-044e-4317-9a02-0817bbf2ff66'
+rlp create started: id='509017c3-e616-45ce-b3c9-cc6a5aba4464'
+rlp create started: id='983baf91-b624-4569-883d-33c7adbbd582'rlp create started: id='80c6c61c-b56d-484e-8235-f78bf145f0fc'
+
+rlp create started: id='b54b90e0-789e-4c8f-a9f6-7eb58bbbe86b'
+rlp create started: id='7c846cfc-4a3f-455f-83d3-e2014e22eb44'
+rlp create started: id='1a4b5da1-ac62-42b6-9cd8-c5be9162673d'
+rlp create started: id='c96253ef-cb9c-4518-9071-456b222754ae'
+rlp create started: id='68ea3cf2-99ac-4638-b136-137078ab9bdc'
+rlp create started: id='29aeeb2c-3fbf-4728-a12f-485b8755c9fe'
+rlp create started: id='c05103fb-e2af-4e1f-bd80-bf846d78c1e3'
+rlp create started: id='2fe8ec75-b1a2-49f6-8ee8-b559af7bed8e'
+rlp create started: id='7f9c073d-3118-4f2b-accd-610bac70f013'
+rlp create started: id='1012cb11-4c47-4c86-9df1-ab1d7de93ff2'
+rlp create started: id='bd8c63be-1321-4242-9107-ddadf77d1482'
+rlp create started: id='953f6da5-a894-461a-a380-5d089176550c'
+rlp create started: id='1101c0c7-0b8e-4e5b-b709-e62a7b08cd50'
+rlp create started: id='26a5a373-0c64-4ca9-b99e-fbd9e167b9e5'
+rlp create started: id='bb96b85e-99c0-4230-8015-4d45296eb772'
+rlp create started: id='c94a7263-ec7e-4a39-9dcb-dbaa051dca7c'
+rlp create started: id='5e2e49e2-8f02-4b3d-ab33-7e7afc1044ef'
+rlp create started: id='fc4b1875-5661-4baa-bad3-432628a30f48'
+rlp create started: id='aa0255bd-b01a-45fc-950d-0d886ae2ad62'
+rlp create started: id='2e868932-7498-47b5-bd8f-1f5c93cc7d6f'
+rlp create started: id='73166436-7271-45a8-803a-4d921a905ba2'
+rlp create started: id='844ceacb-335a-46d1-946f-08f88524994d'
+rlp create started: id='98ddc026-268c-45bf-8f0c-47eb31d78ffa'
+rlp create started: id='075d4ea9-bd9a-4a74-97e1-610b0cbb82f1'
+rlp create started: id='a2ed32dd-5234-4a78-9eed-425596d73eb8'
+rlp create started: id='736ad52f-f89a-474e-909d-b6e3bccf46f5'
+rlp create started: id='3e564f5d-7a71-46a7-b6bd-1165a3814c06'
+rlp create started: id='30441b2c-453b-4338-afec-c0decc05de71'
+rlp create started: id='3df7e26c-8039-4381-8a77-1aad59895088'
+rlp create started: id='c1db538b-5848-47a0-8a6e-20354abdde68'
+rlp create started: id='bed08b17-a862-4629-8c3b-918c8b4a72aa'
+rlp create started: id='696ff885-89cc-4158-88fe-0cdef6d0c75c'
+rlp create started: id='f45689dc-eccb-4d7f-8785-eb3032cae850'
+rlp create started: id='a5e56f9a-19c3-493d-899a-a7faa7742a8f'
+rlp create started: id='53e5eaed-61f9-45bc-b47a-071440ad665f'
+rlp create started: id='534c77c2-9051-4fd0-98a4-47db37b219bc'
+rlp create started: id='0551da70-5fdc-4505-946f-712a0ee2e8d2'
+rlp create started: id='0e9e72be-8106-44f0-9c13-1e041713f08a'
+rlp create started: id='415d1bb0-705b-44c3-b77e-1b43627f8942'rlp create started: id='8458709f-2088-4a07-ab43-d8afd0424018'
+
+rlp create started: id='d9ff2a9d-0ad1-49e5-8617-bfb004f5370f'
+rlp create started: id='5979c986-9761-4d6e-b966-dabf47001a19'
+rlp create started: id='7fb638c7-760d-4d2c-921e-269a1fc59018'
+rlp create started: id='da56f8fa-7f1c-43f3-acda-22b2a06a42a8'
+rlp create started: id='65209713-3534-4d0f-aeae-d4974b2fe5e6'
+rlp create started: id='e62d04ad-791a-4078-b56b-4ef87c736b88'
+rlp create started: id='7baf3807-6b8a-460d-aa25-019929adfc2f'
+rlp create started: id='94e2384f-0a27-4a70-b033-b8087b583e04'
+rlp create started: id='06f332ad-29a7-40fe-a251-e33a5bdc4df7'
+rlp create started: id='31990a17-3d35-4b2c-ab05-d6a98eef0e32'
+rlp create started: id='f5bbdbe5-b3f4-4138-babd-f64494f15180'
+rlp create started: id='0ab94260-c011-45b1-8fb5-645cced1b2c3'
+rlp create started: id='2ccf9ddc-667f-420a-8881-37762dbaf037'
+rlp create started: id='1b6019a0-9be6-46bf-9f01-ab44b49d7913'
+rlp create started: id='904f9702-507d-4827-b080-c62b59f13bae'
+rlp create started: id='0653a0fe-2670-4e97-b28b-78ff8bb3784b'
+rlp create started: id='5dc3b99c-f3d8-4544-a011-5c2fccfec4ac'
+rlp create started: id='56d70a8a-b285-408d-8c39-fdf886ded4cf'
+rlp create started: id='bd47e59e-c297-496b-8b6b-f5fa8b1d8578'rlp create started: id='04540332-2f87-4680-aa09-7ef377e24696'
+
+rlp create started: id='f2a82c26-6946-446f-9164-e2d3cb566faa'
+rlp create started: id='ad86eaa9-c18a-4ae5-8396-5b60fbc38c4d'
+rlp create started: id='d76c716f-c975-4218-93e8-bef8484dd313'
+rlp create started: id='b5eff9e4-1c76-45ef-9fc6-2e0aedf1d944'
+rlp create started: id='1f4a4999-67fd-4f81-aa98-f0e827bb3d38'
+rlp create started: id='91c43b69-e546-4046-8f25-39ca47067acd'
+rlp create started: id='4ec1aedb-e79b-46a2-8aa8-f174fc6a7168'
+rlp create started: id='75caa0c2-e286-4c16-8b67-181cbfcd2516'
+rlp create started: id='3dad8806-b648-4404-a19c-d4f63a859307'
+rlp create started: id='9646b6ba-6f1f-4b33-921f-54fe1a31d3d2'
+rlp create started: id='537ab560-8adc-4037-b026-345f5b080f97'
+rlp create started: id='d6591ba7-1e3e-4ceb-9c61-a7091000c8b9'
+rlp create started: id='61298935-512a-42b3-9e7b-a3ec5ab1a6fe'
+rlp create started: id='014ddb69-0b22-4d78-95b0-5ae6d1b6b912'
+rlp create started: id='60b1630d-150b-4b4c-8bcd-ed1761aad871'rlp create started: id='717bf2c0-7e66-4b33-9839-7f29b21c4578'
+
+rlp create started: id='485d2837-96e7-442a-b871-7412ddfc691b'
+rlp create started: id='98b8c4c4-716c-4d2c-9314-d40e0629737a'
+rlp create started: id='01ee6242-5b1b-47cf-99fd-3acd80e94f13'
+rlp create started: id='7b7c2569-4ad3-4e89-805d-4b7e8bc367df'
+rlp create started: id='8258e3cb-ae0c-4801-b048-6d049b87d4cf'
+rlp create started: id='d46cb618-7605-42d3-bde0-3b30f1ab9474'
+rlp create started: id='574e8ba2-f380-4ba2-aa04-875c4aff157b'
+rlp create started: id='02b30218-ac2e-413a-abac-0b11627bf6c8'
+rlp create started: id='24736c2d-6aef-436f-8cd3-14a90fd80356'
+rlp create started: id='1d87c7b8-e2c1-4c9a-be3a-067283100efb'
+rlp create started: id='9d89cf3d-5c0a-482b-92a0-ef354b11c49d'
+rlp create started: id='c604e495-3e4f-41ef-8212-4426ba337e64'
+rlp create started: id='c039cbe7-81e9-4eba-beea-3339355af395'
+rlp create started: id='6ffc53a8-00ca-4018-8577-6c296e2c2591'
+rlp create started: id='a10be790-a120-4acb-8706-4f58e6c832f3'
+rlp create started: id='0771f287-84e3-40e9-87dc-ab1a8e132c12'
+rlp create started: id='e2b9e18c-b17e-421c-a3b0-73e378fcb28c'
+rlp create started: id='92f366b5-0e7a-4d81-a29a-3298da3857aa'
+rlp create started: id='a866c59a-6aef-455b-989d-e0be592773f3'
+rlp create started: id='0838351b-3a2e-4407-8d6b-c8f3c0b0845a'
+rlp create started: id='c0e2c900-fcd8-4efb-8d14-dd61bd113dc2'
+rlp create started: id='a26748e4-148f-4e22-85ed-40c9b74c2596'
+rlp create started: id='4794d0af-1097-4fd5-87c0-a304615ac3e9'
+rlp create started: id='21d60a1b-2064-4446-b03e-c2b5b405b6ae'
+rlp create started: id='c0652dea-1f75-437f-b2a7-dddad37cff4a'
+rlp create started: id='3a86fe9b-5088-4b85-bf24-2b2745157190'
+rlp create started: id='21ac532d-40ea-4eb4-a054-4215e53d6a5b'
+rlp create started: id='6c6260ad-d358-4871-83b1-817578a07c4d'
+rlp create started: id='d32c3f12-34dc-4fc2-91b6-5c1e8fcac806'
+rlp create started: id='5e7c2f1b-b9da-4db5-8657-5e69abf93417'
+rlp create started: id='4fd3b764-88c0-4e15-a32e-95e2a2954715'
+rlp create started: id='8664eb49-5f84-4725-99d8-a678ebd1e659'
+rlp create started: id='cf143213-3c00-4c23-969b-615c806ea543'
+rlp create started: id='4db67403-813b-47de-b5fe-517150dbcfa9'
+rlp create started: id='6d3b104d-67f4-4776-b04b-e6e219095488'
+rlp create started: id='3567bc99-955f-44eb-88f2-06b7f9d7b012'
+rlp create started: id='3b949dea-ec8b-4c6e-bba5-750050ea47c2'
+rlp create started: id='b9e16086-cba6-4fda-8e8a-9041ba143942'
+rlp create started: id='1a2d42e2-c891-4b15-b7ec-9eb2317d4192'
+rlp create started: id='c4f2a12e-a796-49ae-b174-d58a4f2957e6'
+rlp create started: id='02b00da8-8583-46fb-90c9-56369a19df94'
+rlp create started: id='981ef9db-31a9-4f45-bdfc-faec463e5f1c'
+rlp create started: id='126222a0-6f79-4ec9-a589-8e70c598388a'
+rlp create started: id='061c8786-d765-47a8-9049-3d7877198f74'
+rlp create started: id='00ebb802-243b-45b6-bf9b-407d8c4f019d'
+rlp create started: id='ecd5810f-d920-466b-a90d-25cb2f4d2549'
+rlp create started: id='6e1a2e61-7996-4761-8cc5-c098d036e5f7'
+rlp create started: id='1fb72cb3-7f52-4eac-8653-dc1b1253771c'
+rlp create started: id='11a8b364-2217-4b7b-bec9-59f6db3e19fc'
+rlp create started: id='8f2ea124-8f6e-4c74-8bdb-43f29268ae9e'
+rlp create started: id='5aea55d1-ebc4-4735-aef2-dc6b2a1801f2'
+rlp create started: id='f5cdf282-2ab6-43c6-afc2-5f88902a52d9'
+rlp create started: id='cb68f4d0-87ed-46b3-896c-cbf9e2781c06'
+rlp create started: id='0a36786c-fa0c-4c6c-abbb-26b5cf8574b8'
+rlp create started: id='3e665872-a9be-4897-a2d1-61c7f673e480'rlp create started: id='bbf13e02-b92b-4b60-b6e7-43499cf083e4'
+
+rlp create started: id='a7703400-38ea-478e-8c54-6bee82bb7b76'
+rlp create started: id='8b1c86ba-ee64-45a9-a1b4-75126b9a012b'
+rlp create started: id='37dcc3f3-12f6-4296-95c2-b8dd1f810dfa'
+rlp create started: id='7a3bd4b6-dc2a-463e-aafc-53cb25eae465'
+rlp create started: id='c72ce35e-391e-4211-8873-57bdfe65543a'
+rlp create started: id='90dcae72-7218-4c04-bbf5-a1ebb2d98006'
+rlp create started: id='4a7c451d-45c3-4cd7-9c48-8f90f6127348'
+rlp create started: id='a9387d0e-01d0-4fab-b77f-b6d07e980240'
+rlp create started: id='6213161d-4a94-4885-a9c8-f6af32d4b5e8'
+rlp create started: id='6f94ccfe-f0e5-42e4-a993-c419a3c9939f'
+rlp create started: id='2fb7d3bd-d110-4d60-a88c-b01ccf3a768e'
+rlp create started: id='c108d5f3-c8c9-4810-b828-39a44830ab5f'
+rlp create started: id='fb9be8dc-9f13-4a48-81b4-8cda386cc8b7'
+rlp create started: id='55ebe062-f0e0-4995-b2af-62baebb36521'
+rlp create started: id='64fff986-ca72-4732-a372-feebbab15ecc'
+rlp create started: id='26861b63-0bea-4d89-aac4-5ac120ae1b7c'
+rlp create started: id='1c21f8b8-9d56-499c-a6ec-2e91e090940b'
+rlp create started: id='48bec5b9-d26f-4475-a62b-869cf273c798'
+rlp create started: id='2132105e-e089-4491-8c2a-4a6f583e32f1'
+rlp create started: id='ac25fb12-bb00-4a07-8fa9-2e4f57c23077'
+rlp create started: id='6e333aef-2e8d-4681-8c87-4e21a94e5ee9'
+rlp create started: id='f7f23564-4af4-416f-8eec-ab28f2b0b141'
+rlp create started: id='d9f280b7-f345-4ccc-9ca8-5c532e4de197'
+rlp create started: id='857772f9-0ba2-417d-8f8c-82e03de2d95d'
+rlp create started: id='39b41074-f0fe-46b1-8048-abd3bf1cb1e5'rlp create started: id='95023a47-2fad-4b04-9d6e-6e601f0dacda'
+
+rlp create started: id='5a9b302d-b5ca-4fd9-8939-8988c85b8078'rlp create started: id='b28b7201-2e9e-401a-ad01-7e02e327c784'
+
+rlp create started: id='e269fe19-a471-4e4e-8d3e-5ea4daaf64a9'
+rlp create started: id='910ff172-74c2-4186-9d4f-651478b0df80'
+rlp create started: id='90ac2810-1879-42a4-8775-03eb27f3d205'
+rlp create started: id='7d4db859-c409-4aaa-889b-351e3c6d29df'
+rlp create started: id='e539f6d4-1cac-4f6f-bcab-54977e1a1f67'rlp create started: id='01c15e5a-67f5-4e44-92b7-1ba5d1d45f0f'
+
+rlp create started: id='7656cf2d-9928-4edb-9928-e031ad4d1736'
+rlp create started: id='bf5f06b5-aade-4f5a-9c36-e7394eb2d0a9'
+rlp create started: id='865ce50c-a00e-4906-b6ca-431238de5a16'
+rlp create started: id='bc1895a9-67ab-4779-b1d3-5a385b5b52a8'
+rlp create started: id='43c4e47e-f8ef-451c-a6e5-61dd97d11d11'
+rlp create started: id='ce4b7008-c091-4cb3-8225-d87ce779863b'rlp create started: id='567cc291-f66a-4319-8e24-bc460925dce0'
+
+rlp create started: id='c4c0972d-5ad4-4e32-8322-cdfee75b4762'
+rlp create started: id='8773a854-90ba-4bb1-b7f5-42fe6e8ccf50'
+rlp create started: id='6e5e19ef-7a5e-4fe9-b711-0cbb85d9783c'
+rlp create started: id='77da3c31-20f9-4fe0-b02b-4af259837855'rlp create started: id='3b789576-d14e-4c27-b773-9c25b6b17032'
+rlp create started: id='8048595f-dfc3-4e54-8c8e-3deb8ba3cce3'
+
+rlp create started: id='b20b4078-2144-4b4f-9558-afb02c0f95cc'
+rlp create started: id='bc099762-30eb-4da0-b80a-2e26eb3c3fcf'
+rlp create started: id='1c04bff4-bfbb-4d61-b138-aa42ae8720e5'
+rlp create started: id='5159552d-fb45-49b7-afc6-93483846a0c4'
+rlp create started: id='c1b1835d-4a41-43a6-96cd-3396f3ef1561'
+rlp create started: id='7101013c-d681-4e28-bbd7-febcbc4cba14'
+rlp create started: id='dcbc4336-8d26-4343-971d-f48656695b78'
+rlp create started: id='6a932c77-aeb8-4679-bbc7-cad6c28ac297'
+rlp create started: id='27d51cbb-d9fd-4f60-8e80-4609c0c95dfb'
+rlp create started: id='930683d8-0b97-4903-aeb9-b81459bde8f0'
+rlp create started: id='e3815352-40b9-4c33-a920-e90a17022537'
+rlp create started: id='3f1f6e4a-63de-4763-a1bd-093fdf2ec45c'
+rlp create started: id='20ff395c-958f-4588-94a0-8df1f2cf5d67'
+rlp create started: id='f8862435-dfa0-4429-bc3f-155deee64c0e'
+rlp create started: id='875c4875-8c2e-4d57-ad45-c18d0b4960b2'
+rlp create started: id='a1603235-1562-4bbe-b0b0-cc349e42e43e'
+rlp create started: id='c59968c5-0663-4eb9-a438-7471b0a02951'
+rlp create started: id='bb3d8967-5c4a-4061-8376-5c928262b259'
+rlp create started: id='04e72746-7f9f-41a1-b606-25dd22338ecc'rlp create started: id='2744199c-bf2e-464e-9f67-1f7c7a9a9e2e'
+
+rlp create started: id='93a609ad-9335-40fc-8a73-a8963b51ed71'
+rlp create started: id='580a4535-2e19-467a-a51f-8e913e91a7f3'
+rlp create started: id='8c6211a7-3364-4205-9d42-dd5ae200ec67'
+rlp create started: id='12fb7bb8-7d00-423d-9ed7-e4c1f3228219'rlp create started: id='78b0f4f4-ba52-4733-a450-e59cd65cba34'
+
+rlp create started: id='c165afd4-c045-4bea-bf40-9409145abbab'
+rlp create started: id='ed4b9af2-fd48-4d0b-96df-a979537d96cb'
+rlp create started: id='6a819078-3115-407d-9460-66615667077b'
+rlp create started: id='f9e3a2d6-c9bb-43a6-b56c-4134a43abeb3'
+rlp create started: id='64798b31-8740-4a15-94cd-a7feafc87d83'
+rlp create started: id='fa6ae536-78ad-472c-9e46-729e85d52fff'rlp create started: id='56b6c760-f2ee-4c6b-bd07-ea01eb6cc69b'
+
+rlp create started: id='46e336cd-c4d4-4a48-8af3-3ddf78673352'
+rlp create started: id='457d4d57-8346-4815-aad1-8097aa254f62'
+rlp create started: id='0537e485-9bd9-46f7-9efe-b72052f86b03'
+rlp create started: id='fa383ba2-cac5-48ac-a746-1a4954c1511f'
+rlp create started: id='f2053bb2-cf04-4833-acbd-7873d12ec3c7'
+rlp create started: id='88ec1d52-cd36-4dbc-8961-68996e1e35d2'
+rlp create started: id='7ab6068c-edb9-4df9-811e-35154593ac03'
+rlp create started: id='045429e9-4b38-4671-b41c-071c20afca2c'
+rlp create started: id='663fc8f3-ab02-4121-bbe9-515a4dc823b8'
+rlp create started: id='176f6da1-16c1-47fb-bc9e-87b390dfcbee'
+rlp create started: id='51ec9aff-d1d8-4e58-8163-8c288f59f314'
+rlp create started: id='6f9a35d0-4843-472e-b20f-7eca5ac30810'
+rlp create started: id='8d12b1da-41f8-4090-9dd5-1ff52ef90ecb'
+rlp create started: id='a159c757-bc97-43fc-acce-10ab52f75bb8'rlp create started: id='e9a6d5d2-69b6-4b47-a5cf-0c3de2f1086b'
+
+rlp create started: id='428ebc57-4436-42b7-86e6-1032e1f709f0'
+rlp create started: id='b6c2b00b-8301-43e6-a302-338832846c45'
+rlp create started: id='2cb8b090-940c-4966-a611-dd8fb7e0666c'
+rlp create started: id='6fedbbcc-29be-4140-a5dc-e3aa872b9bc8'
+rlp create started: id='c360d0e7-cc0c-4c4c-b5fc-88fdc8770775'
+rlp create started: id='49631437-f218-459d-914e-c7ba62d13857'
+rlp create started: id='27d819ae-c66f-4a69-be95-1f0624bcdb38'
+rlp create started: id='776bbb66-a971-4632-9de0-009c8b767493'
+rlp create started: id='15483078-7a65-4063-bd38-a267486ed5dc'
+rlp create started: id='0e9b903b-80a1-41fe-9cb4-003071121408'
+rlp create started: id='221c5a73-a99a-4e44-8b0d-5d181800e7b4'
+rlp create started: id='0046764d-3fa9-41c5-8be5-411692a32055'
+rlp create started: id='995b623d-147d-4146-b178-57251b9c0e6f'
+rlp create started: id='ca4ae146-8755-4831-8e44-da6d83be6f16'
+rlp create started: id='bec6909f-3e6d-48ce-b9d0-1df568bea937'rlp create started: id='7aead9cf-3001-4800-8e15-4a09a36d74d9'
+
+rlp create started: id='c964b272-3cba-4f7a-a663-1be6b9d3f6a3'
+rlp create started: id='800f33e2-6677-41a0-a44e-a5d205f8165d'
+rlp create started: id='8320b3d1-8fe7-4201-93dd-c4f017b3db24'
+rlp create started: id='ebfd2b5a-d5cb-4e0d-a0b0-9eb5854ac602'
+rlp create started: id='eb9b1fc8-c707-4ce7-9d17-172e8b761769'
+rlp create started: id='4f878eeb-508e-49e5-b3e9-cfd79b9689d8'
+rlp create started: id='10efd24b-cf85-4c9e-be5e-4dd0a292b440'
+rlp create started: id='61e11e6a-5498-4741-9c19-e55169caab90'
+rlp create started: id='f8929f7e-a44f-40b4-8059-474facc897e7'
+rlp create started: id='e46f4392-7cf0-4150-a166-df5c858928c4'
+rlp create started: id='f5fecd74-3592-4bef-815c-d6dbb0b5f87d'
+{"concurrency": 352, "hold_then_exec": true, "benchmark": "agent", "target": "vera", "runs": 2774, "failures": 6, "distinct_checksums": 1, "checksum_ok": false, "p50_ms": 24715.9, "p95_ms": 31673.3, "p99_ms": 40685.9, "max_ms": 66710.4, "throughput_per_sec": 12.69, "p50_duration_ms": 24364.5, "p99_duration_ms": 29175.6, "max_duration_ms": 37441.0, "p50_warm_ms": 24712.5, "p99_warm_ms": 37183.2, "create_wall_s": 66.761, "exec_wall_s": 218.515, "delete_wall_s": 2.084, "throughput_including_create": 9.72}
