@@ -181,11 +181,11 @@ case "${cmd}" in
 ./o d smoke   same recipe, one wave at 44 sandboxes
 ./o t     status
 ./o x     show disk use and delete kernel source
-./o gap state   record OCI host. stops if the weight-floor loop is up
-./o gap A       shared cores, 1 through 2000, three rounds
-./o gap B       same runs with sandboxes on 75% of the cores
+./o gap state   record OCI host. needs 2 sockets
+./o gap A       one shared 1,000 on both sockets
+./o gap B       three 1,000s, runner and sandboxes on socket 0
 ./o gap sum     table and runner gap after both arms
-./o gap undo    put every core back on rlp.slice
+./o gap undo    put every core back
 EOF
     ;;
   *)

@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# OCI Vera startup test: is the HQ gap the second socket?
+# OCI Vera startup test: does HQ's second socket explain the faster create?
 #
-# Arm A leaves every core shared. Arm B pins sandboxes and the runner to 75%
-# of the cores and leaves 25% free for the API, Postgres, NATS, proxy, and client.
-# One socket only. Two sockets is a different test.
+# Arm A leaves both sockets shared. That is the 19 second setup.
+# Arm B pins sandboxes and the runner to socket 0. The API, proxy, Postgres,
+# NATS, and the benchmark client go to socket 1. This is the HQ pin.
+# The earlier 41.6 second run pinned only the sandboxes. Do not repeat that.
 #
 #   ./o gap state
 #   ./o gap A
@@ -63,87 +64,164 @@ socket_count() {
   lscpu | awk -F: '/^Socket\(s\)/{gsub(/ /,"",$2); print $2}'
 }
 
-# Prints the sandbox cpuset. Exits if this host is not a one-socket SMT Vera.
-sandbox_cpus() {
-  local sockets n sib offset phys keep
+require_two_sockets() {
+  local sockets
   sockets="$(socket_count)"
-  n="$(nproc)"
-  sib="$(cat /sys/devices/system/cpu/cpu0/topology/thread_siblings_list)"
-  if [[ "${sockets}" != "1" ]]; then
-    echo "this host has ${sockets} sockets. stop. the test is for one socket." >&2
+  if [[ "${sockets}" != "2" ]]; then
+    echo "stop. socket count is ${sockets}. this test is the two-socket HQ split." >&2
     exit 1
   fi
+}
+
+# HQ layout: socket 0 is 0-87,176-263 and socket 1 is 88-175,264-351 on 352 threads.
+# Sibling of cpu 0 must be half of nproc, which is that map.
+load_socket_cpus() {
+  local n sib offset per
+  n="$(nproc)"
+  sib="$(cat /sys/devices/system/cpu/cpu0/topology/thread_siblings_list)"
   offset="${sib#*,}"
   if [[ "${sib}" == "${offset}" || "${offset}" != "$(( n / 2 ))" ]]; then
     echo "sibling of cpu0 is ${sib}, nproc is ${n}." >&2
     echo "expected siblings at N and N+$(( n / 2 )). send that line before arm B." >&2
     exit 1
   fi
-  phys=$(( n / 2 ))
-  keep=$(( phys * 3 / 4 ))
-  if [[ "${keep}" -lt 1 || "${keep}" -ge "${phys}" ]]; then
-    echo "could not take 75% of ${phys} cores" >&2
-    exit 1
+  per=$(( n / 4 ))
+  SOCKET0="0-$(( per - 1 )),${offset}-$(( offset + per - 1 ))"
+  SOCKET1="${per}-$(( 2 * per - 1 )),$(( offset + per ))-$(( offset + 2 * per - 1 ))"
+  ALL_CPUS="0-$(( n - 1 ))"
+}
+
+cpus_of() {
+  local name="$1" pid
+  pid="$(pgrep -nx "${name}" || true)"
+  if [[ -z "${pid}" ]]; then
+    echo missing
+    return
   fi
-  printf '%s\n' "0-$(( keep - 1 )),${offset}-$(( offset + keep - 1 ))"
+  awk '/Cpus_allowed_list/{print $2}' "/proc/${pid}/status"
+}
+
+same_cpus() {
+  python3 - "$1" "$2" <<'PY'
+import sys
+def expand(text):
+    out=set()
+    for part in text.replace(" ", "").split(","):
+        if not part:
+            continue
+        if "-" in part:
+            a,b=part.split("-", 1)
+            out.update(range(int(a), int(b)+1))
+        else:
+            out.add(int(part))
+    return out
+sys.exit(0 if expand(sys.argv[1])==expand(sys.argv[2]) else 1)
+PY
 }
 
 undo_pin() {
-  local all slice vms
+  local all slice vms unit dropin
   all="0-$(( $(nproc) - 1 ))"
   slice=/sys/fs/cgroup/rlp.slice
   vms="${slice}/vms"
+  for unit in rlp-runner rlp-api rlp-proxy; do
+    dropin="/etc/systemd/system/${unit}.service.d/oci-gap.conf"
+    if [[ -f "${dropin}" ]]; then
+      as_root rm -f "${dropin}"
+    fi
+  done
+  as_root systemctl daemon-reload || true
   if [[ -f "${slice}/cpuset.cpus" ]]; then
-    write_file "${slice}/cpuset.cpus" "${all}"
+    write_file "${slice}/cpuset.cpus" "${all}" || true
+  fi
+  if [[ -f "${slice}/cpuset.mems" ]]; then
+    write_file "${slice}/cpuset.mems" "0-1" || true
   fi
   if [[ -f "${vms}/cpuset.cpus" ]]; then
-    write_file "${vms}/cpuset.cpus" "${all}"
+    write_file "${vms}/cpuset.cpus" "${all}" || true
   fi
-  echo "rlp.slice cpuset set back to ${all}"
-  as_root systemctl restart rlp-runner
+  if [[ -f "${vms}/cpuset.mems" ]]; then
+    write_file "${vms}/cpuset.mems" "0-1" || true
+  fi
+  as_root docker update --cpuset-cpus="${all}" --cpuset-mems=0-1 rlp-postgres rlp-nats >/dev/null 2>&1 || true
+  as_root systemctl restart rlp-runner rlp-api rlp-proxy || true
   sleep 15
-  echo "rlp.slice back to: $(cat "${slice}/cpuset.cpus.effective" 2>/dev/null || echo unread)"
+  echo "pin removed. runner cpus: $(cpus_of rlp-runner)"
+  echo "api cpus: $(cpus_of rlp-api)"
+}
+
+write_affinity() {
+  local unit="$1" cpus="$2" mems="$3" dropin
+  dropin="/etc/systemd/system/${unit}.service.d/oci-gap.conf"
+  as_root mkdir -p "/etc/systemd/system/${unit}.service.d"
+  # systemd wants spaces between ranges, not commas.
+  as_root tee "${dropin}" >/dev/null <<EOF
+[Service]
+CPUAffinity=${cpus//,/ }
+AllowedMemoryNodes=${mems}
+EOF
 }
 
 apply_pin() {
-  local cpus slice vms
-  cpus="$(sandbox_cpus)"
+  local slice vms runner_now api_now vms_now
+  require_two_sockets
+  load_socket_cpus
   slice=/sys/fs/cgroup/rlp.slice
   vms="${slice}/vms"
-  echo "pinning sandboxes and runner to ${cpus}"
-  echo "cores left free for the control plane: the rest of $(nproc) threads"
+  echo "socket 0 (sandboxes and runner): ${SOCKET0}"
+  echo "socket 1 (api, proxy, postgres, nats, client): ${SOCKET1}"
+  if ! command -v taskset >/dev/null 2>&1; then
+    echo "taskset is missing, so the client cannot be pinned to socket 1." >&2
+    exit 1
+  fi
+  write_affinity rlp-runner "${SOCKET0}" 0
+  write_affinity rlp-api "${SOCKET1}" 1
+  if systemctl cat rlp-proxy >/dev/null 2>&1 || as_root systemctl cat rlp-proxy >/dev/null 2>&1; then
+    write_affinity rlp-proxy "${SOCKET1}" 1
+  fi
+  as_root systemctl daemon-reload
   if ! grep -qw cpuset /sys/fs/cgroup/cgroup.subtree_control 2>/dev/null; then
     write_file /sys/fs/cgroup/cgroup.subtree_control "+cpuset"
   fi
   if ! grep -qw cpuset "${slice}/cgroup.subtree_control" 2>/dev/null; then
     write_file "${slice}/cgroup.subtree_control" "+cpuset"
   fi
-  write_file "${slice}/cpuset.cpus" "${cpus}"
+  # The slice stays on every core. Only the sandbox cgroup and the runner narrow.
+  write_file "${slice}/cpuset.cpus" "${ALL_CPUS}"
+  write_file "${slice}/cpuset.mems" "0-1"
   if [[ -d "${vms}" ]]; then
     if ! grep -qw cpuset "${vms}/cgroup.subtree_control" 2>/dev/null; then
       write_file "${vms}/cgroup.subtree_control" "+cpuset" || true
     fi
-    write_file "${vms}/cpuset.cpus" "${cpus}" || true
+    write_file "${vms}/cpuset.cpus" "${SOCKET0}"
+    write_file "${vms}/cpuset.mems" "0"
   fi
-  as_root systemctl restart rlp-runner
+  as_root systemctl restart rlp-runner rlp-api rlp-proxy || as_root systemctl restart rlp-runner rlp-api
+  as_root docker update --cpuset-cpus="${SOCKET1}" --cpuset-mems=1 rlp-postgres rlp-nats >/dev/null 2>&1 \
+    || echo "postgres and nats cpuset was not changed"
   sleep 20
-  local slice_now runner_now api_now
-  slice_now="$(cat "${slice}/cpuset.cpus.effective" 2>/dev/null || echo unread)"
-  runner_now="$(awk '/Cpus_allowed_list/{print $2}' /proc/"$(pgrep -nx rlp-runner)"/status)"
-  api_now="$(awk '/Cpus_allowed_list/{print $2}' /proc/"$(pgrep -nx rlp-api)"/status)"
-  echo "rlp.slice: ${slice_now}"
-  echo "runner:    ${runner_now}"
-  echo "api:       ${api_now}"
-  if [[ "${runner_now}" != "${cpus}" ]]; then
-    echo "runner cpus are ${runner_now}, wanted ${cpus}. undoing." >&2
+  runner_now="$(cpus_of rlp-runner)"
+  api_now="$(cpus_of rlp-api)"
+  vms_now="$(cat "${vms}/cpuset.cpus.effective" 2>/dev/null || echo unread)"
+  echo "runner: ${runner_now}"
+  echo "vms:    ${vms_now}"
+  echo "api:    ${api_now}"
+  if ! same_cpus "${runner_now}" "${SOCKET0}"; then
+    echo "runner cpus are ${runner_now}, wanted ${SOCKET0}. undoing." >&2
     undo_pin
     exit 1
   fi
-  if [[ "${api_now}" == "${cpus}" ]]; then
-    echo "api is pinned with the runner. undoing. the control plane must keep every core." >&2
+  if ! same_cpus "${vms_now}" "${SOCKET0}"; then
+    echo "sandbox cpus are ${vms_now}, wanted ${SOCKET0}. undoing." >&2
     undo_pin
     exit 1
   fi
+  if ! same_cpus "${api_now}" "${SOCKET1}"; then
+    echo "api cpus are ${api_now}, wanted ${SOCKET1}. undoing." >&2
+    undo_pin
+    exit 1
+  fi
+  export GAP_CLIENT_CPUS="${SOCKET1}"
 }
 
 cmd_state() {
@@ -174,12 +252,10 @@ cmd_state() {
     free -g | sed -n 2p
   } | tee "${out}"
   echo "wrote ${out}"
-  local sockets
-  sockets="$(socket_count)"
-  if [[ "${sockets}" != "1" ]]; then
-    echo "stop. socket count is ${sockets}, not 1." >&2
-    exit 1
-  fi
+  require_two_sockets
+  load_socket_cpus
+  echo "socket 0 would be ${SOCKET0}"
+  echo "socket 1 would be ${SOCKET1}"
 }
 
 start_tmux() {
@@ -203,33 +279,28 @@ start_tmux() {
 
 cmd_shared() {
   stop_floor
-  if [[ "$(socket_count)" != "1" ]]; then
-    echo "stop. socket count is $(socket_count), not 1." >&2
-    exit 1
-  fi
+  require_two_sockets
   if [[ -z "${OCI_GAP_FOREGROUND:-}" ]]; then
     start_tmux A armA A-shared
     return
   fi
   undo_pin
-  export LOGDIR
-  bash "${SCRIPT_DIR}/oci_vera_gap_burst.sh" A-shared
+  export LOGDIR GAP_REPS=1
+  unset GAP_CLIENT_CPUS
+  bash "${SCRIPT_DIR}/oci_vera_gap_burst.sh" A-shared 1
 }
 
 cmd_split() {
   stop_floor
-  if [[ "$(socket_count)" != "1" ]]; then
-    echo "stop. socket count is $(socket_count), not 1." >&2
-    exit 1
-  fi
+  require_two_sockets
   if [[ -z "${OCI_GAP_FOREGROUND:-}" ]]; then
     start_tmux B armB B-split
     return
   fi
   apply_pin
   trap undo_pin EXIT
-  export LOGDIR
-  bash "${SCRIPT_DIR}/oci_vera_gap_burst.sh" B-split
+  export LOGDIR GAP_REPS=3
+  bash "${SCRIPT_DIR}/oci_vera_gap_burst.sh" B-split 3
 }
 
 cmd_sum() {
@@ -256,11 +327,11 @@ cmd_sum() {
 
 usage() {
   cat <<EOF
-./o gap state   record the host. stops if the floor loop is up or sockets are not 1
-./o gap A       shared cores. about 15-20 minutes in tmux session armA
-./o gap B       pin 75% of cores to sandboxes and the runner, then the same runs
+./o gap state   record the host. needs 2 sockets. stops if the floor loop is up
+./o gap A       one shared 1,000, both sockets, tmux session armA
+./o gap B       three 1,000s with runner and sandboxes on socket 0
 ./o gap sum     print the table and the runner gap
-./o gap undo    put rlp.slice back on every core
+./o gap undo    put every core back
 logs: ${LOGDIR}
 EOF
 }

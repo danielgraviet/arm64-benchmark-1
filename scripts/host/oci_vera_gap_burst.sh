@@ -70,36 +70,24 @@ cpus_of() {
 
 echo "log ${LOG}"
 
-wait_clean
-TARGET=vera OCI_VERA=1 DISK_GB=0.015625 CREATE_READY_HTTP_POOL=1024 \
-  bash scripts/host/run_create_ready.sh 10 >> "${LOG}.raw" 2>&1 || true
-
-for spec in "1 1024 fast" "10 1024 fast" "100 1024 fast" "1000 1024 vera" "2000 4096 vera"; do
-  set -- ${spec}
-  N="$1"
-  POOL="$2"
-  if [[ "$3" == "fast" ]]; then
-    PS=0.01
-    PF=1
-    PM=0.01
+REPS="${2:-1}"
+for rep in $(seq 1 "${REPS}"); do
+  wait_clean
+  sleep 1
+  set +e
+  if [[ -n "${GAP_CLIENT_CPUS:-}" ]]; then
+    echo "client taskset ${GAP_CLIENT_CPUS}" >> "${LOG}"
+    TARGET=vera OCI_VERA=1 DISK_GB=0.015625 \
+      taskset -c "${GAP_CLIENT_CPUS}" bash scripts/host/run_create_ready.sh 1000 >> "${LOG}.raw" 2>&1
   else
-    PS=0.25
-    PF=1.5
-    PM=2.0
+    TARGET=vera OCI_VERA=1 DISK_GB=0.015625 \
+      bash scripts/host/run_create_ready.sh 1000 >> "${LOG}.raw" 2>&1
   fi
-  for rep in 1 2 3; do
-    wait_clean
-    sleep 1
-    set +e
-    RLP_WAIT_POLL_START_S="${PS}" RLP_WAIT_POLL_FACTOR="${PF}" RLP_WAIT_POLL_MAX_S="${PM}" \
-      TARGET=vera OCI_VERA=1 DISK_GB=0.015625 CREATE_READY_HTTP_POOL="${POOL}" \
-      bash scripts/host/run_create_ready.sh "${N}" >> "${LOG}.raw" 2>&1
-    rc=$?
-    set -e
-    file="$(ls -t ${OUT}/vera_create_ready_${N}_*.jsonl 2>/dev/null | head -1 || true)"
-    echo "FILE ${ARM} ${N} ${rep} rc=${rc} ${file}" >> "${LOG}"
-    echo "FILE ${ARM} ${N} ${rep} rc=${rc} ${file}"
-  done
+  rc=$?
+  set -e
+  file="$(ls -t ${OUT}/vera_create_ready_1000_*.jsonl 2>/dev/null | head -1 || true)"
+  echo "FILE ${ARM} 1000 ${rep} rc=${rc} ${file}" >> "${LOG}"
+  echo "FILE ${ARM} 1000 ${rep} rc=${rc} ${file}"
 done
 
 echo "MARK end $(date -u '+%Y-%m-%d %H:%M:%S')" >> "${LOG}"
