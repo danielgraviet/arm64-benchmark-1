@@ -91,9 +91,32 @@ if [[ -n "${scratch}" && "${scratch}" -gt 128 ]]; then
   exit 1
 fi
 
-if ! perf stat -a -e cycles,instructions -- sleep 1 >/dev/null 2>&1; then
-  echo "stop. perf cannot read cycles. install linux-tools-$(uname -r) and retry." >&2
-  exit 1
+mkdir -p "$OUT_BASE"
+perf_ok() {
+  perf stat -a -e cycles,instructions -- sleep 1 >"$OUT_BASE/perf-check.txt" 2>&1
+}
+
+if ! perf_ok; then
+  kernel="$(uname -r)"
+  echo "perf cannot read cycles on ${kernel}. installing linux-tools-${kernel}."
+  export DEBIAN_FRONTEND=noninteractive
+  as_root apt-get update -qq || true
+  if ! as_root apt-get install -y linux-tools-common "linux-tools-${kernel}"; then
+    echo "linux-tools-${kernel} did not install. packages that match this kernel:" >&2
+    apt-cache search linux-tools | grep -F "${kernel}" >&2 || apt-cache search linux-tools | grep -E '64k|generic' | head -20 >&2 || true
+    echo "perf said:" >&2
+    cat "$OUT_BASE/perf-check.txt" >&2 || true
+    exit 1
+  fi
+  # A high paranoid value blocks system-wide perf even after the tools are installed.
+  if [[ -w /proc/sys/kernel/perf_event_paranoid ]] || as_root test -w /proc/sys/kernel/perf_event_paranoid; then
+    echo -1 | as_root tee /proc/sys/kernel/perf_event_paranoid >/dev/null || true
+  fi
+  if ! perf_ok; then
+    echo "stop. perf still cannot read cycles after installing linux-tools-${kernel}." >&2
+    cat "$OUT_BASE/perf-check.txt" >&2 || true
+    exit 1
+  fi
 fi
 
 if [[ -z "${OCI_PROBE_FOREGROUND:-}" ]]; then
