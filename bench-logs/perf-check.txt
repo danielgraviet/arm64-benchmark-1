@@ -1,10 +1,10 @@
 
  Performance counter stats for 'system wide':
 
-     3,836,283,536      cycles                                                                
-    42,006,603,339      nvidia_uncore_pmu_0/cycles/                                           
-   101,855,828,715      smmuv3_pmcg_fe0004030/cycles/                                         
-     8,138,558,649      instructions                                                          
+    13,479,081,044      cycles                                                                
+    42,014,016,365      nvidia_uncore_pmu_0/cycles/                                           
+   101,741,688,234      smmuv3_pmcg_fe0004030/cycles/                                         
+    25,173,353,007      instructions                                                          
 
-       1.081411393 seconds time elapsed
+       1.075187759 seconds time elapsed
 

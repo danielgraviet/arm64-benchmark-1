@@ -18,3 +18,4 @@ perf version 7.0.14
 2026-10-13T16:28:36 END L rc=0
 2026-10-13T16:28:52 RUN P level=352 cores_used=88 slice=0-351 runner_cpus=0-351
 2026-10-13T16:35:24 END P rc=0
+2026-10-13T16:52:02 pin restored slice=0-351
