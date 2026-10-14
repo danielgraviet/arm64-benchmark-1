@@ -19,7 +19,7 @@ rlp_client_tuning.apply()
 import rlp_light_create_fleet as F
 from rlp.sandbox import Sandbox
 
-IMAGE = "dtgraviet/vera-agent-benchmark:v3"
+IMAGE = os.environ.get("MPFLEET_IMAGE", "dtgraviet/vera-agent-benchmark:v3")  # override to test an idle-entrypoint image
 
 def worker(wid, idxs, barrier, q, target, probe_timeout, timeout):
     client = F.build_client(target)            # per-process client + HTTP pool

@@ -4,6 +4,31 @@ Learned on HQ Vera, OCI Vera, EPYC 9575F, EPYC 9755 and Vultr 9745 (Sep–Oct 20
 because breaking it produced a wrong published number or a wrong conclusion at least once. Evidence for each:
 `/mnt/data/bench/FINDINGS.md` on the HQ Vera cell, and issues daytona/rlp#3212, #3213.
 
+## 0. The image's entrypoint runs in every sandbox — use an idle image for startup
+
+`dtgraviet/vera-agent-benchmark:v3` has the entrypoint `python -m workload.agent --n 30 --seed 42`. The runner releases
+the entrypoint gate on every sandbox, so **every sandbox in a create-ready burst runs a CPU-bound job as soon as it is
+`running`** (measured: 1.0 core for ~3.1 s per sandbox on a quiet host). A 1k burst therefore measures startup *while
+~3,000+ core-seconds of guest work compete with it*, and the host sits at 100% for 30+ s.
+
+Same 1k burst (16 client processes), agent image vs `alpine:3.20` (entrypoint exits immediately), 2026-10-14:
+
+| host | image | all-ready | p95 | host CPU during burst |
+|---|---|---|---|---|
+| HQ Vera, pinned to 1 socket | agent | 10.2–10.4 s | 9.6–10.0 s | socket 100% for 37 s |
+| HQ Vera, unpinned | agent | 22.0–22.5 s | 21.9–22.3 s | up to 350 cores |
+| EPYC 9575F | agent | 24.5–31.5 s | 19.7–21.9 s | host >95% for 36 s |
+| HQ Vera, pinned or unpinned | **alpine** | **4.0–4.2 s** | **3.8–4.2 s** | ≤ 38 cores peak |
+| EPYC 9575F | **alpine** | **4.0 s** | **3.9 s** | ≤ 33 cores peak |
+
+**The platform startup path is the same ~4 s on both hosts.** The "startup" gap seen with the agent image is the
+hosts' CPU throughput on the entrypoint workload, not startup.
+
+**Rules**
+- **Measure startup with an idle-entrypoint image** (`MPFLEET_IMAGE=alpine:3.20 mpfleet.py …`), and report the image.
+- A burst with the agent image is a *startup-under-load* test. Label it that way, never as "startup".
+- Watch for it: if the host stays busy after the last sandbox is ready, the guests are doing work.
+
 ## 1. Reading the numbers (`create-ready` / `rlp_light_create_fleet.py`)
 
 | field | what it actually is | trap |
@@ -43,10 +68,11 @@ Recorded (report them with results): CPU, sockets online, kernel + **page size**
 
 ## 3. Placement (dual-socket hosts)
 
-- **Pinning runner + sandboxes to one NUMA node is the biggest single lever on dual-socket Vera**: 1k all-ready
-  8.4–10.6 s pinned to socket 0 vs 20–23 s spread across both sockets (same host, build, settings).
-- The second socket is **not** what makes it fast: everything (runner, sandboxes, API, Postgres, NATS, proxy, client)
-  on the same 88-core socket gives the same all-ready time.
+- **Placement matters when the guests do CPU work, not for the startup path itself.** With the agent image
+  (§0) a 1k burst on HQ Vera takes 8.4–10.6 s pinned to socket 0 vs 20–23 s spread over both sockets. With an idle image,
+  pinned and unpinned are the same (~4 s). An earlier reading of this as "NUMA is the startup lever" was wrong.
+- **Throughput: say how many sockets.** HQ Vera dense ladder (published recipe): one socket 13.0–14.0 jobs/s,
+  both sockets 26.6 jobs/s at 352. The published 13.3 jobs/s was a one-socket configuration.
 - So a "one socket" result must say exactly what was pinned. Pin with `rlp.slice` + `rlp.slice/vms` `cpuset.cpus` and
   **`cpuset.mems`**; control-plane services with `systemctl set-property --runtime <ONE unit> AllowedCPUs= AllowedMemoryNodes=`;
   containers with `docker update --cpuset-cpus --cpuset-mems` (no `-q` flag). **Verify every placement from
