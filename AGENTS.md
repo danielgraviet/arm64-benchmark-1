@@ -6,6 +6,18 @@ Vera HQ is Axis-only (`ssh.axisapps.io`). Agents on the Mac cannot usefully Remo
 
 Cwd is the clone (usually `/home/ubuntu/arm64-benchmark-1`). The RLP API and toolbox are on localhost. Never drive a ladder from a laptop SSH tunnel. That measures the tunnel.
 
+## Before any benchmark — read `docs/benchmark-methodology.md`
+
+Short version (every point broke a published number at least once):
+
+- **One operator per box.** Check `tmux ls`, `w`, `ls /etc/systemd/system/rlp-*.service.d/` first.
+- **Gate every rep** with `scripts/host/bench-preflight.sh <outdir>` (floor script, background CPU, warm netns pool,
+  hugepages, ARP limits, leftovers, balloon). It also records kernel/page size/cmdline/power cap/pins/binary SHAs.
+- **`post_s` is not control-plane time** when the client is one Python process; for bursts ≥ 500 use
+  `mpfleet.py --procs 16` and report `procs`.
+- **Record placement.** On dual-socket hosts, pinning runner + sandboxes to one NUMA node changes 1k startup 2.3×.
+- **Same build, daemon, SDK, guest shape and client settings on every platform compared.**
+
 ## How to run
 
 Use the git-tracked wrappers. Do not invent `/tmp` scripts.
