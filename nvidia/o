@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# Ultra-short typed entry for NVIDIA single-socket EPYC 9755.
+# From this directory after clone:
+#   export GH_TOKEN=…
+#   ./o start
+#   ./o hw
+#   ./o test
+#   ./o clean && ./o 1k
+#   ./o clean && ./o 2k
+#   ./o clean && ./o full-ladder
+#
+# Root ./o stays OCI Vera-only. Use this nvidia/o on the Zen5 box.
+set -euo pipefail
+
+NVIDIA_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "${NVIDIA_DIR}/.." && pwd)"
+SCRIPTS="${NVIDIA_DIR}/scripts"
+cd "${ROOT}"
+export PATH="${HOME}/.local/bin:/usr/local/bin:${PATH}"
+
+cmd="${1:-help}"
+shift || true
+
+tmux_run() {
+  local session="$1"
+  local script="$2"
+  if tmux has-session -t "${session}" 2>/dev/null; then
+    echo "tmux session '${session}' already exists. Attach: tmux attach -t ${session}" >&2
+    exit 1
+  fi
+  tmux new-session -d -s "${session}" "bash ${script}"
+  echo "started tmux session '${session}'"
+  echo "  attach: tmux attach -t ${session}"
+  echo "  status: ${NVIDIA_DIR}/o status"
+}
+
+case "${cmd}" in
+  start|boot|bootstrap)
+    if [[ -x /usr/local/bin/rlp-api && -z "${SKIP_BUILD:-}" ]]; then
+      export SKIP_BUILD=1
+      echo "SKIP_BUILD=1 (rlp-api already installed)"
+    fi
+    exec bash "${SCRIPTS}/zen5_bootstrap.sh" "$@"
+    ;;
+  k|kernel|guest)
+    exec bash "${SCRIPTS}/zen5_build_guest.sh" "$@"
+    ;;
+  test)
+    bash "${SCRIPTS}/check_parity.sh" --strict
+    exec bash "${SCRIPTS}/smoke.sh" "$@"
+    ;;
+  check|parity)
+    exec bash "${SCRIPTS}/check_parity.sh" "$@"
+    ;;
+  clean)
+    exec bash "${SCRIPTS}/clean_cell.sh" "$@"
+    ;;
+  1k|1|c1k)
+    tmux_run zen5-1k "${SCRIPTS}/run_1k.sh"
+    ;;
+  2k|2|c2k)
+    tmux_run zen5-2k "${SCRIPTS}/run_2k.sh"
+    ;;
+  full-ladder|ladder|dense|d)
+    tmux_run zen5-dense2k "${SCRIPTS}/run_full_ladder.sh"
+    ;;
+  hw|hardware|inventory)
+    exec bash "${SCRIPTS}/capture_host_hw.sh" "$@"
+    ;;
+  status|t)
+    exec bash "${ROOT}/scripts/host/status.sh" "$@"
+    ;;
+  smoke)
+    exec bash "${SCRIPTS}/smoke.sh" "$@"
+    ;;
+  help|-h|--help|h|"")
+    cat <<'EOF'
+nvidia/o — single-socket EPYC 9755 (empty Ubuntu → results)
+
+  ./o start         boot cell + harness + eng SDK + 9755 tune
+  ./o k             build amd64 guest Image/vmlinux + initdisk
+  ./o hw            capture chip/server inventory (JSON+MD)
+  ./o check         Vera-closeness parity gate (epyc9755)
+  ./o test          parity --strict + one-sandbox smoke
+  ./o clean         drain sandboxes; fail if FC orphans remain
+  ./o 1k            create-ready 1000 (tmux zen5-1k)
+  ./o 2k            create-ready 2000 (tmux zen5-2k)
+  ./o full-ladder   dense agent ladder 44→2000 n=45 (tmux zen5-dense2k)
+  ./o status        cell / FC / disk snapshot
+
+Typical sequence (see RUNBOOK.md):
+  export GH_TOKEN=…
+  ./o start && ./o hw && ./o test
+  ./o clean && ./o 1k
+  ./o clean && ./o 2k
+  ./o clean && ./o full-ladder
+EOF
+    ;;
+  *)
+    echo "unknown: ${cmd}  (./o help)" >&2
+    exit 2
+    ;;
+esac

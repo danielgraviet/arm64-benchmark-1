@@ -155,6 +155,53 @@ class RlpRunner:
         except Exception:  # noqa: BLE001, S110
             pass
 
+    def drain_orphans(self, *, keep_ids: frozenset[str] | None = None) -> int:
+        """DELETE every non-deleted VM except ``keep_ids`` (paginated GET /vms).
+
+        Failed hold-then-exec creates never join the fleet, so they would
+        otherwise linger and burn live-VM / capacity accounting. Returns the
+        number of deletes attempted.
+        """
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        from urllib.parse import quote
+
+        keep = keep_ids or frozenset()
+        api = self._client._api
+        all_vms: list[dict[str, Any]] = []
+        cursor: str | None = None
+        while True:
+            path = "/vms" if not cursor else f"/vms?cursor={quote(cursor, safe='')}"
+            data = api.get(path).json()
+            batch = data.get("vms", [])
+            all_vms.extend(batch)
+            cursor = data.get("next_cursor")
+            if not cursor or not batch:
+                break
+        victims = [
+            vm
+            for vm in all_vms
+            if (vm.get("status") or "").lower() != "deleted"
+            and vm.get("id") not in keep
+        ]
+        if not victims:
+            return 0
+
+        def _del(vm: dict[str, Any]) -> bool:
+            try:
+                api.delete(f"/vms/{vm['id']}")
+                return True
+            except Exception:  # noqa: BLE001
+                return False
+
+        ok = 0
+        workers = min(64, max(8, len(victims)))
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = [pool.submit(_del, vm) for vm in victims]
+            for fut in as_completed(futures):
+                if fut.result():
+                    ok += 1
+        return ok
+
     def exec_on_sandbox(
         self,
         sandbox: Any,
