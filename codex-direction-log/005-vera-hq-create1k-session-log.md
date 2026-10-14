@@ -5,6 +5,64 @@ Plain-language timeline of bringing HQ Vera back to the Sep 8 create-ready resul
 **Target:** 1000 creates, 0 fails, wall clock about 11 s (Sep 8 clean was about 10.7–10.8 s).  
 **Published Sep 8 shape:** socket 0 pin `0-87,176-263`, disk 1 GiB, cpu 0.025, mem 0.0625 GiB, image `dtgraviet/vera-agent-benchmark:v3`, probe `echo ready`.
 
+**Outcome (2026-10-14):** wall time **reproduced** on two clean runs (**10.98 s** and **11.16 s**, both **1000/0**). Median create is still higher than Sep 8 (~6.2–6.4 s vs ~3.5–3.7 s). A third confirm was interrupted by another operator restarting the API.
+
+---
+
+## Main blockers (what stopped ~11 s at first)
+
+These are the big reasons we could not trust or reach a Sep 8–style 1k until they were fixed.
+
+1. **No socket pin**  
+   Runner and VMs could use the whole machine. Sep 8 was pinned to socket 0 (`0-87,176-263`). Without that, the published single-socket result is not comparable.
+
+2. **Runner marked `lost` (heartbeat contract mismatch)**  
+   systemd said `rlp-runner` was active and `/health` was OK, but the API listed `vera-1` as **lost**. Creates returned **HTTP 400** (“no online linux-class runner”).  
+   Cause: we rebuilt the runner from the **SDK pin** checkout (`660e6e3b`). That older runner source omitted required heartbeat fields `capabilities.classes` and `capabilities.windows`, so the API rejected heartbeats.
+
+3. **Quiet-progress rebuild vs sudo limiter**  
+   Rebuilding for quiet progress from the wrong tree risked shipping a binary **without** the sudo concurrency limiter (`RLP_PRIV_EXEC_CONCURRENCY`). That had to be caught before measuring.
+
+4. **Netns pool thrash**  
+   The runner needs a full pre-built network-namespace pool (~2100). Fighting `RLP_VM_CONCURRENCY` (wrapper wanted 256, env already had 512) caused **restarts** and forced the pool to rebuild over and over.
+
+5. **Udev stampede**  
+   Filling thousands of netns created a flood of device events. Hundreds of udev workers blocked (~650–700), load spiked, and the box was not idle enough to measure.
+
+6. **Cold / broken template path**  
+   First measured attempt after repairs failed **0/1000** because the daemon layer pointer was refused (missing `erofs_sha256`). That wall is not a ready result.
+
+7. **Shared-box interference**  
+   Other operators ran A/B experiments and later **restarted the API mid-fleet**. One confirmation ended **934/66** with connection-refused errors. Not a chip result.
+
+8. **Tooling friction (slowed us, did not define the chip number)**  
+   Axis/Codex TUI auth and bubblewrap sandbox failures on the DUT. Worked around with on-box Codex + `dangerously-bypass-approvals-and-sandbox`. Soft `ulimit` started at 1024 until raised.
+
+---
+
+## What we did to finally reproduce ~11 s wall
+
+1. **Pinned socket 0** with `tickets/vera-pin-single-socket.sh` and verified cgroup CPUs/mems.  
+2. **Kept Python eng SDK at `660e6e3b`**, but **built the runner from a separate newer checkout** (`33ba48051`) so heartbeats include required capability fields **and** quiet progress **and** the privileged-exec limiter.  
+3. **Stopped fighting concurrency 512**, let the **netns pool fill to 2100**, capped **udev** workers (~16), drained Firecrackers to **0**, waited for load to settle.  
+4. **Fixed the daemon/erofs layer pointer** so templates could warm.  
+5. **Ran onsite recipe:** `TARGET=vera DISK_GB=1`, nofile 65536, localhost API, burst CPU 1, snapshots on, HTTP poll pool 32 (current wrapper).  
+6. **Measured only after warmup / template path was healthy.**
+
+### Clean results
+
+| JSONL | ok/fail | wall | create p50 / p95 / max |
+|---|---|---|---|
+| `daniel-focus-here/vera-jsonl/vera_create_ready_1000_20261014_012722.jsonl` | 1000/0 | **10.98 s** | 6.22 / 10.39 / 10.64 |
+| `daniel-focus-here/vera-jsonl/vera_create_ready_1000_20261014_012924.jsonl` | 1000/0 | **11.16 s** | 6.42 / 10.21 / 10.72 |
+| Sep 8 published (reference) | 1000/0 | ~10.8 s | ~3.7 / ~10.3 / ~10.5 |
+
+### Still open
+
+- **Median create** (~6.3 s) is still above Sep 8 (~3.7 s). Client split on clean runs shows large **`post_s`** (control-plane POST) and **`wait_s`** / queue-before-runner, while Firecracker start stays tiny (~10 ms).  
+- Need **coordinated** uninterrupted confirms (no external API/runner restarts) if we want a three-run clean cluster.  
+- Detail status: `codex-direction-log/004-vera-create1k-status.md`.
+
 ---
 
 ## Chronological notes
@@ -20,77 +78,45 @@ Plain-language timeline of bringing HQ Vera back to the Sep 8 create-ready resul
 ### Early host checks (before the measured 1k)
 
 - Host page size is **64 KiB** (`getconf PAGESIZE` = 65536). Kernel name includes `nvidia-64k`. That matches the known HQ / onsite shape.
-- Soft open-file limit started at **1024**. Hard limit was already **1048576**. Soft was raised to **1048576** in the working shell. New logins may fall back to 1024 unless PAM or the recipe raises it again.
+- Soft open-file limit started at **1024**. Hard limit was already **1048576**. Soft was raised in the working shell. Recipe wrappers also raise nofile for the run.
 - Neighbor table `gc_thresh3` was **65536** (healthy for large create waves).
-- **Weight-floor loop** (`rlp-cpu-weight-floor`) was **not** running. That background CPU rewriter hurt Zen5 timings earlier. Good that it is absent here.
-- **Sudo concurrency limiter** string `RLP_PRIV_EXEC_CONCURRENCY` was present in the **installed** runner binary (count 1).
-- **Quiet progress** string `RLP_QUIET_PROGRESS` was **missing** from that first installed binary (count 0).
-- Socket pin was **not** set like Sep 8. `rlp.slice` cpuset was empty. `rlp.slice/vms` was missing. Sep 8 had CPUs `0-87,176-263` and mems `0`.
-- Idle baseline was dirty at first check: high load averages, `rlp-runner` hot, leftover Firecrackers. Not a fair measure yet.
+- **Weight-floor loop** (`rlp-cpu-weight-floor`) was **not** running. That background CPU rewriter hurt Zen5 timings earlier.
+- First installed runner had sudo-limiter marker present, quiet-progress marker missing.
+- Socket pin was **not** set like Sep 8 until we ran the pin script.
+- Idle baseline was dirty at first check: high load, leftover Firecrackers.
 
-### Why the new environment looked slow
+### Why the new environment looked slow (CTO first numbers)
 
-- CTO ran three 1000-sandbox bursts on the **new** HQ environment.
-- New HQ medians were about **7.9–9.8 s** ready. Tails went to about **20–83 s**.
-- Sep 8 HQ was about **3.5–3.7 s** median ready, about **10.2–10.8 s** p95/max, wall about **11 s**.
-- New HQ looked closer to **OCI Vera** and cleaned **9575F** than to published HQ. We treated that as a **repro / config gap**, not a sudden chip regression.
-- Direction for Codex: `codex-direction-log/003-vera-hq-create1k-pin.md` (pin socket 0, onsite `DISK_GB=1`, debug to ~11 s wall).
+- CTO’s new-env 1k medians were about **7.9–9.8 s** ready, tails about **20–83 s**.
+- Sep 8 HQ was about **3.5–3.7 s** median, about **10.2–10.8 s** p95/max, wall about **11 s**.
+- We treated the gap as **repro / config**, not a sudden chip regression.
+- Direction for Codex: `codex-direction-log/003-vera-hq-create1k-pin.md`.
 
 ### Repo and Codex tooling hiccups
 
-- The on-box clone briefly **lost its `.git` directory**. Re-cloned to `85aca35` (direction note present). Reinstalled eng SDK afterward.
-- Codex **TUI** started failing: `account/read` / workspace requirements (`-32603`) even after logout/login.
-- `codex exec` could authenticate, but the default **bubblewrap sandbox** failed on this host: `bwrap: loopback: Failed RTM_NEWADDR: Operation not permitted`.
-- Workaround: run with `--dangerously-bypass-approvals-and-sandbox` (or equivalent full host access). This DUT needs localhost RLP and in-process ulimit raises.
-- A clean Codex reinstall / cache clear was also attempted while waiting on other work.
+- On-box clone briefly lost `.git`. Re-cloned and reinstalled eng SDK.
+- Codex TUI hit `account/read` / workspace requirements (`-32603`).
+- Default bubblewrap sandbox failed (`RTM_NEWADDR`). Used full host access for `codex exec`.
 
 ### Competing work on the box
 
-- Before our 1k, Codex found a **six-run A/B** that changed Firecracker socket wait (`FC_SOCK`, 3000 vs 30000 ms) and restarted the runner.
-- We **waited** for that experiment to finish so it would not fight the pin and create-ready measurement.
-- After it finished, we told Codex the box was ours again and to continue direction 003.
+- Waited out an FC_SOCK A/B that restarted the runner.
+- Later, another operator restarted the API during a confirmation fleet (66 connection-refused failures). Documented and excluded.
 
-### Runner rebuild saga (quiet progress vs sudo limiter)
+### Runner rebuild, udev, netns, heartbeat
 
-- Create-ready path wants **quiet progress** so the runner emits fewer intermediate status events (less API spam during creates).
-- Rebuilding the runner from the SDK pin checkout (`660e6e3b`) added quiet progress but **dropped** the sudo concurrency limiter that the old binary had.
-- Codex **stopped before the 1k**, then aimed the build path at keeping **both** quiet progress and the privileged-command limiter.
-- Separately: wrapper drop-in wanted `RLP_VM_CONCURRENCY=256`, while runner env already had **512**. Fighting that caused extra **restarts and full netns pool rebuilds**. Codex stopped fighting and kept **512**.
+- Kept SDK at `660e6e3b`. Built runner from separate tree `33ba48051` with capability fields + quiet progress + priv-exec limiter.
+- Accepted VM concurrency **512** to avoid pool rebuild loops.
+- Capped udev workers, drained FC to 0, waited for netns **2100/2100**.
+- After capability-capable runner deploy: `vera-1|online` again.
 
-### Udev congestion
+### Measured runs (2026-10-14)
 
-- While filling thousands of network namespaces, **udev** (Linux device-event service) grew hundreds of workers (about 650–700) stuck in kernel sysfs access.
-- Load averages were extreme (hundreds on the 5 and 15 minute windows at peaks).
-- Codex capped udev workers (about **16**) via config because live runtime control timed out.
-- Blocked udev workers later fell to low double digits (about 22). Firecracker count was driven to **0** before measuring.
-
-### Netns pool (network namespace shelf)
-
-- **Netns** = per-sandbox private network stack. The runner pre-builds a pool (target **2100**) so the measured create wave does not pay full networking setup cost mid-flight.
-- Pool gauges showed steady climb (examples: 69 → 109 → … → 2100) with small `inflight` (often 4).
-- Full pool (`ready=2100`, `inflight=0`) was reached at least once, then later rebuilds started again after runner restarts.
-
-### “No online runner” / lost heartbeat
-
-- Creates returned **HTTP 400**: region `vera` has no online linux-class runner. **400** means bad request / cannot fulfill, not **401** auth failure.
-- `systemctl` showed `rlp-runner` **active**. Health curl returned `{"status":"ok"}`. Local process up does not guarantee API status.
-- Wrapper / checks still showed `vera-1|lost` even with an active unit.
-- API logs: heartbeats from the rebuilt-from-`660e6e3b` runner **omitted required** `capabilities.classes` and `capabilities.windows`. API rejected those heartbeats → runner stayed **lost**.
-
-### Fix that restored online
-
-- **Keep Python SDK at `660e6e3b`.**
-- **Build runner from a newer separate checkout** that includes the current heartbeat contract.
-- New runner build succeeded at commit **`33ba48051`**, with required capability fields and native privileged-command limiter.
-- After that deploy, status became: **`vera-1|online`** (example timestamp `2026-10-14 01:24:17+00`) while netns pool was mid-refill (example **1078/2100**).
-- Codex continued waiting for full pool + DB/API confirm before warmup and the measured 1k.
-
-### Current status (as of last update in this chat)
-
-- Socket pin work and create-ready wrapper path are in progress under Codex.
-- Runner online again with the newer binary.
-- Netns pool was still filling toward 2100 after the good runner deploy.
-- Measured Sep 8–matching 1k result **not yet confirmed** in this log. Next expected steps: pool full → warmup / template → `TARGET=vera DISK_GB=1` create-ready 1000 → report `ready_wall_s` near 11 s → commit JSONL + status note.
+- `…012227.jsonl`: **0/1000** fail (daemon/erofs layer). Ignore wall.
+- `…012722.jsonl`: **1000/0**, wall **10.98 s** (first Sep 8–band wall success).
+- `…012924.jsonl`: **1000/0**, wall **11.16 s** (idle confirmation).
+- `…013140.jsonl`: **934/66**, wall ~69 s, API restarted mid-run. Exclude.
+- Final cleanup: FC=0, API healthy, benchmark tmux gone. Pushed through `9fe41bc` (status note updated).
 
 ---
 
@@ -99,9 +125,11 @@ Plain-language timeline of bringing HQ Vera back to the Sep 8 create-ready resul
 - **Sandbox:** short-lived microVM (Firecracker) used for one unit of work.
 - **Create-ready 1000:** start 1000 sandboxes and wait until a simple probe (`echo ready`) succeeds in each.
 - **Wall clock (`ready_wall_s`):** time from start until the whole batch is ready.
+- **Median create:** middle sandbox’s create time. Can stay high even when wall is ~11 s.
 - **Socket pin:** restrict runner and VMs to one CPU socket so the result matches the published single-socket HQ run.
 - **Netns pool:** pre-built set of network namespaces for sandboxes.
 - **Udev:** kernel/userspace device event handling. Can stampede when many network devices appear.
 - **Heartbeat:** runner periodically tells the API it is alive. Missing fields ⇒ API marks runner lost.
 - **Quiet progress:** runner sends fewer intermediate status events during create.
 - **Sudo limiter:** cap on parallel privileged host commands so the machine does not fork-storm on `sudo`.
+- **`post_s` / `wait_s`:** client time posting create to the API, then waiting until ready.
