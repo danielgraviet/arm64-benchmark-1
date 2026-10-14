@@ -24,3 +24,9 @@ Continued direction 003 on-box 2026-10-14 UTC. No new A/B trials run by this dir
 First run failed because the daemon layer was refused; its wall is not a ready result. Second run reaches ~11s wall with 1000 template hits; median remains above Sep 8. Confirmation trials pending after idle.
 
 - `daniel-focus-here/vera-jsonl/vera_create_ready_1000_20261014_012924.jsonl`: wall=11.157s; ok/fail=1000/0; create p50/p95/max=6.424/10.210/10.721s. Full ready pool, warmup probe passed, load1<=20 before fleet; END_EXIT=0.
+
+- `daniel-focus-here/vera-jsonl/vera_create_ready_1000_20261014_013140.jsonl`: wall=69.141s; ok/fail=934/66; create p50/p95/max=6.085/10.291/68.843s. **Interrupted, excluded from clean cluster**: API stopped/restarted at 01:34:20 during fleet; all 66 errors are `DaytonaConnectionError:[Errno 111] Connection refused`. NRestarts=0 confirms no automatic systemd retry. API/runner restarted again at 01:35:48–49; current runner binary quiet-progress marker was replaced (count=0), privexec marker remains 1. Tracked paginated cleanup drained leftovers afterward.
+
+## Current outcome / remaining blocker
+
+Two successful 1000/0 trials reproduce ~11s wall (10.977 and 11.157s), p95/max ~10–11s; median remains ~6.2–6.4s versus Sep 8 ~3–4s. Three uninterrupted idle confirmation trials are not yet established. Another on-box operator is replacing/restarting services during this direction; asked human to hold those changes. Do not start another A/B. Resume fixed-setting confirmations only once service ownership is coordinated, using `UV_NO_SYNC=1 TARGET=vera DISK_GB=1 RLP_RUNNER_SOURCE=/home/daytona/rlp-bench-runner bash scripts/host/run_create_ready.sh 1000` in its own tmux; this rebuilds quiet progress if the other operator replaced the binary. Both SDK and runner worktrees have intentional local benchmark patches.
