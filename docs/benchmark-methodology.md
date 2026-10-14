@@ -46,6 +46,24 @@ hosts' CPU throughput on the entrypoint workload, not startup.
   tracing (OTel) and read server-side `POST /vms` durations.
 - Compare platforms on **all-ready + median + p95 + failures**, with the same client settings (pool, polling, procs).
 
+## 1b. One wedged guest can hang a whole run — set a client read timeout
+
+The SDK reads with no timeout (`httpx.Timeout(30.0, read=None)` in `rlp/http.py`). A guest that wedges mid-exec —
+a post-resume kernel oops, or the daemon answering TCP but never finishing a command (daytona/rlp#3213, #3229) —
+therefore hangs that call **forever**: the daemon-side command timeout never fires, because the daemon is the thing
+that is stuck.
+
+Measured on HQ Vera: a dense ladder at level 176 sat for 20 minutes with **1,401 of 1,408 episodes finished and 7 in
+flight**; two of the 176 live guests had oopsed ~1.3 s after resume. The run never ended on its own.
+
+- Set **`RLP_HTTP_READ_TIMEOUT_S`** (harness knob, `harness/rlp_client_tuning.py`; unset = the SDK's no-timeout
+  behaviour). 120 s is a good value when episodes are 7–30 s: a wedged guest becomes a counted failure instead of a
+  stall.
+- Always run a ladder under an outer `timeout`, and report failures per level.
+- A level whose throughput collapses while the host is idle (`load average` near zero, sandboxes alive) is this,
+  not the platform: at level 176 with no read timeout the rung read 1.47 jobs/s against 15.2 jobs/s on the same
+  build minutes later.
+
 ## 2. Host state that silently changes results — check every run
 
 Run `scripts/host/bench-preflight.sh <outdir>` before every rep. It refuses to start (exit 1) on the hard gates and
