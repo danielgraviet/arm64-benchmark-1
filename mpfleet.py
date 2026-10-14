@@ -57,6 +57,7 @@ def main():
     ap.add_argument("--target", default="vera"); ap.add_argument("--output", required=True)
     ap.add_argument("--timeout", type=int, default=180); ap.add_argument("--probe-timeout", type=int, default=60)
     a = ap.parse_args()
+    a.procs = max(1, min(a.procs, a.count))  # an empty shard would crash its worker and hang the barrier
     ctx = mp.get_context("fork")
     barrier = ctx.Barrier(a.procs + 1); q = ctx.Queue()
     shards = [list(range(a.count))[w::a.procs] for w in range(a.procs)]
