@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
 # Ultra-short typed entry for NVIDIA single-socket EPYC 9755.
-# From this directory after clone:
+# Preferred (passphrase only — secrets packed on Mac):
+#   NVIDIA_PASS='…' ./o load
+#   ./o start
+#
+# Or paste a PAT once:
 #   export GH_TOKEN=…
 #   ./o start
-#   ./o hw
-#   ./o test
-#   ./o clean && ./o 1k
-#   ./o clean && ./o 2k
-#   ./o clean && ./o full-ladder
 #
 # Root ./o stays OCI Vera-only. Use this nvidia/o on the Zen5 box.
 set -euo pipefail
@@ -20,6 +19,16 @@ export PATH="${HOME}/.local/bin:/usr/local/bin:${PATH}"
 
 cmd="${1:-help}"
 shift || true
+
+# Prefer already-decrypted drop file across typed commands.
+load_env_nvidia_if_present() {
+  if [[ -z "${GH_TOKEN:-}" && -f "${ROOT}/.env.nvidia" ]]; then
+    set -a
+    # shellcheck disable=SC1091
+    source "${ROOT}/.env.nvidia"
+    set +a
+  fi
+}
 
 tmux_run() {
   local session="$1"
@@ -35,7 +44,22 @@ tmux_run() {
 }
 
 case "${cmd}" in
+  pack)
+    exec bash "${SCRIPTS}/pack_secrets.sh" "$@"
+    ;;
+  load|l)
+    exec bash "${SCRIPTS}/load_secrets.sh" --print-keys "$@"
+    ;;
   start|boot|bootstrap)
+    load_env_nvidia_if_present
+    if [[ -z "${GH_TOKEN:-}" && -f "${ROOT}/secrets/nvidia-zen5.enc" ]]; then
+      if [[ -z "${NVIDIA_PASS:-}${OCI_PASS:-}" ]]; then
+        echo "need GH_TOKEN or NVIDIA_PASS. Try: NVIDIA_PASS='…' ./o load   then   ./o start" >&2
+        exit 1
+      fi
+      # shellcheck disable=SC1091
+      source "${SCRIPTS}/load_secrets.sh"
+    fi
     if [[ -x /usr/local/bin/rlp-api && -z "${SKIP_BUILD:-}" ]]; then
       export SKIP_BUILD=1
       echo "SKIP_BUILD=1 (rlp-api already installed)"
@@ -77,6 +101,8 @@ case "${cmd}" in
     cat <<'EOF'
 nvidia/o — single-socket EPYC 9755 (empty Ubuntu → results)
 
+  ./o pack          Mac: encrypt GH_TOKEN → secrets/nvidia-zen5.enc
+  ./o load          9755: decrypt with NVIDIA_PASS → .env.nvidia
   ./o start         boot cell + harness + eng SDK + 9755 tune
   ./o k             build amd64 guest Image/vmlinux + initdisk
   ./o hw            capture chip/server inventory (JSON+MD)
@@ -89,7 +115,7 @@ nvidia/o — single-socket EPYC 9755 (empty Ubuntu → results)
   ./o status        cell / FC / disk snapshot
 
 Typical sequence (see RUNBOOK.md):
-  export GH_TOKEN=…
+  NVIDIA_PASS='…' ./o load
   ./o start && ./o hw && ./o test
   ./o clean && ./o 1k
   ./o clean && ./o 2k

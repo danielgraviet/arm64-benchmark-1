@@ -769,6 +769,15 @@ if [[ ! -e /dev/kvm ]]; then
   die "/dev/kvm missing — enable KVM before ./o start"
 fi
 
+# Prefer passphrase-decrypted drop file from: NVIDIA_PASS=… ./o load
+if [[ -z "${GH_TOKEN:-}" && -f "${ROOT}/.env.nvidia" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "${ROOT}/.env.nvidia"
+  set +a
+  log "sourced .env.nvidia (GH_TOKEN length ${#GH_TOKEN})"
+fi
+
 apt_packages
 install_uv_and_go_rust_toolchains
 raise_nofile_and_sysctl

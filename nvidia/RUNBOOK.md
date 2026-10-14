@@ -19,18 +19,40 @@ Do not drive ladders from a laptop SSH tunnel. That measures the tunnel. Run on 
 
 ---
 
-## Path A — PAT + `git` (no `gh`)
+## Path A — passphrase pack (preferred)
 
-On GitHub (her laptop/browser): fine-grained PAT with **Contents: Read** on `rlp-bench-pin` and **Contents: Write** on `arm64-benchmark-1`.
+Ciphertext in git. Short password you tell her out of band. Same pattern as OCI Vera.
 
-On the 9755:
+**You (Mac), once:**
 
 ```bash
-# HTTPS clone; when prompted for password, paste the PAT (username = her GitHub login)
+cd arm64-benchmark-1
+export GH_TOKEN='github_pat_…'   # read rlp-bench-pin, write this repo
+NVIDIA_PASS='four short words' bash nvidia/scripts/pack_secrets.sh
+git add secrets/nvidia-zen5.enc secrets/nvidia-zen5.sha256
+git commit -m "nvidia: encrypted secret pack"
+git push
+```
+
+**Ananya (9755):**
+
+```bash
 git clone https://github.com/danielgraviet/arm64-benchmark-1.git
 cd arm64-benchmark-1/nvidia
-export GH_TOKEN='github_pat_…'   # same PAT; ./o start uses it to clone ~/rlp
+NVIDIA_PASS='four short words' ./o load   # → ../.env.nvidia (gitignored)
+./o start
+./o hw
+./o test
+```
 
+Rotate the PAT after the runs. Never commit `.env.nvidia` or `secrets/*.plain`.
+
+## Path A2 — paste PAT on the box
+
+```bash
+git clone https://github.com/danielgraviet/arm64-benchmark-1.git
+cd arm64-benchmark-1/nvidia
+export GH_TOKEN='github_pat_…'
 ./o start
 ./o hw
 ./o test

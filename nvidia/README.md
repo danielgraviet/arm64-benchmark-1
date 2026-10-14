@@ -6,8 +6,8 @@ This directory is the only place NVIDIA eng needs for the empty-Ubuntu bare-cell
 
 ```bash
 cd nvidia
-# Path A: export GH_TOKEN='…'   (PAT; gh CLI not required)
-# Path B: extract ~/rlp from tarball first, then no token needed
+# Preferred: NVIDIA_PASS='…' ./o load   (Mac packed secrets/nvidia-zen5.enc)
+# Or:        export GH_TOKEN='…'
 ./o start
 ./o hw
 ./o test
@@ -16,7 +16,7 @@ cd nvidia
 ./o clean && ./o full-ladder
 ```
 
-See [RUNBOOK.md](RUNBOOK.md) for PAT-without-`gh` and tarball/scp/Drive bring-up.
+See [RUNBOOK.md](RUNBOOK.md) for passphrase pack, PAT paste, and tarball bring-up.
 
 | Command | What it does |
 |---------|----------------|
