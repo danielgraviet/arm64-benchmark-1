@@ -22,3 +22,5 @@ Continued direction 003 on-box 2026-10-14 UTC. No new A/B trials run by this dir
 - `daniel-focus-here/vera-jsonl/vera_create_ready_1000_20261014_012722.jsonl`: wall=10.977s; ok/fail=1000/0; create p50/p95/max=6.217/10.387/10.640s.
 
 First run failed because the daemon layer was refused; its wall is not a ready result. Second run reaches ~11s wall with 1000 template hits; median remains above Sep 8. Confirmation trials pending after idle.
+
+- `daniel-focus-here/vera-jsonl/vera_create_ready_1000_20261014_012924.jsonl`: wall=11.157s; ok/fail=1000/0; create p50/p95/max=6.424/10.210/10.721s. Full ready pool, warmup probe passed, load1<=20 before fleet; END_EXIT=0.
