@@ -1,0 +1,21 @@
+docs/benchmark-methodology.md
+  s_5fa36428907df3::t_cacf995ddfa468 49-66
+harness/rlp_client_tuning.py
+  s_5fa36428907df3::t_b8fa4ea13167fc 62-69,81
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3f20b8522dbe7af6c402f1cf3e82ca253b2a61c4",
+  "prompts": {},
+  "sessions": {
+    "s_5fa36428907df3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fa3c61e74ffeDTVau8vzjc33Tp",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Vedran Jukic <vedran.jukic@gmail.com>"
+    }
+  }
+}
