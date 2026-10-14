@@ -37,8 +37,14 @@ for b in rlp-runner rlp-proxy firecracker; do chk bin_$b INFO "sha=$(sha256sum /
 chk bin_rlp-api INFO "sha=$(sha256sum $(readlink -f /proc/$(pgrep -nx rlp-api)/exe) 2>/dev/null | cut -c1-12) path=$(readlink -f /proc/$(pgrep -nx rlp-api)/exe)"
 chk build INFO "$(cat /etc/rlp/BUILD 2>/dev/null)"
 chk slice_cpus INFO "rlp.slice=$(cat /sys/fs/cgroup/rlp.slice/cpuset.cpus.effective 2>/dev/null) runner=$(awk '/Cpus_allowed_list/{print $2}' /proc/$(pgrep -nx rlp-runner)/status 2>/dev/null) api=$(awk '/Cpus_allowed_list/{print $2}' /proc/$(pgrep -nx rlp-api)/status 2>/dev/null)"
-chk runner_env INFO "$(tr '\0' '\n' </proc/$(pgrep -nx rlp-runner)/environ 2>/dev/null | grep -E '^RLP_(VM_CONCURRENCY|NETNS_POOL|MAX_LIVE_VMS|SNAPSHOTS|TEMPLATE_BUILD_AFTER|QUIET_PROGRESS|RESERVE_PCT)=' | tr '\n' ' ')"
-chk api_env INFO "$(tr '\0' '\n' </proc/$(pgrep -nx rlp-api)/environ 2>/dev/null | grep -E '^RLP_(EVENT_AUDIT|MIN_CPU|MIN_MEM_MIB|MIN_SCRATCH_MIB|BURST_MAX_CPU|BURST_MAX_MEM_MIB)=' | tr '\n' ' ')"
+chk runner_env INFO "$(tr '\0' '\n' </proc/$(pgrep -nx rlp-runner)/environ 2>/dev/null | grep -E '^RLP_(VM_CONCURRENCY|NETNS_POOL|MAX_LIVE_VMS|SNAPSHOTS|TEMPLATE_BUILD_AFTER|QUIET_PROGRESS|RESERVE_PCT|FC_SOCK_WAIT_MS|INITDISK_MODE|CGROUP_POOL|NEIGH_PERMANENT)=' | tr '\n' ' ')"
+# Create-path fixes (daytona/rlp#3260 #3261 #3265 #3269): patched builds only. ON/OFF changes 1k-burst startup ~30-45%,
+# so every result must say which. Read from the live processes, not the env files.
+_re() { tr '\0' '\n' </proc/$(pgrep -nx $1)/environ 2>/dev/null | grep -oP "^$2=\K.*"; }
+_fx="initdisk=$(_re rlp-runner RLP_INITDISK_MODE) cgroup_pool=$(_re rlp-runner RLP_CGROUP_POOL) neigh=$(_re rlp-runner RLP_NEIGH_PERMANENT) backlog=$(ss -ltn 'sport = :8088' 2>/dev/null | awk 'NR==2{print $2+$3}')"
+case "$_fx" in *initdisk=nofsync*cgroup_pool=[1-9]*neigh=1*backlog=4096*) _st=ON ;; *initdisk=\ cgroup_pool=\ neigh=\ *) _st=OFF ;; *) _st=PARTIAL ;; esac
+chk create_path_fixes INFO "$_st ($_fx)"
+chk api_env INFO "$(tr '\0' '\n' </proc/$(pgrep -nx rlp-api)/environ 2>/dev/null | grep -E '^RLP_(EVENT_AUDIT|MIN_CPU|MIN_MEM_MIB|MIN_SCRATCH_MIB|BURST_MAX_CPU|BURST_MAX_MEM_MIB|API_LISTEN_BACKLOG)=' | tr '\n' ' ')"
 chk disk INFO "$(df -h --output=source,size,avail /mnt/data | tail -1)"
 echo "PREFLIGHT $([ $fail = 0 ] && echo PASS || echo FAIL) -> $F" | tee -a $F
 exit $fail
