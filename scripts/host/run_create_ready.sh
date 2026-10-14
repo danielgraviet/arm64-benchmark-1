@@ -101,7 +101,7 @@ else
   DISK_GB="${DISK_GB:-1.0}"
 fi
 
-if [[ "${TARGET}" == "vera" && -f /etc/rlp/api.env ]]; then
+if [[ "${TARGET}" == "vera" && -n "${OCI_VERA:-}" && -f /etc/rlp/api.env ]]; then
   if ! sudo -n grep -q '^RLP_MIN_SCRATCH_MIB=16$' /etc/rlp/api.env 2>/dev/null; then
     echo "lowering RLP_MIN_SCRATCH_MIB to 16 so the API does not clamp disks back to 1 GiB"
     sudo -n sed -i '/^RLP_MIN_SCRATCH_MIB=/d' /etc/rlp/api.env
@@ -212,11 +212,32 @@ EOF
   # 54 started-updates per second. Skip them, keep the running event, rebuild
   # the runner once.
   quiet_built=0
-  if ! grep -a -q 'RLP_QUIET_PROGRESS' /usr/local/bin/rlp-runner 2>/dev/null; then
+  if [[ "${FORCE_RUNNER_REBUILD:-0}" == "1" ]] \
+    || ! grep -a -q 'RLP_QUIET_PROGRESS' /usr/local/bin/rlp-runner 2>/dev/null \
+    || ! grep -a -q 'RLP_PRIV_EXEC_CONCURRENCY' /usr/local/bin/rlp-runner 2>/dev/null; then
     echo "patching the runner to emit only the started event"
     python3 - <<'PY'
 from pathlib import Path
-p = Path.home() / "rlp/runner/internal/runner/vm.go"
+import os
+root = Path(os.environ.get("RLP_RUNNER_SOURCE", str(Path.home() / "rlp")))
+p = root / "runner/internal/runner/vm.go"
+if (p.parent / "classes.go").exists():
+    # Current runners centralize create progress in classes.go. Preserve
+    # retry errors and terminal events while suppressing plain progress.
+    p = p.parent / "runner.go"
+    text = p.read_text()
+    if "RLP_QUIET_PROGRESS" not in text:
+        signature = "func (r *Runner) emitVm(ctx context.Context, vs contract.VmState) {"
+        assert signature in text
+        text = text.replace(signature, signature + '''
+    if envIsSet("RLP_QUIET_PROGRESS") && vs.Error == "" &&
+        (vs.Status == contract.VmAssigned || vs.Status == contract.VmBuilding || vs.Status == contract.VmBooting) {
+        return
+    }
+''', 1)
+        p.write_text(text)
+    print("current runner has quiet progress and native privexec limiter")
+    raise SystemExit(0)
 text = p.read_text()
 if "RLP_QUIET_PROGRESS" not in text:
     pairs = [
@@ -251,10 +272,44 @@ if "RLP_QUIET_PROGRESS" not in text:
         text = text.replace(old, new, 1)
     p.write_text(text)
 print("runner source has RLP_QUIET_PROGRESS")
+# Preserve the privileged-exec limiter when rebuilding the pinned eng source.
+network = p.parent.parent / "vm/network.go"
+src = network.read_text()
+if "acquirePrivExec()" not in src:
+    for signature in [
+        "func run(name string, args ...string) error {",
+        "func runStdin(name string, args ...string) error {",
+        "func runNsNft(ns, script string) error {",
+    ]:
+        if signature not in src:
+            raise SystemExit(f"missing privileged helper: {signature}")
+        src = src.replace(signature, signature + "\n\trelease := acquirePrivExec()\n\tdefer release()", 1)
+    network.write_text(src)
+    (network.parent / "priv_exec_limit.go").write_text('''package vm
+
+import (
+    "os"
+    "strconv"
+)
+
+var privExecSlots = make(chan struct{}, privExecLimit())
+
+func privExecLimit() int {
+    n, err := strconv.Atoi(os.Getenv("RLP_PRIV_EXEC_CONCURRENCY"))
+    if err != nil || n < 1 { return 16 }
+    return n
+}
+
+func acquirePrivExec() func() {
+    privExecSlots <- struct{}{}
+    return func() { <-privExecSlots }
+}
+''')
+print("runner source has RLP_PRIV_EXEC_CONCURRENCY")
 PY
     echo "building rlp-runner"
     (
-      cd "${HOME}/rlp/runner"
+      cd "${RLP_RUNNER_SOURCE:-${HOME}/rlp}/runner"
       export PATH="/usr/local/go/bin:${PATH}"
       if [[ ! -x /usr/local/go/bin/go ]]; then
         echo "go is not at /usr/local/go/bin/go" >&2
@@ -318,7 +373,9 @@ print(found)
   fc_n="$(pgrep -c firecracker 2>/dev/null || true)"
   fc_n="${fc_n:-0}"
   avail_kb="$(awk '/MemAvailable:/ {print $2}' /proc/meminfo)"
-  if [[ "${fstype}" == "tmpfs" ]]; then
+  if [[ -z "${OCI_VERA:-}" ]]; then
+    echo "HQ Vera: keeping configured scratch storage (disk_gb=${DISK_GB})"
+  elif [[ "${fstype}" == "tmpfs" ]]; then
     echo "scratch fstype=tmpfs"
   elif [[ "${fc_n}" != "0" ]]; then
     echo "firecracker still running (${fc_n}). scratch stays on disk."
@@ -332,22 +389,32 @@ print(found)
   runner_env="$(sudo -n cat "/proc/$(pgrep -nx rlp-runner)/environ" 2>/dev/null | tr '\0' '\n' || true)"
   if [[ "${scratch_moved}" == "1" || "${jobs_moved}" == "1" || "${quiet_built}" == "1" ]] \
     || ! printf '%s\n' "${runner_env}" | grep -qx 'RLP_SNAPSHOTS=1' \
-    || ! printf '%s\n' "${runner_env}" | grep -qx 'RLP_VM_CONCURRENCY=256' \
+    || ! printf '%s\n' "${runner_env}" | grep -Eq '^RLP_VM_CONCURRENCY=(256|512)$' \
     || ! printf '%s\n' "${runner_env}" | grep -qx 'RLP_TEMPLATE_BUILD_AFTER=1' \
     || ! printf '%s\n' "${runner_env}" | grep -qx 'RLP_QUIET_PROGRESS=1'; then
     echo "restarting runner so the first sandbox builds a snapshot template"
     sudo -n systemctl daemon-reload
     sudo -n systemctl restart rlp-runner
+  fi
     echo "waiting for netns pool"
-    for _ in $(seq 1 40); do
-      ready_ns="$(sudo -n ip netns list 2>/dev/null | grep -c '^rlpns' || true)"
+    runner_started="$(systemctl show rlp-runner -p ActiveEnterTimestamp --value)"
+    pool_ready=0
+    for _ in $(seq 1 600); do
+      # Namespace count includes entries still being provisioned. Use the
+      # runner's ready gauge, and wait for the full pool before measuring.
+      ready_ns="$(sudo -n journalctl -u rlp-runner _COMM=rlp-runner --since "${runner_started}" -n 20 --no-pager -o cat | sed -n 's/.*netns pool gauge.* ready=\([0-9]*\).*/\1/p' | tail -n1)"
+      ready_ns="${ready_ns:-0}"
       echo "netns ready=${ready_ns}"
-      if [[ "${ready_ns}" -ge 2000 ]]; then
+      if [[ "${ready_ns}" -ge 2100 ]]; then
+        pool_ready=1
         break
       fi
       sleep 3
     done
-  fi
+    if [[ "${pool_ready}" != "1" ]]; then
+      echo "netns pool did not become ready; refusing a hot-box measurement" >&2
+      exit 1
+    fi
   # GET /vms returns every historical row. 8112 deleted sandboxes is about
   # 82 pages before the fleet starts. Drop those rows. Live rows stay.
   # Each POST /vms commits one Postgres transaction. On this root disk that
@@ -389,6 +456,17 @@ fi
       --disk "${DISK_GB}" \
       --probe "echo ready" \
       --output "/tmp/vera-template-warmup.jsonl" | tee "${warm_log}" || true
+    if ! python3 - /tmp/vera-template-warmup.jsonl <<'PY'
+import json, sys
+rows = [json.loads(line) for line in open(sys.argv[1])]
+summary = next(row for row in rows if row.get("type") == "summary")
+raise SystemExit(0 if summary.get("ok") == 1 and summary.get("failed") == 0 else 1)
+PY
+    then
+      echo "warmup probe failed; refusing the 1k measurement" >&2
+      UV_NO_SYNC=1 uv run python scripts/phoenix_rlp_cleanup_sandboxes.py --target "${TARGET}" || true
+      exit 1
+    fi
     # 0.3s is a cold boot of one sandbox. template=hit in the journal is the
     # only proof the snapshot already existed. Otherwise wait for the build
     # that miss just started.
@@ -422,6 +500,28 @@ fi
     fi
     echo "template_ready=${ready}"
     UV_NO_SYNC=1 uv run python scripts/phoenix_rlp_cleanup_sandboxes.py --target "${TARGET}" || true
+    if [[ "${ready}" != "1" ]]; then
+      echo "template warmup failed; refusing a cold or unavailable-runner measurement" >&2
+      exit 1
+    fi
+  fi
+  if [[ "${TARGET}" == "vera" ]]; then
+    echo "waiting for idle host before the fleet"
+    idle=0
+    for _ in $(seq 1 180); do
+      load1="$(cut -d' ' -f1 /proc/loadavg)"
+      fc_n="$(pgrep -c firecracker 2>/dev/null || true)"
+      echo "idle load1=${load1} FC=${fc_n:-0}"
+      if [[ "${fc_n:-0}" == "0" ]] && awk -v v="${load1}" 'BEGIN { exit !(v <= 20) }'; then
+        idle=1
+        break
+      fi
+      sleep 10
+    done
+    if [[ "${idle}" != "1" ]]; then
+      echo "host did not become idle; refusing fleet measurement" >&2
+      exit 1
+    fi
   fi
   set +e
   fleet_since="$(date -u '+%Y-%m-%d %H:%M:%S')"
