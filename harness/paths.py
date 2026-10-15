@@ -63,6 +63,9 @@ def result_series_name(
             base = "rlp-redswitches-9755"
         elif target == "epyc9575":
             base = "rlp-redswitches-9575"
+        elif target == "phoenix-e6":
+            # OCI Phoenix E6 / EPYC 9J45 on-box cell (socket-0 focus pack).
+            base = "rlp-phoenix-e6"
         elif target == "digitalocean":
             base = "rlp-digitalocean"
         elif target and target in ARM64_TARGETS:

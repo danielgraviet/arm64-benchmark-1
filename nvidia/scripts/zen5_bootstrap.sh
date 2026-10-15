@@ -745,10 +745,11 @@ tune_create() {
 print_next() {
   cat <<EOF
 
-[zen5] bootstrap finished.
+[zen5] bootstrap finished (REGION_ID=${REGION_ID}).
 
 Next (from nvidia/):
   ./o hw
+$([[ "${REGION_ID}" == "phoenix-e6" ]] && echo "  ./o pin")
   ./o test
   ./o clean && ./o 1k
   ./o clean && ./o 2k

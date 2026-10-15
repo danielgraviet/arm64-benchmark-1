@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Capture as much Zen5 host / chip inventory as practical.
-# Writes JSON + Markdown under daniel-focus-here/zen5-9755-jsonl/ and nvidia/results/.
+# Writes JSON + Markdown under OUT_DIR and nvidia/results/.
 #
 # Usage:  cd nvidia && ./o hw
 set -euo pipefail
@@ -9,6 +9,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NVIDIA_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 ROOT="$(cd "${NVIDIA_DIR}/.." && pwd)"
 cd "${ROOT}"
+
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/profile.sh"
+_zen5_apply_profile
 
 export PATH="${HOME}/.local/bin:/usr/local/bin:${PATH}"
 
@@ -170,7 +174,24 @@ doc = {
     "rlp_cell": {
         "units": read("rlp_units"),
         "health": read("rlp_health"),
-        "region_target": "epyc9755",
+        "region_target": os.environ.get("TARGET", "epyc9755"),
+    },
+    "socket_pin": {
+        "slice_cpus": Path("/sys/fs/cgroup/rlp.slice/cpuset.cpus").read_text().strip()
+        if Path("/sys/fs/cgroup/rlp.slice/cpuset.cpus").exists()
+        else None,
+        "slice_mems": Path("/sys/fs/cgroup/rlp.slice/cpuset.mems").read_text().strip()
+        if Path("/sys/fs/cgroup/rlp.slice/cpuset.mems").exists()
+        else None,
+        "vms_cpus": Path("/sys/fs/cgroup/rlp.slice/vms/cpuset.cpus").read_text().strip()
+        if Path("/sys/fs/cgroup/rlp.slice/vms/cpuset.cpus").exists()
+        else None,
+        "vms_mems": Path("/sys/fs/cgroup/rlp.slice/vms/cpuset.mems").read_text().strip()
+        if Path("/sys/fs/cgroup/rlp.slice/vms/cpuset.mems").exists()
+        else None,
+        "node0_cpulist": Path("/sys/devices/system/node/node0/cpulist").read_text().strip()
+        if Path("/sys/devices/system/node/node0/cpulist").exists()
+        else None,
     },
     "raw_sections": {p.stem: p.read_text(errors="replace")[:50000] for p in sorted(raw.glob("*.txt"))},
 }
