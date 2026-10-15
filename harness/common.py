@@ -3,11 +3,35 @@
 from __future__ import annotations
 
 import json
+import signal
 import time
 from collections.abc import Callable, Iterator
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Self, TextIO
+
+def install_teardown_signal_handlers() -> None:
+    """Make SIGTERM/SIGHUP unwind the stack instead of killing the process.
+
+    Python's default SIGTERM disposition terminates immediately, so ``finally``
+    blocks never run. A suite wrapped in ``timeout 7200`` therefore leaked its
+    entire fleet when the deadline fired: hundreds of sandboxes stayed resident
+    with nothing left to issue deletes, which repeatedly drove benchmark hosts
+    into unreachability. Converting the signal to KeyboardInterrupt lets the
+    teardown ``finally`` run.
+
+    Idempotent, and a no-op off the main thread (``signal.signal`` raises there).
+    """
+
+    def _raise(signum: int, _frame: Any) -> None:
+        raise KeyboardInterrupt(f"terminated by signal {signum}")
+
+    for sig in (signal.SIGTERM, signal.SIGHUP):
+        try:
+            signal.signal(sig, _raise)
+        except (ValueError, OSError):  # not main thread / unsupported platform
+            pass
+
 
 # One concurrent worker → one or more episode records (sandbox reuse).
 RunWorker = Callable[[int, int], list[dict[str, Any]]]
@@ -175,6 +199,7 @@ def run_hold_suite(
     ``throughput_including_create`` keeps the product number that includes
     sandbox boot. Create/delete churn is isolated from episode ``duration_ms``.
     """
+    install_teardown_signal_handlers()
     episodes = int(getattr(runner, "_episodes_per_sandbox", 1))
     if episodes < 1:
         raise ValueError("episodes_per_sandbox must be >= 1")
@@ -220,36 +245,47 @@ def run_hold_suite(
             create_wall_s = time.monotonic() - create_start
 
             exec_start = time.monotonic()
-            if fleet:
-                with ThreadPoolExecutor(max_workers=len(fleet)) as pool:
-                    futures = [
-                        pool.submit(
-                            runner.exec_on_sandbox,
-                            sandbox,
-                            n,
-                            seed,
-                            episodes,
-                            cold_first=False,
-                        )
-                        for sandbox in fleet
-                    ]
-                    for future in as_completed(futures):
-                        for record in future.result():
-                            records.append(_write(writer, level, record))
-            exec_wall_s = time.monotonic() - exec_start
-
-            delete_start = time.monotonic()
-            if fleet:
-                with ThreadPoolExecutor(max_workers=len(fleet)) as pool:
-                    futs = [
-                        pool.submit(runner.delete_sandbox, sandbox) for sandbox in fleet
-                    ]
-                    for fut in as_completed(futs):
-                        try:
-                            fut.result()
-                        except Exception:  # noqa: BLE001, S110
-                            pass
-            delete_wall_s = time.monotonic() - delete_start
+            exec_wall_s = 0.0
+            delete_wall_s = 0.0
+            try:
+                if fleet:
+                    with ThreadPoolExecutor(max_workers=len(fleet)) as pool:
+                        futures = [
+                            pool.submit(
+                                runner.exec_on_sandbox,
+                                sandbox,
+                                n,
+                                seed,
+                                episodes,
+                                cold_first=False,
+                            )
+                            for sandbox in fleet
+                        ]
+                        for future in as_completed(futures):
+                            for record in future.result():
+                                records.append(_write(writer, level, record))
+                exec_wall_s = time.monotonic() - exec_start
+            finally:
+                # ALWAYS tear the fleet down — including on KeyboardInterrupt,
+                # SIGTERM (see install_teardown_signal_handlers) or any exec
+                # error. Without this the fleet outlives the run and nothing
+                # else deletes it: the API reaper only cancels unplaced creates,
+                # and a runner keeps a booted sandbox until told otherwise.
+                if exec_wall_s == 0.0:
+                    exec_wall_s = time.monotonic() - exec_start
+                delete_start = time.monotonic()
+                if fleet:
+                    with ThreadPoolExecutor(max_workers=len(fleet)) as pool:
+                        futs = [
+                            pool.submit(runner.delete_sandbox, sandbox)
+                            for sandbox in fleet
+                        ]
+                        for fut in as_completed(futs):
+                            try:
+                                fut.result()
+                            except Exception:  # noqa: BLE001, S110
+                                pass
+                delete_wall_s = time.monotonic() - delete_start
 
             summary = summarize(
                 records, exec_wall_s, max_distinct_checksums=max_checksums
