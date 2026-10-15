@@ -1,0 +1,29 @@
+tests/test_hold_suite_teardown.py
+  s_5fa36428907df3::t_bec0117dbb3f06 1-93
+harness/common.py
+  s_c24e898b263207::t_80a1457a2c1846 6,13-35,202,248-288
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1b9f9fb969f99cfdf85d8c3979844428ed2cd57b",
+  "prompts": {},
+  "sessions": {
+    "s_5fa36428907df3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fa3c61e74ffeDTVau8vzjc33Tp",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Vedran Jukic <vedran.jukic@gmail.com>"
+    },
+    "s_c24e898b263207": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec547b1e1ffehWcdUVTM4CafxF",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Vedran Jukic <vedran.jukic@gmail.com>"
+    }
+  }
+}
