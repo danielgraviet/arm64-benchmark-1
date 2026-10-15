@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Drain all sandboxes on the Zen5 cell, then ensure no Firecracker orphans.
+# Drain all sandboxes on the epyc9755 cell, then ensure no Firecracker orphans.
 # Prefer API DELETE. Only pkill firecracker when API reports live=0 but FC>0.
 #
 # Usage:  cd nvidia && ./o clean
@@ -9,10 +9,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NVIDIA_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 ROOT="$(cd "${NVIDIA_DIR}/.." && pwd)"
 cd "${ROOT}"
-
-# shellcheck disable=SC1091
-source "${SCRIPT_DIR}/profile.sh"
-_zen5_apply_profile
 
 export PATH="${HOME}/.local/bin:/usr/local/bin:${PATH}"
 export UV_NO_SYNC=1
@@ -55,7 +51,7 @@ deadline=$((SECONDS + WAIT_SECS))
 live=-1
 while (( SECONDS < deadline )); do
   live="$(
-    UV_NO_SYNC=1 TARGET="${TARGET}" uv run python - <<'PY' 2>/dev/null || echo -1
+    UV_NO_SYNC=1 uv run python - <<'PY' 2>/dev/null || echo -1
 import os, sys
 from pathlib import Path
 sys.path.insert(0, str(Path.cwd()))
@@ -65,7 +61,7 @@ from harness.regions import resolve_rlp_client_config
 from rlp import Daytona
 from urllib.parse import quote
 
-cfg = resolve_rlp_client_config(os.environ.get("TARGET", "epyc9755"))
+cfg = resolve_rlp_client_config("epyc9755")
 d = Daytona(cfg)
 api = d._api
 live = 0

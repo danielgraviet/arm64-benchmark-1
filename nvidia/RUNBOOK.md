@@ -232,26 +232,6 @@ git push
 
 ---
 
-## Phoenix E6 / EPYC 9J45 (`phoenix-e6`)
-
-Dual-socket OCI cell already brought up by eng (region `phoenix-e6`, cpu type `turin-9j45`). Full ticket: [`tickets/phoenix-e6-9j45-runbook.md`](../tickets/phoenix-e6-9j45-runbook.md).
-
-`nvidia/o` auto-detects `RLP_RUNNER_REGION=phoenix-e6` and sets `SKIP_CELL=1` so `./o start` only syncs the harness + eng SDK. Do **not** reseed this box as `epyc9755`.
-
-Socket-0 pin is required (match Vera focus pack). Typical cpuset `0-95,192-287`, mems `0`:
-
-```bash
-cd ~/arm64-benchmark-1/nvidia
-./o start && ./o hw && ./o pin && ./o test
-./o clean && ./o 1k
-./o clean && ./o 2k
-./o clean && ./o full-ladder
-```
-
-Results land under `daniel-focus-here/zen5-9j45-jsonl/` and `data/agent/rlp-phoenix-e6-c0p025-max1/`. Create + dense scrape `wall_share`; meta records `socket_pin`.
-
----
-
 ## Troubleshooting
 
 | Symptom | Fix |

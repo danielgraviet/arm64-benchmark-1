@@ -39,7 +39,7 @@ sync_tree() {
     "${ROOT_LOCAL}/" "${USER}@${HOST}:~/arm64-benchmark-1/"
   "${SSH[@]}" 'set -e
     if [[ -f /tmp/phoenix-e6.env ]]; then cp /tmp/phoenix-e6.env ~/arm64-benchmark-1/.env; chmod 600 ~/arm64-benchmark-1/.env; fi
-    test -x ~/arm64-benchmark-1/nvidia/o
+    test -x ~/arm64-benchmark-1/phoenix-e6/o
   '
 }
 
@@ -128,7 +128,7 @@ push_results() {
 cd ~/arm64-benchmark-1
 git config user.email >/dev/null 2>&1 || git config user.email "ubuntu@phoenix-e6"
 git config user.name >/dev/null 2>&1 || git config user.name "phoenix-e6 agent"
-git add daniel-focus-here/zen5-9j45-jsonl/ data/agent/rlp-phoenix-e6-c0p025-max1/ nvidia/results/ || true
+git add daniel-focus-here/zen5-9j45-jsonl/ data/agent/rlp-phoenix-e6-c0p025-max1/ phoenix-e6/results/ || true
 if git diff --cached --quiet; then
   echo "nothing to commit on box; scp results instead"
   exit 3
@@ -141,22 +141,22 @@ git push origin HEAD || exit 4
 main() {
   wait_ssh
   sync_tree
-  log "start (SKIP_CELL harness only)"
-  remote 'cd ~/arm64-benchmark-1/nvidia && SKIP_CELL=1 ./o start' 
+  log "start (harness only via phoenix-e6/o)"
+  remote 'cd ~/arm64-benchmark-1/phoenix-e6 && ./o start'
   log "hw"
-  remote 'cd ~/arm64-benchmark-1/nvidia && ./o hw'
+  remote 'cd ~/arm64-benchmark-1/phoenix-e6 && ./o hw'
   log "pin"
-  remote 'cd ~/arm64-benchmark-1/nvidia && ./o pin'
+  remote 'cd ~/arm64-benchmark-1/phoenix-e6 && ./o pin'
   log "test"
-  remote 'cd ~/arm64-benchmark-1/nvidia && ./o test'
+  remote 'cd ~/arm64-benchmark-1/phoenix-e6 && ./o test'
   log "1k"
-  remote 'cd ~/arm64-benchmark-1/nvidia && ./o clean && ./o 1k'
+  remote 'cd ~/arm64-benchmark-1/phoenix-e6 && ./o clean && ./o 1k'
   wait_tmux zen5-1k /tmp/phoenix-e6-create-ready-1000.log
   log "2k"
-  remote 'cd ~/arm64-benchmark-1/nvidia && ./o clean && ./o 2k'
+  remote 'cd ~/arm64-benchmark-1/phoenix-e6 && ./o clean && ./o 2k'
   wait_tmux zen5-2k /tmp/phoenix-e6-create-ready-2000.log
   log "full-ladder"
-  remote 'cd ~/arm64-benchmark-1/nvidia && ./o clean && ./o full-ladder'
+  remote 'cd ~/arm64-benchmark-1/phoenix-e6 && ./o clean && ./o full-ladder'
   wait_tmux zen5-dense2k /tmp/zen5-9j45-dense2k-n45.log
   log "metrics gate"
   metrics_gate
@@ -165,7 +165,7 @@ main() {
     log "git push on box failed; pulling results via rsync to Mac"
     mkdir -p "${ROOT_LOCAL}/daniel-focus-here/zen5-9j45-jsonl" \
       "${ROOT_LOCAL}/data/agent/rlp-phoenix-e6-c0p025-max1" \
-      "${ROOT_LOCAL}/nvidia/results"
+      "${ROOT_LOCAL}/phoenix-e6/results"
     rsync -az -e "${RSYNC_SSH}" \
       "${USER}@${HOST}:~/arm64-benchmark-1/daniel-focus-here/zen5-9j45-jsonl/" \
       "${ROOT_LOCAL}/daniel-focus-here/zen5-9j45-jsonl/"
@@ -173,8 +173,8 @@ main() {
       "${USER}@${HOST}:~/arm64-benchmark-1/data/agent/rlp-phoenix-e6-c0p025-max1/" \
       "${ROOT_LOCAL}/data/agent/rlp-phoenix-e6-c0p025-max1/"
     rsync -az -e "${RSYNC_SSH}" \
-      "${USER}@${HOST}:~/arm64-benchmark-1/nvidia/results/" \
-      "${ROOT_LOCAL}/nvidia/results/" || true
+      "${USER}@${HOST}:~/arm64-benchmark-1/phoenix-e6/results/" \
+      "${ROOT_LOCAL}/phoenix-e6/results/" || true
   fi
   log "DONE"
 }

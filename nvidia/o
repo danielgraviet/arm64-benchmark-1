@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Ultra-short typed entry for Zen5 bare cells (9755 or phoenix-e6 / 9J45).
+# Ultra-short typed entry for NVIDIA single-socket EPYC 9755.
 # Preferred (passphrase only — secrets packed on Mac):
 #   NVIDIA_PASS='…' ./o load
 #   ./o start
@@ -8,7 +8,6 @@
 #   export GH_TOKEN=…
 #   ./o start
 #
-# On phoenix-e6 (eng cell already live): ./o start forces SKIP_CELL=1.
 # Root ./o stays OCI Vera-only. Use this nvidia/o on the Zen5 box.
 set -euo pipefail
 
@@ -17,10 +16,6 @@ ROOT="$(cd "${NVIDIA_DIR}/.." && pwd)"
 SCRIPTS="${NVIDIA_DIR}/scripts"
 cd "${ROOT}"
 export PATH="${HOME}/.local/bin:/usr/local/bin:${PATH}"
-
-# shellcheck disable=SC1091
-source "${SCRIPTS}/profile.sh"
-_zen5_apply_profile
 
 cmd="${1:-help}"
 shift || true
@@ -59,41 +54,22 @@ case "${cmd}" in
     load_env_nvidia_if_present
     if [[ -z "${GH_TOKEN:-}" && -f "${ROOT}/secrets/nvidia-zen5.enc" ]]; then
       if [[ -z "${NVIDIA_PASS:-}${OCI_PASS:-}" ]]; then
-        # phoenix-e6 SKIP_CELL path often needs no GH_TOKEN (harness already present).
-        if [[ "${ZEN5_PROFILE}" != "phoenix-e6" && "${SKIP_CELL:-0}" != "1" ]]; then
-          echo "need GH_TOKEN or NVIDIA_PASS. Try: NVIDIA_PASS='…' ./o load   then   ./o start" >&2
-          exit 1
-        fi
-      else
-        # shellcheck disable=SC1091
-        source "${SCRIPTS}/load_secrets.sh"
+        echo "need GH_TOKEN or NVIDIA_PASS. Try: NVIDIA_PASS='…' ./o load   then   ./o start" >&2
+        exit 1
       fi
+      # shellcheck disable=SC1091
+      source "${SCRIPTS}/load_secrets.sh"
     fi
     if [[ -x /usr/local/bin/rlp-api && -z "${SKIP_BUILD:-}" ]]; then
       export SKIP_BUILD=1
       echo "SKIP_BUILD=1 (rlp-api already installed)"
-    fi
-    if [[ "${ZEN5_PROFILE}" == "phoenix-e6" ]]; then
-      export SKIP_CELL=1
-      echo "SKIP_CELL=1 (phoenix-e6 eng cell — do not reseed)"
     fi
     exec bash "${SCRIPTS}/zen5_bootstrap.sh" "$@"
     ;;
   k|kernel|guest)
     exec bash "${SCRIPTS}/zen5_build_guest.sh" "$@"
     ;;
-  pin)
-    if [[ "${1:-}" == "undo" ]]; then
-      exec bash "${ROOT}/tickets/9j45-pin-single-socket.sh" undo
-    fi
-    if [[ "${ZEN5_PROFILE}" != "phoenix-e6" ]]; then
-      echo "pin is for phoenix-e6 / 9J45 (detected profile=${ZEN5_PROFILE}). Use tickets/vera-pin-single-socket.sh on Vera." >&2
-      exit 1
-    fi
-    exec bash "${ROOT}/tickets/9j45-pin-single-socket.sh" "${1:-0}"
-    ;;
   test)
-    _zen5_require_pin_if_9j45
     bash "${SCRIPTS}/check_parity.sh" --strict
     exec bash "${SCRIPTS}/smoke.sh" "$@"
     ;;
@@ -104,15 +80,12 @@ case "${cmd}" in
     exec bash "${SCRIPTS}/clean_cell.sh" "$@"
     ;;
   1k|1|c1k)
-    _zen5_require_pin_if_9j45
     tmux_run zen5-1k "${SCRIPTS}/run_1k.sh"
     ;;
   2k|2|c2k)
-    _zen5_require_pin_if_9j45
     tmux_run zen5-2k "${SCRIPTS}/run_2k.sh"
     ;;
   full-ladder|ladder|dense|d)
-    _zen5_require_pin_if_9j45
     tmux_run zen5-dense2k "${SCRIPTS}/run_full_ladder.sh"
     ;;
   hw|hardware|inventory)
@@ -122,20 +95,18 @@ case "${cmd}" in
     exec bash "${ROOT}/scripts/host/status.sh" "$@"
     ;;
   smoke)
-    _zen5_require_pin_if_9j45
     exec bash "${SCRIPTS}/smoke.sh" "$@"
     ;;
   help|-h|--help|h|"")
-    cat <<EOF
-nvidia/o — Zen5 cell operator (profile=${ZEN5_PROFILE} target=${TARGET})
+    cat <<'EOF'
+nvidia/o — single-socket EPYC 9755 (empty Ubuntu → results)
 
   ./o pack          Mac: encrypt GH_TOKEN → secrets/nvidia-zen5.enc
-  ./o load          decrypt with NVIDIA_PASS → .env.nvidia
-  ./o start         boot cell + harness (phoenix-e6: SKIP_CELL harness only)
+  ./o load          9755: decrypt with NVIDIA_PASS → .env.nvidia
+  ./o start         boot cell + harness + eng SDK + 9755 tune
   ./o k             build amd64 guest Image/vmlinux + initdisk
-  ./o pin [0|undo]  9J45: pin rlp.slice to socket 0 (or undo)
   ./o hw            capture chip/server inventory (JSON+MD)
-  ./o check         Vera-closeness parity gate
+  ./o check         Vera-closeness parity gate (epyc9755)
   ./o test          parity --strict + one-sandbox smoke
   ./o clean         drain sandboxes; fail if FC orphans remain
   ./o 1k            create-ready 1000 (tmux zen5-1k)
@@ -143,8 +114,9 @@ nvidia/o — Zen5 cell operator (profile=${ZEN5_PROFILE} target=${TARGET})
   ./o full-ladder   dense agent ladder 44→2000 n=45 (tmux zen5-dense2k)
   ./o status        cell / FC / disk snapshot
 
-Typical phoenix-e6 sequence:
-  ./o start && ./o hw && ./o pin && ./o test
+Typical sequence (see RUNBOOK.md):
+  NVIDIA_PASS='…' ./o load
+  ./o start && ./o hw && ./o test
   ./o clean && ./o 1k
   ./o clean && ./o 2k
   ./o clean && ./o full-ladder

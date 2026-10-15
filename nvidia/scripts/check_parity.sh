@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Pass/fail audit for Zen5 create-ready + dense parity knobs.
-# Vera-closeness gate (epyc9755 or phoenix-e6, amd64 guest). Separate from
+# Pass/fail audit for single-socket EPYC 9755 create-ready + dense parity knobs.
+# Vera-closeness gate (region=epyc9755, amd64 guest). Separate from
 # scripts/host/check_vera_parity.sh.
 #
 # Usage:
@@ -12,10 +12,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NVIDIA_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 ROOT="$(cd "${NVIDIA_DIR}/.." && pwd)"
 cd "${ROOT}"
-
-# shellcheck disable=SC1091
-source "${SCRIPT_DIR}/profile.sh"
-_zen5_apply_profile
 
 STRICT=0
 if [[ "${1:-}" == "--strict" ]]; then
@@ -76,7 +72,7 @@ env_file_int_ge() {
   (( val >= min ))
 }
 
-echo "=== Zen5 ${TARGET} parity check (cwd=${ROOT} profile=${ZEN5_PROFILE}) ==="
+echo "=== Zen5 epyc9755 parity check (cwd=${ROOT}) ==="
 
 if [[ "$(uname -m)" == "x86_64" ]]; then
   ok "host arch x86_64"
@@ -175,40 +171,16 @@ else
   bad "runner.env RLP_NETNS_POOL must be >= 2100"
 fi
 
-if [[ -f "${RUN_ENV}" ]] && grep -qE "^RLP_RUNNER_REGION=${TARGET}$" "${RUN_ENV}"; then
-  ok "runner.env RLP_RUNNER_REGION=${TARGET}"
+if [[ -f "${RUN_ENV}" ]] && grep -qE '^RLP_RUNNER_REGION=epyc9755$' "${RUN_ENV}"; then
+  ok "runner.env RLP_RUNNER_REGION=epyc9755"
 else
-  bad "runner.env RLP_RUNNER_REGION must be ${TARGET}"
-fi
-
-if [[ "${ZEN5_PROFILE}" == "phoenix-e6" ]]; then
-  if [[ -f "${RUN_ENV}" ]] && grep -qE '^RLP_RUNNER_CPU_TYPE=turin-9j45$' "${RUN_ENV}"; then
-    ok "runner.env RLP_RUNNER_CPU_TYPE=turin-9j45"
-  else
-    bad "runner.env RLP_RUNNER_CPU_TYPE must be turin-9j45 on phoenix-e6"
-  fi
+  bad "runner.env RLP_RUNNER_REGION must be epyc9755"
 fi
 
 if [[ -f "${RUN_ENV}" ]] && grep -qE '^RLP_GUEST_ARCH=amd64$' "${RUN_ENV}"; then
   ok "runner.env RLP_GUEST_ARCH=amd64"
 else
   bad "runner.env RLP_GUEST_ARCH must be amd64"
-fi
-
-if [[ "${ZEN5_PROFILE}" == "phoenix-e6" ]]; then
-  want_cpus="$(tr -d '[:space:]' </sys/devices/system/node/node0/cpulist 2>/dev/null || true)"
-  want_cpus="${want_cpus:-0-95,192-287}"
-  cur_cpus="$(tr -d '[:space:]' </sys/fs/cgroup/rlp.slice/cpuset.cpus 2>/dev/null || true)"
-  cur_mems="$(tr -d '[:space:]' </sys/fs/cgroup/rlp.slice/cpuset.mems 2>/dev/null || true)"
-  if [[ -z "${cur_cpus}" ]]; then
-    cur_cpus="$(sudo -n cat /sys/fs/cgroup/rlp.slice/cpuset.cpus 2>/dev/null | tr -d '[:space:]' || true)"
-    cur_mems="$(sudo -n cat /sys/fs/cgroup/rlp.slice/cpuset.mems 2>/dev/null | tr -d '[:space:]' || true)"
-  fi
-  if [[ "${cur_cpus}" == "${want_cpus}" && "${cur_mems}" == "0" ]]; then
-    ok "rlp.slice pinned to socket 0 (${cur_cpus} mems=${cur_mems})"
-  else
-    bad "rlp.slice not pinned to socket 0 (cpus=${cur_cpus:-unset} mems=${cur_mems:-unset}; want ${want_cpus}/0). Run: ./o pin"
-  fi
 fi
 
 if [[ -f "${RUN_ENV}" ]]; then
@@ -280,10 +252,10 @@ fi
 
 if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx rlp-postgres; then
   if docker exec rlp-postgres psql -U rlp -d rlplatform -tAc \
-    "SELECT 1 FROM regions WHERE id='${TARGET}' AND status='active'" 2>/dev/null | grep -q 1; then
-    ok "postgres regions.id=${TARGET} active"
+    "SELECT 1 FROM regions WHERE id='epyc9755' AND status='active'" 2>/dev/null | grep -q 1; then
+    ok "postgres regions.id=epyc9755 active"
   else
-    bad "postgres missing active regions.id=${TARGET}"
+    bad "postgres missing active regions.id=epyc9755"
   fi
 else
   warn "rlp-postgres container not found; skip region row check"
