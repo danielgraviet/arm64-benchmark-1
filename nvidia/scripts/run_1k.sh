@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Create-ready 1000 on epyc9755 with pre/post clean gate.
+# Prefer: cd nvidia && ./o 1k  (starts tmux)
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+NVIDIA_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+ROOT="$(cd "${NVIDIA_DIR}/.." && pwd)"
+cd "${ROOT}"
+
+export PATH="${HOME}/.local/bin:/usr/local/bin:${PATH}"
+export UV_NO_SYNC=1
+export TARGET=epyc9755
+
+bash "${SCRIPT_DIR}/clean_cell.sh"
+TARGET=epyc9755 bash "${ROOT}/scripts/host/run_create_ready.sh" 1000
+status=$?
+bash "${SCRIPT_DIR}/clean_cell.sh" || true
+exit "${status}"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import signal
 import time
 from collections.abc import Callable, Iterator
@@ -37,6 +38,22 @@ def install_teardown_signal_handlers() -> None:
 RunWorker = Callable[[int, int], list[dict[str, Any]]]
 # Back-compat alias for single-shot runners.
 RunOne = Callable[[int, int], dict[str, Any]]
+
+# Hold-then-exec create waves. Keep at or below cell RLP_VM_CONCURRENCY so the
+# create queue stays drainable inside the hard 60s pickup cap. Override with
+# RLP_HOLD_CREATE_BATCH.
+_DEFAULT_HOLD_CREATE_BATCH = 512
+
+
+def hold_create_batch_size() -> int:
+    raw = (os.environ.get("RLP_HOLD_CREATE_BATCH") or "").strip()
+    if not raw:
+        return _DEFAULT_HOLD_CREATE_BATCH
+    try:
+        n = int(raw)
+    except ValueError:
+        return _DEFAULT_HOLD_CREATE_BATCH
+    return max(1, n)
 
 
 class JsonlWriter:
@@ -211,38 +228,87 @@ def run_hold_suite(
         writer.write({"type": "run", "concurrency": level, **record})
         return record
 
+    create_batch = hold_create_batch_size()
+    drain_orphans = getattr(runner, "drain_orphans", None)
+
+    def _drain(keep: set[str], *, label: str) -> None:
+        if not callable(drain_orphans):
+            return
+        try:
+            removed = int(drain_orphans(keep_ids=frozenset(keep)) or 0)
+        except Exception as exc:  # noqa: BLE001
+            print(f"hold drain ({label}): error {exc!r}", flush=True)
+            return
+        if removed:
+            print(f"hold drain ({label}): removed {removed} orphan VMs", flush=True)
+
     with JsonlWriter(output) as writer:
         if meta:
-            writer.write({"type": "meta", **meta})
+            writer.write(
+                {
+                    "type": "meta",
+                    **meta,
+                    "hold_create_batch": create_batch,
+                }
+            )
         for level in levels:
+            _drain(set(), label=f"pre-c={level}")
             create_start = time.monotonic()
             fleet: list[Any] = []
             records: list[dict[str, Any]] = []
-            with ThreadPoolExecutor(max_workers=level) as pool:
-                futures = [pool.submit(runner.create_sandbox) for _ in range(level)]
-                for future in as_completed(futures):
-                    try:
-                        fleet.append(future.result())
-                    except Exception as exc:  # noqa: BLE001
-                        records.append(
-                            _write(
-                                writer,
-                                level,
-                                {
-                                    "latency_ms": (time.monotonic() - create_start)
-                                    * 1000,
-                                    "exit_code": -1,
-                                    "error": f"{type(exc).__name__}: {exc}",
-                                    "target": target,
-                                    "arch": getattr(runner, "_arch", "unspecified"),
-                                    "benchmark": spec_id,
-                                    "episode_idx": 0,
-                                    "cold": True,
-                                    "fleet_hold": True,
-                                },
+            # Wave creates so the cell queue stays within the hard 60s pickup
+            # cap (RLP_VM_CONCURRENCY is often ~192; blasting 2k at once tails out).
+            remaining = level
+            wave = 0
+            while remaining > 0:
+                batch = min(create_batch, remaining)
+                wave += 1
+                print(
+                    f"hold create: c={level} wave={wave} batch={batch} "
+                    f"remaining_after={remaining - batch}",
+                    flush=True,
+                )
+                with ThreadPoolExecutor(max_workers=batch) as pool:
+                    futures = [
+                        pool.submit(runner.create_sandbox) for _ in range(batch)
+                    ]
+                    for future in as_completed(futures):
+                        try:
+                            fleet.append(future.result())
+                        except Exception as exc:  # noqa: BLE001
+                            records.append(
+                                _write(
+                                    writer,
+                                    level,
+                                    {
+                                        "latency_ms": (
+                                            time.monotonic() - create_start
+                                        )
+                                        * 1000,
+                                        "exit_code": -1,
+                                        "error": f"{type(exc).__name__}: {exc}",
+                                        "target": target,
+                                        "arch": getattr(
+                                            runner, "_arch", "unspecified"
+                                        ),
+                                        "benchmark": spec_id,
+                                        "episode_idx": 0,
+                                        "cold": True,
+                                        "fleet_hold": True,
+                                    },
+                                )
                             )
-                        )
+                remaining -= batch
             create_wall_s = time.monotonic() - create_start
+
+            keep_ids = {
+                sid
+                for sid in (getattr(s, "id", None) for s in fleet)
+                if isinstance(sid, str) and sid
+            }
+            # Failed creates never join the fleet; drop them before exec so they
+            # do not burn live-VM / capacity accounting into the next wave.
+            _drain(keep_ids, label=f"post-create-c={level}")
 
             exec_start = time.monotonic()
             exec_wall_s = 0.0
@@ -286,6 +352,7 @@ def run_hold_suite(
                             except Exception:  # noqa: BLE001, S110
                                 pass
                 delete_wall_s = time.monotonic() - delete_start
+                _drain(set(), label=f"post-delete-c={level}")
 
             summary = summarize(
                 records, exec_wall_s, max_distinct_checksums=max_checksums
@@ -293,6 +360,7 @@ def run_hold_suite(
             summary["create_wall_s"] = round(create_wall_s, 3)
             summary["exec_wall_s"] = round(exec_wall_s, 3)
             summary["delete_wall_s"] = round(delete_wall_s, 3)
+            summary["hold_create_batch"] = create_batch
             if exec_wall_s < 0.001 or not fleet:
                 summary["throughput_per_sec"] = 0.0
             include_create = create_wall_s + exec_wall_s

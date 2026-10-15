@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+# Operator CLI for OCI Phoenix E6 / EPYC 9J45 only.
+# Separate from nvidia/o (9755). Do not cross-wire the trees.
+set -euo pipefail
+
+PHOENIX_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "${PHOENIX_DIR}/.." && pwd)"
+SCRIPTS="${PHOENIX_DIR}/scripts"
+cd "${ROOT}"
+export PATH="${HOME}/.local/bin:/usr/local/bin:${PATH}"
+export TARGET=phoenix-e6
+export OUT_DIR="${OUT_DIR:-daniel-focus-here/zen5-9j45-jsonl}"
+
+cmd="${1:-help}"
+shift || true
+
+require_pin() {
+  local want_cpus want_mems cur_cpus cur_mems
+  want_cpus="$(tr -d '[:space:]' </sys/devices/system/node/node0/cpulist 2>/dev/null || true)"
+  want_cpus="${want_cpus:-0-95,192-287}"
+  want_mems="0"
+  cur_cpus="$(tr -d '[:space:]' </sys/fs/cgroup/rlp.slice/cpuset.cpus 2>/dev/null || true)"
+  cur_mems="$(tr -d '[:space:]' </sys/fs/cgroup/rlp.slice/cpuset.mems 2>/dev/null || true)"
+  if [[ -z "${cur_cpus}" ]]; then
+    cur_cpus="$(sudo -n cat /sys/fs/cgroup/rlp.slice/cpuset.cpus 2>/dev/null | tr -d '[:space:]' || true)"
+    cur_mems="$(sudo -n cat /sys/fs/cgroup/rlp.slice/cpuset.mems 2>/dev/null | tr -d '[:space:]' || true)"
+  fi
+  if [[ "${cur_cpus}" != "${want_cpus}" || "${cur_mems}" != "${want_mems}" ]]; then
+    echo "[phoenix-e6/o] pinning to socket 0 before timed run" >&2
+    bash "${ROOT}/tickets/9j45-pin-single-socket.sh" 0
+  fi
+}
+
+tmux_run() {
+  local session="$1"
+  local script="$2"
+  if tmux has-session -t "${session}" 2>/dev/null; then
+    echo "tmux session '${session}' already exists. Attach: tmux attach -t ${session}" >&2
+    exit 1
+  fi
+  tmux new-session -d -s "${session}" "bash ${script}"
+  echo "started tmux session '${session}'"
+  echo "  attach: tmux attach -t ${session}"
+  echo "  status: ${PHOENIX_DIR}/o status"
+}
+
+case "${cmd}" in
+  start|boot|bootstrap)
+    exec bash "${SCRIPTS}/start.sh" "$@"
+    ;;
+  pin)
+    if [[ "${1:-}" == "undo" ]]; then
+      exec bash "${ROOT}/tickets/9j45-pin-single-socket.sh" undo
+    fi
+    exec bash "${ROOT}/tickets/9j45-pin-single-socket.sh" "${1:-0}"
+    ;;
+  test)
+    require_pin
+    bash "${SCRIPTS}/check_parity.sh" --strict
+    exec bash "${SCRIPTS}/smoke.sh" "$@"
+    ;;
+  check|parity)
+    exec bash "${SCRIPTS}/check_parity.sh" "$@"
+    ;;
+  clean)
+    exec bash "${SCRIPTS}/clean_cell.sh" "$@"
+    ;;
+  1k|1|c1k)
+    require_pin
+    tmux_run zen5-1k "${SCRIPTS}/run_1k.sh"
+    ;;
+  2k|2|c2k)
+    require_pin
+    tmux_run zen5-2k "${SCRIPTS}/run_2k.sh"
+    ;;
+  full-ladder|ladder|dense|d)
+    require_pin
+    tmux_run zen5-dense2k "${SCRIPTS}/run_full_ladder.sh"
+    ;;
+  hw|hardware|inventory)
+    exec bash "${SCRIPTS}/capture_host_hw.sh" "$@"
+    ;;
+  status|t)
+    exec bash "${ROOT}/scripts/host/status.sh" "$@"
+    ;;
+  smoke)
+    require_pin
+    exec bash "${SCRIPTS}/smoke.sh" "$@"
+    ;;
+  help|-h|--help|h|"")
+    cat <<'EOF'
+phoenix-e6/o — OCI EPYC 9J45 (eng cell already live)
+
+  ./o start         harness + eng SDK only (never reseeds the cell)
+  ./o pin [0|undo]  pin rlp.slice to socket 0 (or undo)
+  ./o hw            chip/server inventory → zen5-9j45-jsonl/
+  ./o check         parity gate (region phoenix-e6 + socket pin)
+  ./o test          parity --strict + one-sandbox smoke
+  ./o clean         drain sandboxes; fail if FC orphans remain
+  ./o 1k            create-ready 1000 (tmux zen5-1k)
+  ./o 2k            create-ready 2000 (tmux zen5-2k)
+  ./o full-ladder   dense 44→2000 n=45 (tmux zen5-dense2k)
+  ./o status        cell / FC / disk snapshot
+
+Typical:
+  ./o start && ./o hw && ./o pin && ./o test
+  ./o clean && ./o 1k
+  ./o clean && ./o 2k
+  ./o clean && ./o full-ladder
+
+nvidia/o stays 9755-only. Do not use it here.
+EOF
+    ;;
+  *)
+    echo "unknown: ${cmd}  (./o help)" >&2
+    exit 2
+    ;;
+esac

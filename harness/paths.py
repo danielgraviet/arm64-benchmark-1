@@ -58,6 +58,14 @@ def result_series_name(
             base = "rlp-phoenix"
         elif target == "redswitches":
             base = "rlp-redswitches"
+        elif target == "epyc9755":
+            # Same cell packing series as the 9755 dense2k focus pack.
+            base = "rlp-redswitches-9755"
+        elif target == "epyc9575":
+            base = "rlp-redswitches-9575"
+        elif target == "phoenix-e6":
+            # OCI Phoenix E6 / EPYC 9J45 on-box cell (socket-0 focus pack).
+            base = "rlp-phoenix-e6"
         elif target == "digitalocean":
             base = "rlp-digitalocean"
         elif target == "phoenix-e6":

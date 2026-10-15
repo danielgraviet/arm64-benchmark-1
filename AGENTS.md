@@ -4,6 +4,8 @@ This repo is the harness. On a RedSwitches DUT or Vera HQ, Codex is the operator
 
 Vera HQ is Axis-only (`ssh.axisapps.io`). Agents on the Mac cannot usefully Remote-SSH it. See `tickets/vera-codex-host.md`. RedSwitches: `tickets/redswitches-codex-host.md`.
 
+**NVIDIA single-socket EPYC 9755 (empty Ubuntu bare cell):** start at [`nvidia/RUNBOOK.md`](nvidia/RUNBOOK.md) (`cd nvidia && ./o start`).
+
 Cwd is the clone (usually `/home/ubuntu/arm64-benchmark-1`). The RLP API and toolbox are on localhost. Never drive a ladder from a laptop SSH tunnel. That measures the tunnel.
 
 ## Before any benchmark — read `docs/benchmark-methodology.md`

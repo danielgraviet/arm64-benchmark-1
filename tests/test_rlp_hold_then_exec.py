@@ -121,6 +121,53 @@ def test_hold_then_exec_records_create_failure(tmp_path: Path) -> None:
     assert "boot failed" in fails[0]["error"]
 
 
+def test_hold_then_exec_batches_creates(tmp_path: Path, monkeypatch) -> None:
+    """Creates above RLP_HOLD_CREATE_BATCH must run in serial waves."""
+    import threading
+
+    monkeypatch.setenv("RLP_HOLD_CREATE_BATCH", "2")
+    max_inflight = 0
+    lock = threading.Lock()
+    inflight = 0
+
+    class Batched(FakeHoldRunner):
+        def create_sandbox(self) -> object:
+            nonlocal max_inflight, inflight
+            with lock:
+                inflight += 1
+                max_inflight = max(max_inflight, inflight)
+            try:
+                return super().create_sandbox()
+            finally:
+                with lock:
+                    inflight -= 1
+
+    runner = Batched()
+    out = tmp_path / "hold.jsonl"
+    run_hold_suite(levels=[5], n=64, seed=42, output=out, runner=runner)
+    assert runner.events.count("create") == 5
+    assert max_inflight <= 2
+
+
+def test_hold_then_exec_drains_orphans(tmp_path: Path) -> None:
+    calls: list[frozenset[str]] = []
+
+    class DrainRunner(FakeHoldRunner):
+        def drain_orphans(self, *, keep_ids: frozenset[str] | None = None) -> int:
+            calls.append(keep_ids or frozenset())
+            return 0
+
+    runner = DrainRunner()
+    out = tmp_path / "hold.jsonl"
+    run_hold_suite(levels=[2], n=64, seed=42, output=out, runner=runner)
+    # pre, post-create, post-delete
+    assert len(calls) == 3
+    assert calls[0] == frozenset()
+    assert calls[-1] == frozenset()
+    # FakeHoldRunner sandboxes have no .id → keep set empty
+    assert calls[1] == frozenset()
+
+
 def test_hold_all_creates_fail_zero_exec_tput(tmp_path: Path) -> None:
     import json
 

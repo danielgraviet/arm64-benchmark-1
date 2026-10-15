@@ -36,6 +36,16 @@ def test_result_series_rlp_vera() -> None:
         result_series_name("rlp", "redswitches", rlp_cpu=0.025, rlp_cpu_max=1)
         == "rlp-redswitches-c0p025-max1"
     )
+    assert result_series_name("rlp", "epyc9755") == "rlp-redswitches-9755"
+    assert (
+        result_series_name("rlp", "epyc9755", rlp_cpu=0.025, rlp_cpu_max=1)
+        == "rlp-redswitches-9755-c0p025-max1"
+    )
+    assert result_series_name("rlp", "epyc9575") == "rlp-redswitches-9575"
+    assert (
+        result_series_name("rlp", "epyc9575", rlp_cpu=0.025, rlp_cpu_max=1)
+        == "rlp-redswitches-9575-c0p025-max1"
+    )
     assert result_series_name("rlp", None) == "rlp-x86"
 
 
@@ -59,6 +69,8 @@ def test_validate_vera_target() -> None:
     validate_rlp_target("vera")
     validate_rlp_target("us-phoenix-1")
     validate_rlp_target("redswitches")
+    validate_rlp_target("epyc9755")
+    validate_rlp_target("epyc9575")
     with pytest.raises(ValueError, match="Unknown RLP target"):
         validate_rlp_target("vera-typo")
 
@@ -155,8 +167,73 @@ def test_resolve_rlp_client_config_redswitches_missing_key(
         resolve_rlp_client_config("redswitches")
 
 
+def test_resolve_rlp_client_config_epyc9755(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RLP_API_KEY", "dtn_test")
+    monkeypatch.delenv("EPYC9755_RLP_API_KEY", raising=False)
+    monkeypatch.delenv("REDSWITCHES_RLP_API_KEY", raising=False)
+    monkeypatch.delenv("RS_KEY", raising=False)
+    monkeypatch.delenv("EPYC9755_RLP_API_URL", raising=False)
+    monkeypatch.delenv("REDSWITCHES_RLP_API_URL", raising=False)
+    monkeypatch.delenv("RLP_API_URL", raising=False)
+    monkeypatch.delenv("EPYC9755_RLP_TOOLBOX_URL", raising=False)
+    monkeypatch.delenv("REDSWITCHES_RLP_TOOLBOX_URL", raising=False)
+    monkeypatch.delenv("RLP_TOOLBOX_URL", raising=False)
+    cfg = resolve_rlp_client_config("epyc9755")
+    assert cfg.target == "epyc9755"
+    assert cfg.api_url == "http://127.0.0.1:8088"
+    assert cfg.api_key == "dtn_test"
+    assert cfg.toolbox_url == "http://127.0.0.1:9000/toolbox"
+    routing = getattr(cfg, "region_routing", None)
+    if routing is not None:
+        assert routing is False
+
+
+def test_resolve_rlp_client_config_epyc9575(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("RLP_API_KEY", "dtn_test")
+    monkeypatch.delenv("EPYC9575_RLP_API_KEY", raising=False)
+    monkeypatch.delenv("REDSWITCHES_RLP_API_KEY", raising=False)
+    monkeypatch.delenv("RS_KEY", raising=False)
+    monkeypatch.delenv("EPYC9575_RLP_API_URL", raising=False)
+    monkeypatch.delenv("REDSWITCHES_RLP_API_URL", raising=False)
+    monkeypatch.delenv("RLP_API_URL", raising=False)
+    monkeypatch.delenv("EPYC9575_RLP_TOOLBOX_URL", raising=False)
+    monkeypatch.delenv("REDSWITCHES_RLP_TOOLBOX_URL", raising=False)
+    monkeypatch.delenv("RLP_TOOLBOX_URL", raising=False)
+    cfg = resolve_rlp_client_config("epyc9575")
+    assert cfg.target == "epyc9575"
+    assert cfg.api_url == "http://127.0.0.1:8088"
+    assert cfg.api_key == "dtn_test"
+    assert cfg.toolbox_url == "http://127.0.0.1:9000/toolbox"
+    routing = getattr(cfg, "region_routing", None)
+    if routing is not None:
+        assert routing is False
+
+
+def test_resolve_rlp_client_config_redswitches_prefers_rlp_api_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Stale RS_KEY (rlp_) must not win over rotated RLP_API_KEY (dtn_)."""
+    monkeypatch.setenv("RLP_API_KEY", "dtn_rotated")
+    monkeypatch.setenv("RS_KEY", "rlp_stale")
+    monkeypatch.delenv("REDSWITCHES_RLP_API_KEY", raising=False)
+    monkeypatch.delenv("REDSWITCHES_RLP_API_URL", raising=False)
+    monkeypatch.delenv("RS_API", raising=False)
+    cfg = resolve_rlp_client_config("redswitches")
+    assert cfg.api_key == "dtn_rotated"
+
+
 def test_rlp_boot_image_hub_on_redswitches() -> None:
     assert AGENT.boot_image_for_rlp("redswitches") == (
+        "dtgraviet/vera-agent-benchmark:v3"
+    )
+    assert AGENT.boot_image_for_rlp("epyc9755") == (
+        "dtgraviet/vera-agent-benchmark:v3"
+    )
+    assert AGENT.boot_image_for_rlp("epyc9575") == (
         "dtgraviet/vera-agent-benchmark:v3"
     )
 
