@@ -1,0 +1,19 @@
+docs/benchmark-methodology.md
+  s_c24e898b263207::t_80e2f2a5ef8499 3,5-6,25-29,75,87-96,115-125
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "05e15d4c6f4f4a7423b536d37239d4260d52531a",
+  "prompts": {},
+  "sessions": {
+    "s_c24e898b263207": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec547b1e1ffehWcdUVTM4CafxF",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Vedran Jukic <vedran.jukic@gmail.com>"
+    }
+  }
+}
