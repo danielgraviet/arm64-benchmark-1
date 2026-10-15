@@ -1,0 +1,103 @@
+.gitignore
+  s_c24e898b263207::t_5c8d8cc5771d9e 15,20
+AGENTS.md
+  s_c24e898b263207::t_cc5010d867702d 7-8
+harness/common.py
+  s_c24e898b263207::t_e6d36d85ecee0e 6,42-57,231-244,247-253,255,259-299,301,304-312,355,363
+harness/paths.py
+  s_c24e898b263207::t_6caa6e0590769c 61-68
+harness/regions.py
+  s_c24e898b263207::t_76cf854c33b639 32-38,61-63,95,97-98,103-111,139-161,226-230,287-288,306-375
+harness/runners/rlp.py
+  s_c24e898b263207::t_115fdc45483c8e 158-204
+nvidia/README.md
+  s_c24e898b263207::t_bead05db10179c 1-32
+nvidia/RUNBOOK.md
+  s_c24e898b263207::t_2d413c0a617e9b 1-247
+nvidia/o
+  s_c24e898b263207::t_edacc82204b4f4 1-129
+nvidia/scripts/capture_host_hw.sh
+  s_c24e898b263207::t_cb8d63ad38ae47 1-229
+nvidia/scripts/check_parity.sh
+  s_c24e898b263207::t_2872b606af665c 1-271
+nvidia/scripts/clean_cell.sh
+  s_c24e898b263207::t_8007bd06f171e2 1-113
+nvidia/scripts/load_secrets.sh
+  s_c24e898b263207::t_d682ae71c4cc4a 1-106
+nvidia/scripts/pack_secrets.sh
+  s_c24e898b263207::t_2862a9a081d4e6 1-73
+nvidia/scripts/run_1k.sh
+  s_c24e898b263207::t_d011784b77e2bf 1-19
+nvidia/scripts/run_2k.sh
+  s_c24e898b263207::t_7394ca718904fc 1-19
+nvidia/scripts/run_full_ladder.sh
+  s_c24e898b263207::t_aa8859147dda8e 1-18
+nvidia/scripts/smoke.sh
+  s_c24e898b263207::t_11c77681fb796e 1-62
+nvidia/scripts/zen5_bootstrap.sh
+  s_c24e898b263207::t_dee9a8d246b876 1-811
+nvidia/scripts/zen5_build_guest.sh
+  s_c24e898b263207::t_916876324a08c2 1-125
+phoenix-e6/README.md
+  s_c24e898b263207::t_b7eb8c1afddf12 1-20
+phoenix-e6/o
+  s_c24e898b263207::t_a9cc9fd62be36f 1-118
+phoenix-e6/scripts/capture_host_hw.sh
+  s_c24e898b263207::t_5ac112b2553c87 1-246
+phoenix-e6/scripts/check_parity.sh
+  s_c24e898b263207::t_9a4e6c080204b7 1-147
+phoenix-e6/scripts/clean_cell.sh
+  s_c24e898b263207::t_9a5f84b22f359b 1-93
+phoenix-e6/scripts/run_1k.sh
+  s_c24e898b263207::t_b20ef920fdb037 1-13
+phoenix-e6/scripts/run_2k.sh
+  s_c24e898b263207::t_63b5f72d773e85 1-13
+phoenix-e6/scripts/run_full_ladder.sh
+  s_c24e898b263207::t_bd439f7b54671f 1-12
+phoenix-e6/scripts/smoke.sh
+  s_c24e898b263207::t_10225657b2b063 1-41
+phoenix-e6/scripts/start.sh
+  s_c24e898b263207::t_2fd9dc7dd27873 1-59
+scripts/host/run_create_ready.sh
+  s_c24e898b263207::t_0c81f7d513dc33 25,35-40,111-136,477-491,493,504-505,554,585,594-596
+scripts/host/run_dense2k.sh
+  s_c24e898b263207::t_57055191905cd0 7-9,18-20,23-26,29-30,45-53,60,66,68-83,86,94-104,112-117
+scripts/host/run_dense2k_9j45.sh
+  s_c24e898b263207::t_cdbebb46502e8a 1-179
+scripts/host/run_phoenix_e6_remote.sh
+  s_c24e898b263207::t_c521930d0710f3 1-182
+scripts/host/scrape_boot_phases.py
+  s_c24e898b263207::t_ed68ec2ba85767 1-332
+scripts/host/tune_epyc9755_create.sh
+  s_c24e898b263207::t_b7bae37cd0a26b 1-53
+secrets/README.md
+  s_c24e898b263207::t_125669e0ed27d2 3-4,11-21
+secrets/nvidia-zen5.enc
+  s_c24e898b263207::t_de5c97175065a8 1-2
+secrets/nvidia-zen5.sha256
+  s_c24e898b263207::t_a620a99105656e 1
+tests/test_rlp_hold_then_exec.py
+  s_c24e898b263207::t_81ca91c60337ae 124-170
+tests/test_rlp_vera_target.py
+  s_c24e898b263207::t_8567bc4e717a22 39-48,72-73,170-228,233-238
+tickets/9j45-pin-single-socket.sh
+  s_c24e898b263207::t_c5bcbefac73640 1-147
+tickets/phoenix-e6-9j45-runbook.md
+  s_c24e898b263207::t_9d3ef52f3f1793 1-36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b556278a96acce57776f1d4ad213bb193ceafc1f",
+  "prompts": {},
+  "sessions": {
+    "s_c24e898b263207": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec547b1e1ffehWcdUVTM4CafxF",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Vedran Jukic <vedran.jukic@gmail.com>"
+    }
+  }
+}
