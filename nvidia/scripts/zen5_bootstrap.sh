@@ -779,12 +779,11 @@ if [[ -z "${GH_TOKEN:-}" && -f "${ROOT}/.env.nvidia" ]]; then
   log "sourced .env.nvidia (GH_TOKEN length ${#GH_TOKEN})"
 fi
 
-apt_packages
-install_uv_and_go_rust_toolchains
-raise_nofile_and_sysctl
-clone_rlp
-
 if [[ "${SKIP_CELL}" != "1" ]]; then
+  apt_packages
+  install_uv_and_go_rust_toolchains
+  raise_nofile_and_sysctl
+  clone_rlp
   setup_dirs_sudoers
   install_firecracker
   build_and_install_binaries
@@ -796,8 +795,10 @@ if [[ "${SKIP_CELL}" != "1" ]]; then
   seed_region_and_mint_key
   tune_create
 else
-  log "SKIP_CELL=1 — not installing cell stack"
-  resolve_guest_paths || true
+  # Eng / already-live cell (e.g. phoenix-e6): harness + eng SDK only.
+  # Do not apt/toolchain/sysctl — that can starve SSH on a dual-socket box mid-run.
+  log "SKIP_CELL=1 — not installing cell stack / apt / toolchains"
+  export PATH="${HOME}/.local/bin:/usr/local/bin:/usr/local/go/bin:${PATH}"
   if [[ -z "${RLP_API_KEY:-}" && -f "${ROOT}/.env" ]]; then
     set -a
     # shellcheck disable=SC1091
@@ -805,6 +806,7 @@ else
     set +a
   fi
   [[ -n "${RLP_API_KEY:-}" ]] || die "SKIP_CELL=1 requires RLP_API_KEY or existing .env"
+  resolve_guest_paths || true
 fi
 
 write_client_env
