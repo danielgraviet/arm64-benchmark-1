@@ -60,6 +60,12 @@ def result_series_name(
             base = "rlp-redswitches"
         elif target == "digitalocean":
             base = "rlp-digitalocean"
+        elif target == "phoenix-e6":
+            base = "rlp-phoenix-e6"
+        elif target == "graviton5":
+            base = "rlp-graviton5"
+        elif target == "epyc9575":
+            base = "rlp-epyc9575"
         elif target and target in ARM64_TARGETS:
             base = "rlp-arm64"
         else:
