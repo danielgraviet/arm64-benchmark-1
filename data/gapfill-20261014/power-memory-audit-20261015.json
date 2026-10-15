@@ -1,0 +1,1313 @@
+{
+  "hosts": {
+    "vera": {
+      "archive": "vera-hq-cell-20261014/power-mem-20261015/vera-power-mem.tgz",
+      "sha256": "4d498a5ad88f51498a9bf5eb17f811daf661ff2f5eaf5ea2f738f32977009673",
+      "memtest_sha256": "0ad55a704fb407bee0e29503e900e5cc87c8d93ddd40e52afe8cf73b527f217b",
+      "compile_commands": [
+        "r = sb.process.exec(f\"sh -c 'echo {B64} | base64 -d > /tmp/m.c && gcc -O3 -o /tmp/m /tmp/m.c && echo built'\", timeout=300)"
+      ],
+      "memory": [
+        {
+          "concurrency": 1,
+          "rep": 1,
+          "image": "buildpack-deps:bookworm",
+          "ok": 1,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 72.46,
+          "host_send_skew_s": 0.0,
+          "host_rpc_overlap_s": 30.0579,
+          "conservative_kernel_overlap_s": 29.9431,
+          "max_rpc_minus_kernel_s": 0.0574,
+          "duration_s_range": [
+            30.0005,
+            30.0005
+          ],
+          "power_host_window": {
+            "vera_AP_W": 234.292,
+            "vera_Total_W": 291.583,
+            "vera_DRAM_W": 19.667,
+            "wall_w": null,
+            "busy_ghz": 3.384,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 1,
+          "rep": 2,
+          "image": "buildpack-deps:bookworm",
+          "ok": 1,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 72.06,
+          "host_send_skew_s": 0.0,
+          "host_rpc_overlap_s": 30.057,
+          "conservative_kernel_overlap_s": 29.9508,
+          "max_rpc_minus_kernel_s": 0.0531,
+          "duration_s_range": [
+            30.0039,
+            30.0039
+          ],
+          "power_host_window": {
+            "vera_AP_W": 232.675,
+            "vera_Total_W": 290.167,
+            "vera_DRAM_W": 19.775,
+            "wall_w": null,
+            "busy_ghz": 3.384,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 8,
+          "rep": 1,
+          "image": "buildpack-deps:bookworm",
+          "ok": 8,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 550.83,
+          "host_send_skew_s": 0.0005,
+          "host_rpc_overlap_s": 30.0586,
+          "conservative_kernel_overlap_s": 29.9426,
+          "max_rpc_minus_kernel_s": 0.0581,
+          "duration_s_range": [
+            30.000700000000002,
+            30.005599999999998
+          ],
+          "power_host_window": {
+            "vera_AP_W": 336.642,
+            "vera_Total_W": 408.483,
+            "vera_DRAM_W": 33.667,
+            "wall_w": null,
+            "busy_ghz": 3.385,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 8,
+          "rep": 2,
+          "image": "buildpack-deps:bookworm",
+          "ok": 8,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 570.34,
+          "host_send_skew_s": 0.0005,
+          "host_rpc_overlap_s": 30.0582,
+          "conservative_kernel_overlap_s": 29.9438,
+          "max_rpc_minus_kernel_s": 0.0576,
+          "duration_s_range": [
+            30.0014,
+            30.004900000000003
+          ],
+          "power_host_window": {
+            "vera_AP_W": 339.417,
+            "vera_Total_W": 412.183,
+            "vera_DRAM_W": 34.275,
+            "wall_w": null,
+            "busy_ghz": 3.385,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 32,
+          "rep": 1,
+          "image": "buildpack-deps:bookworm",
+          "ok": 32,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 1019.21,
+          "host_send_skew_s": 0.0019,
+          "host_rpc_overlap_s": 30.0685,
+          "conservative_kernel_overlap_s": 29.9286,
+          "max_rpc_minus_kernel_s": 0.0708,
+          "duration_s_range": [
+            30.0001,
+            30.0095
+          ],
+          "power_host_window": {
+            "vera_AP_W": 469.025,
+            "vera_Total_W": 553.483,
+            "vera_DRAM_W": 45.55,
+            "wall_w": null,
+            "busy_ghz": 3.391,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 32,
+          "rep": 2,
+          "image": "buildpack-deps:bookworm",
+          "ok": 32,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 1014.57,
+          "host_send_skew_s": 0.0015,
+          "host_rpc_overlap_s": 30.0705,
+          "conservative_kernel_overlap_s": 29.9198,
+          "max_rpc_minus_kernel_s": 0.0804,
+          "duration_s_range": [
+            30.000700000000002,
+            30.0085
+          ],
+          "power_host_window": {
+            "vera_AP_W": 468.325,
+            "vera_Total_W": 553.067,
+            "vera_DRAM_W": 45.625,
+            "wall_w": null,
+            "busy_ghz": 3.389,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 64,
+          "rep": 1,
+          "image": "buildpack-deps:bookworm",
+          "ok": 64,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 1743.63,
+          "host_send_skew_s": 0.0028,
+          "host_rpc_overlap_s": 30.0765,
+          "conservative_kernel_overlap_s": 29.9034,
+          "max_rpc_minus_kernel_s": 0.0965,
+          "duration_s_range": [
+            30.0,
+            30.0137
+          ],
+          "power_host_window": {
+            "vera_AP_W": 722.645,
+            "vera_Total_W": 846.273,
+            "vera_DRAM_W": 68.4,
+            "wall_w": null,
+            "busy_ghz": 3.385,
+            "samples": 11
+          }
+        },
+        {
+          "concurrency": 64,
+          "rep": 2,
+          "image": "buildpack-deps:bookworm",
+          "ok": 64,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 1852.51,
+          "host_send_skew_s": 0.0026,
+          "host_rpc_overlap_s": 30.0728,
+          "conservative_kernel_overlap_s": 29.9037,
+          "max_rpc_minus_kernel_s": 0.0966,
+          "duration_s_range": [
+            30.0001,
+            30.013
+          ],
+          "power_host_window": {
+            "vera_AP_W": 743.583,
+            "vera_Total_W": 869.783,
+            "vera_DRAM_W": 70.967,
+            "wall_w": null,
+            "busy_ghz": 3.385,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 128,
+          "rep": 1,
+          "image": "buildpack-deps:bookworm",
+          "ok": 127,
+          "failed": 1,
+          "failure_statuses": [
+            "prep_failed"
+          ],
+          "aggregate_GBs": 2123.72,
+          "host_send_skew_s": 0.0079,
+          "host_rpc_overlap_s": 30.1131,
+          "conservative_kernel_overlap_s": 29.8457,
+          "max_rpc_minus_kernel_s": 0.1537,
+          "duration_s_range": [
+            30.0003,
+            30.0255
+          ],
+          "power_host_window": {
+            "vera_AP_W": 875.967,
+            "vera_Total_W": 1004.683,
+            "vera_DRAM_W": 78.717,
+            "wall_w": null,
+            "busy_ghz": 3.375,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 128,
+          "rep": 2,
+          "image": "buildpack-deps:bookworm",
+          "ok": 127,
+          "failed": 1,
+          "failure_statuses": [
+            "prep_failed"
+          ],
+          "aggregate_GBs": 2125.37,
+          "host_send_skew_s": 0.0064,
+          "host_rpc_overlap_s": 30.1139,
+          "conservative_kernel_overlap_s": 29.8462,
+          "max_rpc_minus_kernel_s": 0.1528,
+          "duration_s_range": [
+            30.0001,
+            30.0199
+          ],
+          "power_host_window": {
+            "vera_AP_W": 886.667,
+            "vera_Total_W": 1017.767,
+            "vera_DRAM_W": 78.717,
+            "wall_w": null,
+            "busy_ghz": 3.376,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 176,
+          "rep": 1,
+          "image": "buildpack-deps:bookworm",
+          "ok": 174,
+          "failed": 2,
+          "failure_statuses": [
+            "prep_failed",
+            "prep_failed"
+          ],
+          "aggregate_GBs": 2099.44,
+          "host_send_skew_s": 0.0105,
+          "host_rpc_overlap_s": 30.1184,
+          "conservative_kernel_overlap_s": 29.8028,
+          "max_rpc_minus_kernel_s": 0.1899,
+          "duration_s_range": [
+            30.0002,
+            30.032700000000002
+          ],
+          "power_host_window": {
+            "vera_AP_W": 1062.617,
+            "vera_Total_W": 1199.583,
+            "vera_DRAM_W": 80.567,
+            "wall_w": null,
+            "busy_ghz": 3.374,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 176,
+          "rep": 2,
+          "image": "buildpack-deps:bookworm",
+          "ok": 176,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 2108.42,
+          "host_send_skew_s": 0.0104,
+          "host_rpc_overlap_s": 30.1366,
+          "conservative_kernel_overlap_s": 29.8246,
+          "max_rpc_minus_kernel_s": 0.174,
+          "duration_s_range": [
+            30.0,
+            30.033900000000003
+          ],
+          "power_host_window": {
+            "vera_AP_W": 942.091,
+            "vera_Total_W": 1077.245,
+            "vera_DRAM_W": 79.082,
+            "wall_w": null,
+            "busy_ghz": 3.38,
+            "samples": 11
+          }
+        },
+        {
+          "concurrency": 256,
+          "rep": 1,
+          "image": "buildpack-deps:bookworm",
+          "ok": 256,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 2070.37,
+          "host_send_skew_s": 0.0209,
+          "host_rpc_overlap_s": 30.1339,
+          "conservative_kernel_overlap_s": 29.5292,
+          "max_rpc_minus_kernel_s": 0.4541,
+          "duration_s_range": [
+            30.0001,
+            30.0589
+          ],
+          "power_host_window": {
+            "vera_AP_W": 1062.309,
+            "vera_Total_W": 1201.082,
+            "vera_DRAM_W": 80.9,
+            "wall_w": null,
+            "busy_ghz": 3.376,
+            "samples": 11
+          }
+        },
+        {
+          "concurrency": 256,
+          "rep": 2,
+          "image": "buildpack-deps:bookworm",
+          "ok": 255,
+          "failed": 1,
+          "failure_statuses": [
+            "prep_failed"
+          ],
+          "aggregate_GBs": 2067.67,
+          "host_send_skew_s": 0.0193,
+          "host_rpc_overlap_s": 30.1174,
+          "conservative_kernel_overlap_s": 29.536,
+          "max_rpc_minus_kernel_s": 0.4602,
+          "duration_s_range": [
+            30.0003,
+            30.0495
+          ],
+          "power_host_window": {
+            "vera_AP_W": 1067.8,
+            "vera_Total_W": 1205.318,
+            "vera_DRAM_W": 80.836,
+            "wall_w": null,
+            "busy_ghz": 3.374,
+            "samples": 11
+          }
+        },
+        {
+          "concurrency": 352,
+          "rep": 1,
+          "image": "buildpack-deps:bookworm",
+          "ok": 351,
+          "failed": 1,
+          "failure_statuses": [
+            "prep_failed"
+          ],
+          "aggregate_GBs": 1356.9,
+          "host_send_skew_s": 0.0307,
+          "host_rpc_overlap_s": 30.1517,
+          "conservative_kernel_overlap_s": 29.1148,
+          "max_rpc_minus_kernel_s": 0.8739,
+          "duration_s_range": [
+            30.0001,
+            30.1045
+          ],
+          "power_host_window": {
+            "vera_AP_W": 961.636,
+            "vera_Total_W": 1087.591,
+            "vera_DRAM_W": 69.5,
+            "wall_w": null,
+            "busy_ghz": 3.373,
+            "samples": 11
+          }
+        },
+        {
+          "concurrency": 352,
+          "rep": 2,
+          "image": "buildpack-deps:bookworm",
+          "ok": 351,
+          "failed": 1,
+          "failure_statuses": [
+            "prep_failed"
+          ],
+          "aggregate_GBs": 1406.26,
+          "host_send_skew_s": 0.0352,
+          "host_rpc_overlap_s": 30.1221,
+          "conservative_kernel_overlap_s": 29.0819,
+          "max_rpc_minus_kernel_s": 0.8997,
+          "duration_s_range": [
+            30.0001,
+            30.095599999999997
+          ],
+          "power_host_window": {
+            "vera_AP_W": 959.2,
+            "vera_Total_W": 1085.56,
+            "vera_DRAM_W": 70.43,
+            "wall_w": null,
+            "busy_ghz": 3.373,
+            "samples": 10
+          }
+        }
+      ],
+      "requested_sandboxes": 2034,
+      "setup_failures": 7,
+      "power": {
+        "idle": {
+          "vera_AP_W": 225.215,
+          "vera_Total_W": 281.725,
+          "vera_DRAM_W": 17.274,
+          "wall_w": null,
+          "busy_ghz": null,
+          "samples": 88
+        },
+        "levels": [
+          {
+            "concurrency": 44,
+            "runs": 352,
+            "failures": 0,
+            "checksum_ok": true,
+            "throughput_per_sec": 6.66,
+            "exec_wall_s": 52.853,
+            "p50_duration_ms": 5922.0,
+            "scopes": {
+              "vera_AP_W": 537.532,
+              "vera_Total_W": 596.768,
+              "vera_DRAM_W": 18.716,
+              "wall_w": null,
+              "busy_ghz": 3.39,
+              "samples": 25
+            }
+          },
+          {
+            "concurrency": 176,
+            "runs": 1408,
+            "failures": 0,
+            "checksum_ok": true,
+            "throughput_per_sec": 14.54,
+            "exec_wall_s": 96.839,
+            "p50_duration_ms": 11242.5,
+            "scopes": {
+              "vera_AP_W": 736.015,
+              "vera_Total_W": 800.665,
+              "vera_DRAM_W": 21.598,
+              "wall_w": null,
+              "busy_ghz": 3.382,
+              "samples": 46
+            }
+          },
+          {
+            "concurrency": 352,
+            "runs": 2816,
+            "failures": 0,
+            "checksum_ok": true,
+            "throughput_per_sec": 26.29,
+            "exec_wall_s": 107.113,
+            "p50_duration_ms": 12057.0,
+            "scopes": {
+              "vera_AP_W": 1107.596,
+              "vera_Total_W": 1184.89,
+              "vera_DRAM_W": 25.665,
+              "wall_w": null,
+              "busy_ghz": 3.373,
+              "samples": 49
+            }
+          },
+          {
+            "concurrency": 704,
+            "runs": 5632,
+            "failures": 0,
+            "checksum_ok": true,
+            "throughput_per_sec": 25.52,
+            "exec_wall_s": 220.684,
+            "p50_duration_ms": 16190.0,
+            "scopes": {
+              "vera_AP_W": 1079.148,
+              "vera_Total_W": 1158.936,
+              "vera_DRAM_W": 26.947,
+              "wall_w": null,
+              "busy_ghz": 3.375,
+              "samples": 103
+            }
+          },
+          {
+            "concurrency": 2000,
+            "runs": 16000,
+            "failures": 0,
+            "checksum_ok": true,
+            "throughput_per_sec": 26.25,
+            "exec_wall_s": 609.424,
+            "p50_duration_ms": 32043.5,
+            "scopes": {
+              "vera_AP_W": 1109.214,
+              "vera_Total_W": 1192.288,
+              "vera_DRAM_W": 28.984,
+              "wall_w": null,
+              "busy_ghz": 3.373,
+              "samples": 280
+            }
+          }
+        ]
+      }
+    },
+    "epyc9575": {
+      "archive": "vera-hq-cell-20261014/power-mem-20261015/epyc9575-power-mem.tgz",
+      "sha256": "7b07e57f776dd9586e8fa69bc334ba74931f7e2146f8b1b728dde0a5136035f5",
+      "memtest_sha256": "0ad55a704fb407bee0e29503e900e5cc87c8d93ddd40e52afe8cf73b527f217b",
+      "compile_commands": [
+        "r = sb.process.exec(f\"sh -c 'echo {B64} | base64 -d > /tmp/m.c && gcc -O3 -o /tmp/m /tmp/m.c && echo built'\", timeout=300)"
+      ],
+      "memory": [
+        {
+          "concurrency": 1,
+          "rep": 1,
+          "image": "buildpack-deps:bookworm",
+          "ok": 1,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 45.13,
+          "host_send_skew_s": 0.0,
+          "host_rpc_overlap_s": 30.2564,
+          "conservative_kernel_overlap_s": 29.7474,
+          "max_rpc_minus_kernel_s": 0.2545,
+          "duration_s_range": [
+            30.001900000000003,
+            30.001900000000003
+          ],
+          "power_host_window": {
+            "AMD_package_W": 102.292,
+            "wall_w": 147.0,
+            "busy_ghz": 5.043,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 1,
+          "rep": 2,
+          "image": "buildpack-deps:bookworm",
+          "ok": 1,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 47.08,
+          "host_send_skew_s": 0.0,
+          "host_rpc_overlap_s": 30.2612,
+          "conservative_kernel_overlap_s": 29.7424,
+          "max_rpc_minus_kernel_s": 0.2594,
+          "duration_s_range": [
+            30.0018,
+            30.0018
+          ],
+          "power_host_window": {
+            "AMD_package_W": 103.275,
+            "wall_w": 135.0,
+            "busy_ghz": 5.058,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 8,
+          "rep": 1,
+          "image": "buildpack-deps:bookworm",
+          "ok": 8,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 262.4,
+          "host_send_skew_s": 0.0002,
+          "host_rpc_overlap_s": 30.2663,
+          "conservative_kernel_overlap_s": 29.7311,
+          "max_rpc_minus_kernel_s": 0.2699,
+          "duration_s_range": [
+            30.0009,
+            30.0078
+          ],
+          "power_host_window": {
+            "AMD_package_W": 203.825,
+            "wall_w": 135.0,
+            "busy_ghz": 5.014,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 8,
+          "rep": 2,
+          "image": "buildpack-deps:bookworm",
+          "ok": 8,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 260.91,
+          "host_send_skew_s": 0.0001,
+          "host_rpc_overlap_s": 30.2688,
+          "conservative_kernel_overlap_s": 29.729,
+          "max_rpc_minus_kernel_s": 0.2715,
+          "duration_s_range": [
+            30.0005,
+            30.0098
+          ],
+          "power_host_window": {
+            "AMD_package_W": 204.05,
+            "wall_w": 435.0,
+            "busy_ghz": 5.014,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 32,
+          "rep": 1,
+          "image": "buildpack-deps:bookworm",
+          "ok": 32,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 299.84,
+          "host_send_skew_s": 0.0013,
+          "host_rpc_overlap_s": 30.3036,
+          "conservative_kernel_overlap_s": 29.6552,
+          "max_rpc_minus_kernel_s": 0.3469,
+          "duration_s_range": [
+            30.0021,
+            30.0373
+          ],
+          "power_host_window": {
+            "AMD_package_W": 278.925,
+            "wall_w": 507.0,
+            "busy_ghz": 5.025,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 32,
+          "rep": 2,
+          "image": "buildpack-deps:bookworm",
+          "ok": 32,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 299.71,
+          "host_send_skew_s": 0.0012,
+          "host_rpc_overlap_s": 30.2854,
+          "conservative_kernel_overlap_s": 29.645,
+          "max_rpc_minus_kernel_s": 0.356,
+          "duration_s_range": [
+            30.000700000000002,
+            30.0393
+          ],
+          "power_host_window": {
+            "AMD_package_W": 281.275,
+            "wall_w": 531.0,
+            "busy_ghz": 5.022,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 64,
+          "rep": 1,
+          "image": "buildpack-deps:bookworm",
+          "ok": 64,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 301.45,
+          "host_send_skew_s": 0.0031,
+          "host_rpc_overlap_s": 30.3346,
+          "conservative_kernel_overlap_s": 29.4195,
+          "max_rpc_minus_kernel_s": 0.5793,
+          "duration_s_range": [
+            30.000400000000003,
+            30.072
+          ],
+          "power_host_window": {
+            "AMD_package_W": 328.583,
+            "wall_w": 549.0,
+            "busy_ghz": 4.98,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 64,
+          "rep": 2,
+          "image": "buildpack-deps:bookworm",
+          "ok": 64,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 302.11,
+          "host_send_skew_s": 0.003,
+          "host_rpc_overlap_s": 30.34,
+          "conservative_kernel_overlap_s": 29.3121,
+          "max_rpc_minus_kernel_s": 0.6876,
+          "duration_s_range": [
+            30.0005,
+            30.0794
+          ],
+          "power_host_window": {
+            "AMD_package_W": 352.858,
+            "wall_w": 351.0,
+            "busy_ghz": 4.993,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 128,
+          "rep": 1,
+          "image": "buildpack-deps:bookworm",
+          "ok": 128,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 305.24,
+          "host_send_skew_s": 0.006,
+          "host_rpc_overlap_s": 30.5695,
+          "conservative_kernel_overlap_s": 28.5256,
+          "max_rpc_minus_kernel_s": 1.4748,
+          "duration_s_range": [
+            30.0001,
+            30.1647
+          ],
+          "power_host_window": {
+            "AMD_package_W": 365.936,
+            "wall_w": 272.455,
+            "busy_ghz": 5.001,
+            "samples": 11
+          }
+        },
+        {
+          "concurrency": 128,
+          "rep": 2,
+          "image": "buildpack-deps:bookworm",
+          "ok": 128,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 305.11,
+          "host_send_skew_s": 0.0075,
+          "host_rpc_overlap_s": 30.5645,
+          "conservative_kernel_overlap_s": 28.5378,
+          "max_rpc_minus_kernel_s": 1.4634,
+          "duration_s_range": [
+            30.000700000000002,
+            30.139
+          ],
+          "power_host_window": {
+            "AMD_package_W": 366.336,
+            "wall_w": 362.455,
+            "busy_ghz": 5.002,
+            "samples": 11
+          }
+        }
+      ],
+      "requested_sandboxes": 466,
+      "setup_failures": 0,
+      "power": {
+        "idle": {
+          "AMD_package_W": 53.799,
+          "wall_w": 132.708,
+          "busy_ghz": null,
+          "samples": 89
+        },
+        "levels": [
+          {
+            "concurrency": 44,
+            "runs": 352,
+            "failures": 0,
+            "checksum_ok": true,
+            "throughput_per_sec": 5.91,
+            "exec_wall_s": 59.531,
+            "p50_duration_ms": 6709.0,
+            "scopes": {
+              "AMD_package_W": 398.559,
+              "wall_w": 430.034,
+              "busy_ghz": 4.334,
+              "samples": 29
+            }
+          },
+          {
+            "concurrency": 176,
+            "runs": 1408,
+            "failures": 0,
+            "checksum_ok": true,
+            "throughput_per_sec": 7.98,
+            "exec_wall_s": 176.524,
+            "p50_duration_ms": 19559.5,
+            "scopes": {
+              "AMD_package_W": 366.913,
+              "wall_w": 682.535,
+              "busy_ghz": 3.624,
+              "samples": 86
+            }
+          },
+          {
+            "concurrency": 352,
+            "runs": 2816,
+            "failures": 0,
+            "checksum_ok": true,
+            "throughput_per_sec": 7.93,
+            "exec_wall_s": 355.244,
+            "p50_duration_ms": 40374.5,
+            "scopes": {
+              "AMD_package_W": 374.108,
+              "wall_w": 691.751,
+              "busy_ghz": 3.65,
+              "samples": 173
+            }
+          },
+          {
+            "concurrency": 704,
+            "runs": 5632,
+            "failures": 0,
+            "checksum_ok": true,
+            "throughput_per_sec": 8.03,
+            "exec_wall_s": 701.288,
+            "p50_duration_ms": 82533.0,
+            "scopes": {
+              "AMD_package_W": 379.126,
+              "wall_w": 700.267,
+              "busy_ghz": 3.66,
+              "samples": 341
+            }
+          },
+          {
+            "concurrency": 2000,
+            "runs": 16000,
+            "failures": 0,
+            "checksum_ok": true,
+            "throughput_per_sec": 8.02,
+            "exec_wall_s": 1994.879,
+            "p50_duration_ms": 237668.0,
+            "scopes": {
+              "AMD_package_W": 382.354,
+              "wall_w": 717.251,
+              "busy_ghz": 3.691,
+              "samples": 958
+            }
+          }
+        ]
+      }
+    },
+    "graviton5": {
+      "archive": "graviton5-cell-20261014/mem-ladder-20261015.tgz",
+      "sha256": "bc8b1b71e841dbc847e5eeca42081b63cbf3bff92f741034d28e53d170718807",
+      "memtest_sha256": "0ad55a704fb407bee0e29503e900e5cc87c8d93ddd40e52afe8cf73b527f217b",
+      "compile_commands": [
+        "r = sb.process.exec(f\"sh -c 'echo {B64} | base64 -d > /tmp/m.c && gcc -O3 -o /tmp/m /tmp/m.c && echo built'\", timeout=300)"
+      ],
+      "memory": [
+        {
+          "concurrency": 1,
+          "rep": 1,
+          "image": "buildpack-deps:bookworm",
+          "ok": 1,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 57.91,
+          "host_send_skew_s": 0.0,
+          "host_rpc_overlap_s": 30.2065,
+          "conservative_kernel_overlap_s": 29.8017,
+          "max_rpc_minus_kernel_s": 0.2024,
+          "duration_s_range": [
+            30.004099999999998,
+            30.004099999999998
+          ],
+          "power_host_window": {
+            "wall_w": null,
+            "busy_ghz": null,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 1,
+          "rep": 2,
+          "image": "buildpack-deps:bookworm",
+          "ok": 1,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 56.99,
+          "host_send_skew_s": 0.0,
+          "host_rpc_overlap_s": 30.2152,
+          "conservative_kernel_overlap_s": 29.794,
+          "max_rpc_minus_kernel_s": 0.2106,
+          "duration_s_range": [
+            30.0046,
+            30.0046
+          ],
+          "power_host_window": {
+            "wall_w": null,
+            "busy_ghz": null,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 8,
+          "rep": 1,
+          "image": "buildpack-deps:bookworm",
+          "ok": 8,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 365.13,
+          "host_send_skew_s": 0.0001,
+          "host_rpc_overlap_s": 30.204,
+          "conservative_kernel_overlap_s": 29.7973,
+          "max_rpc_minus_kernel_s": 0.2036,
+          "duration_s_range": [
+            30.0009,
+            30.0083
+          ],
+          "power_host_window": {
+            "wall_w": null,
+            "busy_ghz": null,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 8,
+          "rep": 2,
+          "image": "buildpack-deps:bookworm",
+          "ok": 8,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 337.65,
+          "host_send_skew_s": 0.0001,
+          "host_rpc_overlap_s": 30.2109,
+          "conservative_kernel_overlap_s": 29.7892,
+          "max_rpc_minus_kernel_s": 0.2113,
+          "duration_s_range": [
+            30.0005,
+            30.0066
+          ],
+          "power_host_window": {
+            "wall_w": null,
+            "busy_ghz": null,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 32,
+          "rep": 1,
+          "image": "buildpack-deps:bookworm",
+          "ok": 32,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 594.21,
+          "host_send_skew_s": 0.0006,
+          "host_rpc_overlap_s": 30.2349,
+          "conservative_kernel_overlap_s": 29.7608,
+          "max_rpc_minus_kernel_s": 0.2395,
+          "duration_s_range": [
+            30.000400000000003,
+            30.0148
+          ],
+          "power_host_window": {
+            "wall_w": null,
+            "busy_ghz": null,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 32,
+          "rep": 2,
+          "image": "buildpack-deps:bookworm",
+          "ok": 32,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 593.86,
+          "host_send_skew_s": 0.0007,
+          "host_rpc_overlap_s": 30.2335,
+          "conservative_kernel_overlap_s": 29.7634,
+          "max_rpc_minus_kernel_s": 0.2375,
+          "duration_s_range": [
+            30.0005,
+            30.0165
+          ],
+          "power_host_window": {
+            "wall_w": null,
+            "busy_ghz": null,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 64,
+          "rep": 1,
+          "image": "buildpack-deps:bookworm",
+          "ok": 64,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 603.94,
+          "host_send_skew_s": 0.0015,
+          "host_rpc_overlap_s": 30.2717,
+          "conservative_kernel_overlap_s": 29.7084,
+          "max_rpc_minus_kernel_s": 0.2914,
+          "duration_s_range": [
+            30.0003,
+            30.0292
+          ],
+          "power_host_window": {
+            "wall_w": null,
+            "busy_ghz": null,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 64,
+          "rep": 2,
+          "image": "buildpack-deps:bookworm",
+          "ok": 64,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 603.87,
+          "host_send_skew_s": 0.0016,
+          "host_rpc_overlap_s": 30.2723,
+          "conservative_kernel_overlap_s": 29.7044,
+          "max_rpc_minus_kernel_s": 0.2962,
+          "duration_s_range": [
+            30.001099999999997,
+            30.034
+          ],
+          "power_host_window": {
+            "wall_w": null,
+            "busy_ghz": null,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 128,
+          "rep": 1,
+          "image": "buildpack-deps:bookworm",
+          "ok": 128,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 571.64,
+          "host_send_skew_s": 0.0036,
+          "host_rpc_overlap_s": 30.3915,
+          "conservative_kernel_overlap_s": 29.5855,
+          "max_rpc_minus_kernel_s": 0.4153,
+          "duration_s_range": [
+            30.0005,
+            30.0604
+          ],
+          "power_host_window": {
+            "wall_w": null,
+            "busy_ghz": null,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 128,
+          "rep": 2,
+          "image": "buildpack-deps:bookworm",
+          "ok": 128,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 572.01,
+          "host_send_skew_s": 0.0036,
+          "host_rpc_overlap_s": 30.3885,
+          "conservative_kernel_overlap_s": 29.5773,
+          "max_rpc_minus_kernel_s": 0.4232,
+          "duration_s_range": [
+            30.0017,
+            30.0619
+          ],
+          "power_host_window": {
+            "wall_w": null,
+            "busy_ghz": null,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 176,
+          "rep": 1,
+          "image": "buildpack-deps:bookworm",
+          "ok": 176,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 582.41,
+          "host_send_skew_s": 0.0063,
+          "host_rpc_overlap_s": 30.4839,
+          "conservative_kernel_overlap_s": 29.4479,
+          "max_rpc_minus_kernel_s": 0.5511,
+          "duration_s_range": [
+            30.0005,
+            30.0865
+          ],
+          "power_host_window": {
+            "wall_w": null,
+            "busy_ghz": null,
+            "samples": 12
+          }
+        },
+        {
+          "concurrency": 176,
+          "rep": 2,
+          "image": "buildpack-deps:bookworm",
+          "ok": 176,
+          "failed": 0,
+          "failure_statuses": [],
+          "aggregate_GBs": 582.17,
+          "host_send_skew_s": 0.0063,
+          "host_rpc_overlap_s": 30.3916,
+          "conservative_kernel_overlap_s": 29.4475,
+          "max_rpc_minus_kernel_s": 0.5492,
+          "duration_s_range": [
+            30.0,
+            30.1038
+          ],
+          "power_host_window": {
+            "wall_w": null,
+            "busy_ghz": null,
+            "samples": 12
+          }
+        }
+      ],
+      "requested_sandboxes": 818,
+      "setup_failures": 0
+    },
+    "turin": {
+      "memory": null,
+      "power": {
+        "idle": {
+          "AMD_package_W": 178.478,
+          "wall_w": null,
+          "busy_ghz": null,
+          "samples": 88
+        },
+        "levels": [
+          {
+            "concurrency": 44,
+            "runs": 352,
+            "failures": 0,
+            "checksum_ok": true,
+            "throughput_per_sec": 5.5,
+            "exec_wall_s": 63.955,
+            "p50_duration_ms": 7062.5,
+            "scopes": {
+              "AMD_package_W": 599.152,
+              "wall_w": null,
+              "busy_ghz": null,
+              "samples": 31
+            }
+          },
+          {
+            "concurrency": 88,
+            "runs": 704,
+            "failures": 0,
+            "checksum_ok": true,
+            "throughput_per_sec": 10.58,
+            "exec_wall_s": 66.519,
+            "p50_duration_ms": 7140.5,
+            "scopes": {
+              "AMD_package_W": 858.403,
+              "wall_w": null,
+              "busy_ghz": null,
+              "samples": 32
+            }
+          },
+          {
+            "concurrency": 176,
+            "runs": 1408,
+            "failures": 0,
+            "checksum_ok": true,
+            "throughput_per_sec": 17.86,
+            "exec_wall_s": 78.828,
+            "p50_duration_ms": 8395.0,
+            "scopes": {
+              "AMD_package_W": 967.924,
+              "wall_w": null,
+              "busy_ghz": null,
+              "samples": 37
+            }
+          },
+          {
+            "concurrency": 352,
+            "runs": 2816,
+            "failures": 0,
+            "checksum_ok": true,
+            "throughput_per_sec": 20.15,
+            "exec_wall_s": 139.764,
+            "p50_duration_ms": 15315.0,
+            "scopes": {
+              "AMD_package_W": 935.515,
+              "wall_w": null,
+              "busy_ghz": null,
+              "samples": 66
+            }
+          },
+          {
+            "concurrency": 528,
+            "runs": 4224,
+            "failures": 0,
+            "checksum_ok": true,
+            "throughput_per_sec": 22.32,
+            "exec_wall_s": 189.209,
+            "p50_duration_ms": 21295.5,
+            "scopes": {
+              "AMD_package_W": 955.418,
+              "wall_w": null,
+              "busy_ghz": null,
+              "samples": 89
+            }
+          },
+          {
+            "concurrency": 704,
+            "runs": 5632,
+            "failures": 0,
+            "checksum_ok": true,
+            "throughput_per_sec": 22.27,
+            "exec_wall_s": 252.903,
+            "p50_duration_ms": 28601.0,
+            "scopes": {
+              "AMD_package_W": 971.646,
+              "wall_w": null,
+              "busy_ghz": null,
+              "samples": 119
+            }
+          },
+          {
+            "concurrency": 880,
+            "runs": 7040,
+            "failures": 0,
+            "checksum_ok": true,
+            "throughput_per_sec": 22.25,
+            "exec_wall_s": 316.437,
+            "p50_duration_ms": 34834.0,
+            "scopes": {
+              "AMD_package_W": 973.745,
+              "wall_w": null,
+              "busy_ghz": null,
+              "samples": 149
+            }
+          },
+          {
+            "concurrency": 1056,
+            "runs": 8448,
+            "failures": 0,
+            "checksum_ok": true,
+            "throughput_per_sec": 22.17,
+            "exec_wall_s": 381.015,
+            "p50_duration_ms": 42199.0,
+            "scopes": {
+              "AMD_package_W": 966.898,
+              "wall_w": null,
+              "busy_ghz": null,
+              "samples": 178
+            }
+          },
+          {
+            "concurrency": 1408,
+            "runs": 11264,
+            "failures": 0,
+            "checksum_ok": true,
+            "throughput_per_sec": 22.12,
+            "exec_wall_s": 509.145,
+            "p50_duration_ms": 57199.5,
+            "scopes": {
+              "AMD_package_W": 973.305,
+              "wall_w": null,
+              "busy_ghz": null,
+              "samples": 237
+            }
+          },
+          {
+            "concurrency": 1760,
+            "runs": 14080,
+            "failures": 0,
+            "checksum_ok": true,
+            "throughput_per_sec": 22.13,
+            "exec_wall_s": 636.218,
+            "p50_duration_ms": 71600.0,
+            "scopes": {
+              "AMD_package_W": 973.777,
+              "wall_w": null,
+              "busy_ghz": null,
+              "samples": 295
+            }
+          },
+          {
+            "concurrency": 2000,
+            "runs": 16000,
+            "failures": 0,
+            "checksum_ok": true,
+            "throughput_per_sec": 22.15,
+            "exec_wall_s": 722.323,
+            "p50_duration_ms": 79648.0,
+            "scopes": {
+              "AMD_package_W": 976.897,
+              "wall_w": null,
+              "busy_ghz": null,
+              "samples": 333
+            }
+          }
+        ]
+      }
+    }
+  },
+  "notes": [
+    "Logical triad traffic, not hardware DRAM counters or an official STREAM submission.",
+    "Power scopes are intentionally separate; Vera AP is not AMD package power.",
+    "Power exec windows are inferred from sampled summary arrival; not exact energy markers.",
+    "Host RPC timing bounds overlap; it does not timestamp kernel entry inside each guest."
+  ]
+}

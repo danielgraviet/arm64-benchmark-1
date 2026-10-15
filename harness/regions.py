@@ -39,6 +39,16 @@ RLP_TARGET_TOOLBOX: dict[str, str] = {
     "arm64-test-1": "https://toolbox.arm64-test-1.rlp.trydaytona.com/toolbox",
     "us-phoenix-1": "https://toolbox.us-phoenix-1.rlp.trydaytona.com/toolbox",
     "vera": "http://127.0.0.1:9000/toolbox",
+    # Single-host bench cells built for the Oct 2026 Vera comparison. The harness
+    # runs on the box itself, so the default is loopback; override per cell with
+    # <CELL>_RLP_TOOLBOX_URL when driving one from outside.
+    "phoenix-e6": os.environ.get(
+        "PHOENIX_E6_RLP_TOOLBOX_URL", "http://127.0.0.1:9000/toolbox"
+    ),
+    "graviton5": os.environ.get("G5_RLP_TOOLBOX_URL", "http://127.0.0.1:9000/toolbox"),
+    "epyc9575": os.environ.get(
+        "EPYC9575_RLP_TOOLBOX_URL", "http://127.0.0.1:9000/toolbox"
+    ),
     "redswitches": "https://toolbox.redswitches.rlp.trydaytona.com/toolbox",
     # digitalocean: single-host DO droplet cell, EPYC 9575F (Zen 5 / Turin).
     "digitalocean": os.environ.get(
@@ -54,6 +64,9 @@ RLP_TARGET_API: dict[str, str] = {
     "us-phoenix-1": "https://api.us-phoenix-1.rlp.trydaytona.com",
     "redswitches": "https://api.redswitches.rlp.trydaytona.com",
     "digitalocean": os.environ.get("DO_RLP_API_URL", "http://127.0.0.1:8088"),
+    "phoenix-e6": os.environ.get("PHOENIX_E6_RLP_API_URL", "http://127.0.0.1:8088"),
+    "graviton5": os.environ.get("G5_RLP_API_URL", "http://127.0.0.1:8088"),
+    "epyc9575": os.environ.get("EPYC9575_RLP_API_URL", "http://127.0.0.1:8088"),
 }
 
 ARM64_TARGETS = frozenset({"arm64-test-1", "vera"})

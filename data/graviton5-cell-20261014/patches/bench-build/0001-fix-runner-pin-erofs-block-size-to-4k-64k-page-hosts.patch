@@ -1,0 +1,120 @@
+From 50387866973c623878891cc91980269ad6f13cd0 Mon Sep 17 00:00:00 2001
+From: Vedran Jukic <vedran.jukic@gmail.com>
+Date: Sun, 6 Sep 2026 01:09:01 +0200
+Subject: [PATCH 1/2] =?UTF-8?q?fix(runner):=20pin=20erofs=20block=20size?=
+ =?UTF-8?q?=20to=204k=20=E2=80=94=2064k-page=20hosts=20mint=20unbootable?=
+ =?UTF-8?q?=20layers?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+mkfs.erofs defaults -b to the HOST page size. That is the wrong side of the
+boundary: the blob is mounted by the GUEST, and our guest kernels are 4k-page
+(CONFIG_ARM64_4K_PAGES on arm64). On a 4k-page host the default happened to
+match, so this never surfaced. On a 64k-page host — e.g. Ubuntu's -64k arm64
+kernels, which is what NVIDIA Vera hardware ships — every layer is minted with
+16k/64k blocks and EVERY sandbox fails to boot:
+
+  erofs: (device vdc): erofs_read_superblock: blkszbits 14 isn't supported
+  mount: mounting /dev/vdc on /mnt/l0 failed: Invalid argument
+  [init] ERROR overlay mount
+
+The guest mounts nothing, the overlay never assembles, PID1 never emits
+ROOTFS-READY, and the create dies at "rootfs not ready: marker not seen within
+20s" with nothing pointing at the block size. Firecracker, KVM, the serial
+console, the arm64 kernel and the image pull are all fine — the failure is
+several layers away from its cause, which makes it expensive to find.
+
+Pin -b explicitly at all four call sites (both the tar->erofs image conversion
+and the snapshot upperdir capture, each with its fallback invocation) so a blob
+is a property of the guest we boot rather than of whichever host converted it.
+This also matters for the shared CAS: it is content-addressed and cross-runner,
+so a 64k-block blob minted by one host would be unmountable on every other.
+
+No behaviour change on 4k-page hosts, where 4096 was already the default.
+
+Verified on the rebuilt arm64 Vera cell: before, every create failed at
+clone/template rootfs; after, the guest assembles its overlay and boots
+(boot-phases total_ms=16097, template=miss).
+
+Refs: PLAN-ARM64.md
+Signed-off-by: Vedran Jukic <vedran.jukic@gmail.com>
+(cherry picked from commit 6883d33660f337b7a9821f742ae99efe8c870bec)
+---
+ runner/internal/build/erofs.go    | 29 ++++++++++++++++++++++++++---
+ runner/internal/build/snapshot.go |  8 ++++++--
+ 2 files changed, 32 insertions(+), 5 deletions(-)
+
+diff --git a/runner/internal/build/erofs.go b/runner/internal/build/erofs.go
+index 739bb6aae..a503ea4a6 100644
+--- a/runner/internal/build/erofs.go
++++ b/runner/internal/build/erofs.go
+@@ -75,16 +75,39 @@ func diffIDToUUID(diffID string) string {
+ // Default: mkfsErofsReal.
+ var mkfsErofs = mkfsErofsReal
+ 
++// ErofsBlockSize is the erofs block size, in bytes, for every blob this runner
++// mints. It MUST be <= the GUEST kernel's page size, because the guest is what
++// mounts these blobs — but `mkfs.erofs` defaults `-b` to the *host* page size,
++// which is the wrong side of the boundary entirely.
++//
++// On a 4k-page host the default happened to match the 4k-page guest, so this
++// was invisible. On a 64k-page host (e.g. Ubuntu's `-64k` arm64 kernels) the
++// default mints 16k/64k-block blobs and EVERY sandbox fails to boot: the guest
++// mounts nothing, the overlay never assembles, and PID1 never emits
++// ROOTFS-READY, so the create dies at "rootfs not ready" with no hint that the
++// block size is to blame. Observed on an NVIDIA Vera host:
++//
++//	erofs: (device vdc): erofs_read_superblock: blkszbits 14 isn't supported
++//	mount: mounting /dev/vdc on /mnt/l0 failed: Invalid argument
++//	[init] ERROR overlay mount
++//
++// Pin it explicitly so the blob is a property of the guest we boot, not of
++// whatever host happened to convert it. This also keeps blobs byte-identical
++// across runners with differing page sizes — the CAS is content-addressed and
++// shared, so a 64k-block blob from one host would be unusable on every other.
++// 4096 matches the guest kernels we ship (CONFIG_ARM64_4K_PAGES on arm64).
++const ErofsBlockSize = "4096"
++
+ // mkfsErofsReal converts one uncompressed layer tar into an erofs blob at dst.
+-// Mirrors: mkfs.erofs -T0 -U<uuid> --tar=f --aufs [dst] [tar]
++// Mirrors: mkfs.erofs -b<blksz> -T0 -U<uuid> --tar=f --aufs [dst] [tar]
+ // Falls back without --aufs if the first attempt fails (older erofs-utils).
+ // dst is a temp path; the caller renames/links it into the CAS.
+ func mkfsErofsReal(dst, tarPath, uuid string) error {
+-	args := []string{"-T0", "-U", uuid, "--tar=f", "--aufs", dst, tarPath}
++	args := []string{"-b", ErofsBlockSize, "-T0", "-U", uuid, "--tar=f", "--aufs", dst, tarPath}
+ 	cmd := exec.Command("mkfs.erofs", args...)
+ 	if outp, err := cmd.CombinedOutput(); err != nil {
+ 		// retry without --aufs
+-		args2 := []string{"-T0", "-U", uuid, "--tar=f", dst, tarPath}
++		args2 := []string{"-b", ErofsBlockSize, "-T0", "-U", uuid, "--tar=f", dst, tarPath}
+ 		cmd2 := exec.Command("mkfs.erofs", args2...)
+ 		if outp2, err2 := cmd2.CombinedOutput(); err2 != nil {
+ 			os.Remove(dst)
+diff --git a/runner/internal/build/snapshot.go b/runner/internal/build/snapshot.go
+index 7e30fbaf9..787767883 100644
+--- a/runner/internal/build/snapshot.go
++++ b/runner/internal/build/snapshot.go
+@@ -50,12 +50,16 @@ func mkfsErofsDirReal(dst, srcDir, uuid string) error {
+ 	// reproducibility; -U pins the volume UUID; xattr prefixes (incl.
+ 	// trusted.overlay.* whiteout metadata) are preserved by default. mkfs.erofs
+ 	// takes [dst] [srcdir] for directory input.
+-	args := []string{"-n", "mkfs.erofs", "-T0", "-U", uuid, dst, srcDir}
++	// -b pins the block size to the GUEST page size rather than letting
++	// mkfs.erofs default it to the HOST's — see ErofsBlockSize. A snapshot
++	// minted on a 64k-page host is unmountable in a 4k-page guest, and because
++	// the CAS is shared it would be unmountable on every other runner too.
++	args := []string{"-n", "mkfs.erofs", "-b", ErofsBlockSize, "-T0", "-U", uuid, dst, srcDir}
+ 	cmd := exec.Command("sudo", args...)
+ 	if outp, err := cmd.CombinedOutput(); err != nil {
+ 		// Fall back to a direct (non-sudo) invocation for environments where the
+ 		// runner already runs privileged and sudo is absent.
+-		cmd2 := exec.Command("mkfs.erofs", "-T0", "-U", uuid, dst, srcDir)
++		cmd2 := exec.Command("mkfs.erofs", "-b", ErofsBlockSize, "-T0", "-U", uuid, dst, srcDir)
+ 		if outp2, err2 := cmd2.CombinedOutput(); err2 != nil {
+ 			os.Remove(dst)
+ 			return fmt.Errorf("mkfs.erofs (dir) failed: sudo=%v / direct=%v\n%s\n%s",
+-- 
+2.43.0
+

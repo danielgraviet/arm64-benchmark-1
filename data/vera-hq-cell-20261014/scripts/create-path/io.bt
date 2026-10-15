@@ -1,0 +1,7 @@
+tracepoint:syscalls:sys_enter_fsync /pid == $1/ { @f[tid] = nsecs; }
+tracepoint:syscalls:sys_exit_fsync  /@f[tid]/ { @fsync_ms = hist((nsecs - @f[tid]) / 1000000); @fsync_n = count(); @fsync_sum_s = sum((nsecs - @f[tid]) / 1000000); delete(@f[tid]); }
+tracepoint:syscalls:sys_enter_write /pid == $1/ { @w[tid] = nsecs; }
+tracepoint:syscalls:sys_exit_write  /@w[tid]/ { if (args.ret >= 1048576) { @write_1MiB_plus_ms = hist((nsecs - @w[tid]) / 1000000); @write_bytes = sum(args.ret); } delete(@w[tid]); }
+tracepoint:syscalls:sys_enter_openat /pid == $1/ { @o[tid] = nsecs; @oscr[tid] = (strncmp(str(args.filename), "/mnt/data/rlp/scratch", 21) == 0); }
+tracepoint:syscalls:sys_exit_openat  /@o[tid]/ { if (@oscr[tid]) { @open_scratch_ms = hist((nsecs - @o[tid]) / 1000000); } delete(@o[tid]); delete(@oscr[tid]); }
+END { clear(@f); clear(@w); clear(@o); clear(@oscr); }

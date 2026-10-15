@@ -1,0 +1,6 @@
+// bpftrace forks.bt <runner_pid>: every fork syscall by the runner (enter/exit ns), for overlap analysis.
+tracepoint:syscalls:sys_enter_clone  /pid == $1/ { @s[tid] = nsecs; }
+tracepoint:syscalls:sys_enter_clone3 /pid == $1/ { @s[tid] = nsecs; }
+tracepoint:syscalls:sys_exit_clone   /@s[tid]/ { if (args.ret > 0) { printf("F %d %d\n", @s[tid], nsecs); } delete(@s[tid]); }
+tracepoint:syscalls:sys_exit_clone3  /@s[tid]/ { if (args.ret > 0) { printf("F %d %d\n", @s[tid], nsecs); } delete(@s[tid]); }
+END { clear(@s); }

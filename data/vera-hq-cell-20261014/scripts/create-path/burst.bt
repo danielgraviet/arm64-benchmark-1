@@ -1,0 +1,19 @@
+// Run as: bpftrace burst.bt <runner_pid>.  Splits the opaque clone steps during a burst.
+tracepoint:sched:sched_process_fork /args.parent_pid == $1/ { @fork_ts[args.child_pid] = nsecs; @forks = count(); }
+tracepoint:sched:sched_process_exec /@fork_ts[pid]/ {
+  @fork_to_exec_us[comm] = hist((nsecs - @fork_ts[pid]) / 1000);
+  @exec_ts[pid] = nsecs; delete(@fork_ts[pid]);
+}
+tracepoint:sched:sched_process_exit /@exec_ts[pid] && comm == "cp"/ { @cp_runtime_ms = hist((nsecs - @exec_ts[pid]) / 1000000); delete(@exec_ts[pid]); }
+tracepoint:sched:sched_process_exit /@exec_ts[pid] && comm != "cp"/ { delete(@exec_ts[pid]); }
+tracepoint:syscalls:sys_enter_mkdirat /pid == $1/ { @mk_ts[tid] = nsecs; @mk_cg[tid] = (strncmp(str(args.pathname), "/sys/fs/cgroup", 14) == 0); }
+tracepoint:syscalls:sys_exit_mkdirat /@mk_ts[tid]/ {
+  if (@mk_cg[tid]) { @mkdir_cgroup_us = hist((nsecs - @mk_ts[tid]) / 1000); } else { @mkdir_other_us = hist((nsecs - @mk_ts[tid]) / 1000); }
+  delete(@mk_ts[tid]); delete(@mk_cg[tid]);
+}
+tracepoint:syscalls:sys_enter_openat /pid == $1/ { @op_ts[tid] = nsecs; @op_cg[tid] = (strncmp(str(args.filename), "/sys/fs/cgroup", 14) == 0); }
+tracepoint:syscalls:sys_exit_openat /@op_ts[tid]/ {
+  if (@op_cg[tid]) { @open_cgroup_us = hist((nsecs - @op_ts[tid]) / 1000); }
+  delete(@op_ts[tid]); delete(@op_cg[tid]);
+}
+END { clear(@fork_ts); clear(@exec_ts); clear(@mk_ts); clear(@mk_cg); clear(@op_ts); clear(@op_cg); }

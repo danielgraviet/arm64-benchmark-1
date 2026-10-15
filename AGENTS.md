@@ -8,6 +8,22 @@ Vera HQ is Axis-only (`ssh.axisapps.io`). Agents on the Mac cannot usefully Remo
 
 Cwd is the clone (usually `/home/ubuntu/arm64-benchmark-1`). The RLP API and toolbox are on localhost. Never drive a ladder from a laptop SSH tunnel. That measures the tunnel.
 
+## Before any benchmark — read `docs/benchmark-methodology.md`
+
+Short version (every point broke a published number at least once):
+
+- **Startup needs an idle-entrypoint image.** `vera-agent-benchmark:v3` runs `workload.agent` in every sandbox at boot
+  (~3 core-s each), so a 1k burst with it is startup *under load*. With `alpine:3.20` both HQ Vera and the 9575F
+  bring up 1k in ~4 s; the agent image's 10 s vs 20–30 s gap is CPU throughput. Use `MPFLEET_IMAGE=alpine:3.20`.
+- **One operator per box.** Check `tmux ls`, `w`, `ls /etc/systemd/system/rlp-*.service.d/` first.
+- **Gate every rep** with `scripts/host/bench-preflight.sh <outdir>` (floor script, background CPU, warm netns pool,
+  hugepages, ARP limits, leftovers, balloon). It also records kernel/page size/cmdline/power cap/pins/binary SHAs.
+- **`post_s` is not control-plane time** when the client is one Python process; for bursts ≥ 500 use
+  `mpfleet.py --procs 16` and report `procs`.
+- **Record placement and socket count.** On dual-socket Vera, pinning changes CPU-heavy runs 2× (not the idle startup
+  path); HQ Vera throughput is 13 jobs/s on one socket, 26.6 on both.
+- **Same build, daemon, SDK, guest shape and client settings on every platform compared.**
+
 ## How to run
 
 Use the git-tracked wrappers. Do not invent `/tmp` scripts.

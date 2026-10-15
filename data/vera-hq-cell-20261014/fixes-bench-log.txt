@@ -1,0 +1,26 @@
+18:41:45 host: 6.17.0-1032-nvidia-64k nproc=352 runner=0fd55bab4ad6 api=1648ab971fe5 slice=0-351
+18:44:38 FLAGS off: initdisk=copy neigh=- cgpool=0 backlog=128 netns=2100 cgpool_ready=0
+18:44:53 STARTUP flags=off image=idle rep=1 ok=1000 failed=0 all_ready=4.70s create_p50=2.07s p95=3.30s post_p50=0.72s overflows=210 preflight=PASS
+18:45:54 STARTUP flags=off image=agent rep=1 ok=999 failed=1 all_ready=21.82s create_p50=13.58s p95=21.64s post_p50=0.30s overflows=0 preflight=PASS
+18:49:21 STARTUP flags=off image=idle rep=2 ok=1000 failed=0 all_ready=3.86s create_p50=2.39s p95=3.76s post_p50=0.23s overflows=0 preflight=PASS
+18:50:23 STARTUP flags=off image=agent rep=2 ok=1000 failed=0 all_ready=21.98s create_p50=11.76s p95=21.86s post_p50=0.40s overflows=0 preflight=PASS
+19:12:46 TPUT flags=off c=176 runs=1408 failures=8 tput=1.47/s p50=9.2s p99=18.9s
+19:12:46 TPUT flags=off c=352 runs=2816 failures=0 tput=26.67/s p50=12.1s p99=19.7s
+19:12:46 TPUT flags=off c=704 runs=5632 failures=0 tput=25.93/s p50=17.3s p99=71.6s
+19:15:58 FLAGS on: initdisk=nofsync neigh=1 cgpool=1400 backlog=4096 netns=2100 cgpool_ready=1408
+19:16:19 STARTUP flags=on image=idle rep=1 ok=999 failed=1 all_ready=10.42s create_p50=1.51s p95=2.54s post_p50=0.28s overflows=0 preflight=PASS
+19:18:30 STARTUP flags=on image=agent rep=1 ok=998 failed=2 all_ready=61.02s create_p50=13.72s p95=23.90s post_p50=0.33s overflows=0 preflight=PASS
+19:20:42 STARTUP flags=on image=idle rep=2 ok=1000 failed=0 all_ready=3.88s create_p50=1.62s p95=2.61s post_p50=0.32s overflows=0 preflight=PASS
+19:22:05 STARTUP flags=on image=agent rep=2 ok=1000 failed=0 all_ready=28.10s create_p50=11.84s p95=26.05s post_p50=0.42s overflows=0 preflight=PASS
+19:30:05 TPUT flags=on c=176 runs=1408 failures=0 tput=15.17/s p50=8.4s p99=19.1s
+19:30:05 TPUT flags=on c=352 runs=2816 failures=0 tput=26.65/s p50=12.1s p99=19.7s
+19:30:05 TPUT flags=on c=704 runs=5632 failures=4 tput=25.69/s p50=16.6s p99=79.0s
+19:33:15 FLAGS off: initdisk=copy neigh=- cgpool=0 backlog=128 netns=2100 cgpool_ready=0
+19:33:31 STARTUP flags=off image=idle rep=3 ok=1000 failed=0 all_ready=3.66s create_p50=2.32s p95=3.46s post_p50=0.28s overflows=447 preflight=PASS
+19:34:36 STARTUP flags=off image=agent rep=3 ok=999 failed=1 all_ready=25.75s create_p50=13.53s p95=25.64s post_p50=0.25s overflows=0 preflight=PASS
+19:40:29 FLAGS on: initdisk=nofsync neigh=1 cgpool=1400 backlog=4096 netns=2100 cgpool_ready=1408
+19:40:43 STARTUP flags=on image=idle rep=3 ok=1000 failed=0 all_ready=2.69s create_p50=1.59s p95=2.56s post_p50=0.26s overflows=0 preflight=PASS
+19:41:44 STARTUP flags=on image=agent rep=3 ok=1000 failed=0 all_ready=21.82s create_p50=7.55s p95=21.73s post_p50=0.26s overflows=0 preflight=PASS
+19:41:44 DONE -> /mnt/data/bench/fixes-bench-20261014_184145
+19:45:11 FLAGS off: initdisk=copy neigh=- cgpool=0 backlog=128 netns=2100 cgpool_ready=0
+19:45:15 SCRIPT EXIT rc=0 (flags restored OFF)

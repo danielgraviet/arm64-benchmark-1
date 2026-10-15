@@ -1,0 +1,107 @@
+daytona f0611fa13 + cherry-pick 6883d3366 (EROFS -b 4096) + convert-system-layer -b 4096; built 2026-10-13 on vera; same Daytona build as the epyc9755 cell
+===HOSTCHANGES
+2026-10-13T22:24:41Z udev: shadowed 70-iscsi-network-interface.rules to skip rlp*/veth*/tap*/fc* (remove /etc/udev/rules.d/70-iscsi-network-interface.rules to revert)
+2026-10-13T22:25:05Z stopped libvirtd(+sockets), virtlogd, virtlockd, fwupd; runtime-masked libvirtd+fwupd (reboot restores; 'systemctl unmask --runtime' to revert now)
+2026-10-14T06:37:49Z moved Daniel's /etc/systemd/system/rlp-api.service.d/no-event-audit.conf -> /etc/rlp/daniel-backup-20261014_063749/
+2026-10-14T06:37:49Z moved Daniel's /etc/systemd/system/rlp-runner.service.d/snapshots.conf -> /etc/rlp/daniel-backup-20261014_063749/
+2026-10-14T06:37:50Z udev.conf children_max=16 commented out (original in /etc/rlp/daniel-backup-20261014_063749/udev.conf)
+2026-10-14T06:37:50Z wrote /etc/sysctl.d/90-rlp-bench.conf (ARP 65536, conntrack 1M, hugepages 0) and applied
+2026-10-14T06:37:53Z stopped libvirtd/virtlogd/virtlockd/fwupd again (runtime-masked; reboot restores)
+2026-10-14T06:37:53Z runner.env: RLP_FC_SOCK_WAIT_MS=30000
+===api.env
+DATABASE_URL=postgres://rlp:****@127.0.0.1:5439/rlplatform
+NATS_URL=nats://127.0.0.1:4222
+NATS_TOKEN=****
+API_BIND=127.0.0.1:8088
+RLP_REGIONS_SEED=/etc/rlp/regions.json
+RLP_ALLOW_NON_NVMEOF_RUNNERS=1
+RLP_INTERNAL_TOKEN=****
+RLP_TOOLBOX_PROXY_URL=http://127.0.0.1:9000/toolbox
+# sandbox shape bounds needed by the published benchmark (0.025 CPU / 64 MiB / 4 GiB burst / small disks)
+RLP_MIN_CPU=0.025
+RLP_MIN_MEM_MIB=64
+RLP_MIN_SCRATCH_MIB=16
+RLP_MEM_MIB_PER_CPU=8192
+RLP_BURST_MAX_CPU=1
+RLP_BURST_MAX_MEM_MIB=4096
+RLP_IDLE_REAP_ENABLED=1
+RLP_OTEL_DISABLED=1
+# Required by the global-artifact-store startup guard (G4). Name only: the API holds no S3 client and the
+# runner has no RLP_ARTIFACT_S3_* credentials, so nothing is exported. Single-region cell, always warm.
+RLP_ARTIFACT_S3_BUCKET=rlp-artifacts-unused
+# NOTE: event auditing left at the platform default (on). Vera's old tuning package turned it off;
+# on the 9575F that made no measurable difference. Change only as an explicit, recorded A/B.
+===runner.env
+RLP_NATS_URL=nats://127.0.0.1:4222
+RLP_NATS_TOKEN=****
+RLP_RUNNER_ID=vera-1
+RLP_RUNNER_REGION=vera
+RLP_PUBLIC_IP=10.96.8.228
+RLP_SUBNET_CIDR=10.101.32.0/20
+RLP_GUEST_ARCH=arm64
+RLP_NFS_ROOT=/mnt/data/rlp
+RLP_LAYERS_MOUNT=/mnt/data/rlp/layers
+RLP_CAS_DIR=/mnt/data/rlp/layers/sha256
+RLP_MANIFESTS_DIR=/mnt/data/rlp/manifests
+RLP_SYSTEM_DIR=/mnt/data/rlp/system
+RLP_TEMPLATE_CAS_DIR=/mnt/data/rlp/templates
+RLP_LOCAL_SCRATCH=/mnt/data/rlp/scratch
+RLP_KERNEL=/mnt/data/rlp/kernel/Image-6.12.34-rlp1-arm64
+RLP_INITDISK=/var/lib/rlp/initdisk-rlp.ext4
+RLP_FC_BIN=/usr/local/bin/firecracker
+RLP_SNAPSHOTS=1
+RLP_NETNS_NETLINK=1
+RLP_NETNS_POOL=2100
+RLP_VM_CONCURRENCY=512
+RLP_MAX_LIVE_VMS=3000
+RLP_RESERVE_PCT=95
+RLP_MEM_MIB_PER_CPU=8192
+RLP_TOOLBOX_WAIT_SEC=300
+# 64 KiB host pages: the Firecracker balloon corrupts guest memory (#1066). Must stay off.
+RLP_BALLOON=0
+RLP_KSM=0
+RLP_BUILDER_IMAGE=off
+RLP_BLOCKMOUNT_ENABLED=0
+RLP_USAGE_SHIP_INTERVAL=0
+RLP_OTEL_DISABLED=1
+RLP_RUNNER_CPU_TYPE=vera
+# bench: avoid spawn-timeout retry storms (#3212); default 3000 retries slow-but-healthy VMs
+RLP_FC_SOCK_WAIT_MS=30000
+===proxy.env
+RLP_DB_URL=postgres://rlp:****@127.0.0.1:5439/rlplatform
+RLP_NATS_URL=nats://127.0.0.1:4222
+RLP_NATS_TOKEN=****
+RLP_INTERNAL_TOKEN=****
+RLP_API_URL=http://127.0.0.1:8088
+RLP_API_KEY=****
+RLP_PROXY_LISTEN=0.0.0.0:9000
+RLP_SSH_LISTEN=127.0.0.1:2222
+RLP_SSH_HOST_KEY_PATH=/etc/rlp/ssh_host_key
+RLP_REGION=vera
+RLP_OTEL_DISABLED=1
+===regions.json
+{"macro_regions":[{"id":"vera-cell","cell_id":"vera-cell","name":"HQ Vera bench cell","global_region_id":"us"}],
+ "regions":[{"id":"vera","name":"HQ Vera","macro_region_id":"vera-cell","is_default":true,"status":"active",
+   "auto_placement_enabled":true,"default_cpu_arch":"arm64","default_network_class":"standard","default_disk_class":"standard",
+   "toolbox_proxy_url":"http://127.0.0.1:9000/toolbox"}]}
+===sysctl
+# rlp bench cell (HQ Vera). Density limits: default ARP table (1024) caps a host at ~1k sandboxes.
+net.ipv4.neigh.default.gc_thresh1 = 8192
+net.ipv4.neigh.default.gc_thresh2 = 32768
+net.ipv4.neigh.default.gc_thresh3 = 65536
+net.ipv6.neigh.default.gc_thresh1 = 8192
+net.ipv6.neigh.default.gc_thresh2 = 32768
+net.ipv6.neigh.default.gc_thresh3 = 65536
+net.netfilter.nf_conntrack_max = 1048576
+net.ipv4.tcp_max_syn_backlog = 65535
+vm.max_map_count = 1048576
+vm.nr_hugepages = 0
+===udev
+# rlp bench: shadows /usr/lib/udev/rules.d/70-iscsi-network-interface.rules.
+# The stock rule forks net-interface-handler for EVERY net device, incl. thousands of sandbox veths.
+SUBSYSTEM=="net", KERNEL=="rlp*|veth*|tap*|fc*", GOTO="rlp_iscsi_end"
+SUBSYSTEM=="net", ACTION=="add", RUN+="/usr/lib/open-iscsi/net-interface-handler start"
+SUBSYSTEM=="net", ACTION=="remove", RUN+="/usr/lib/open-iscsi/net-interface-handler stop"
+LABEL="rlp_iscsi_end"
+===daniel-backup
+ls: cannot access '/etc/rlp/daniel-backup-*': No such file or directory

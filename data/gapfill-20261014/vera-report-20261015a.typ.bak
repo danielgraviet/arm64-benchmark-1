@@ -1,0 +1,250 @@
+#import "create-path-breakdown/tables.typ": t1kidle, t1kagent, t2k, twarm
+#set document(title: "NVIDIA Vera sandbox benchmarks — consolidated report", date: datetime(year: 2026, month: 10, day: 15))
+#set page(paper: "a4", margin: (x: 1.6cm, y: 1.7cm), numbering: "1 / 1",
+  header: context { if counter(page).get().first() > 1 [#set text(8pt, fill: gray); NVIDIA Vera sandbox benchmarks — consolidated report #h(1fr) Daytona rl-platform · 2026-10-15] })
+#set text(font: ("Libertinus Serif", "New Computer Modern"), size: 9.8pt)
+#set par(justify: false, leading: 0.6em)
+#set heading(numbering: "1.")
+#show heading.where(level: 1): it => block(above: 1.3em, below: 0.65em, text(13pt, weight: "bold", it))
+#show heading.where(level: 2): it => block(above: 1em, below: 0.5em, text(11pt, weight: "bold", it))
+#show table: set text(8.5pt)
+#set table(stroke: 0.4pt + rgb("#bbbbbb"), inset: (x: 4.5pt, y: 3.2pt))
+#show table.cell.where(y: 0): set text(weight: "bold")
+#show table.cell.where(y: 0): set table.cell(fill: rgb("#eef1f5"))
+#let w(x) = text(weight: "bold", fill: rgb("#1a6b2f"), x)
+#let r(x) = text(weight: "bold", fill: rgb("#a33a1a"), x)
+#let na = text(fill: gray, [—])
+#let miss = text(fill: rgb("#a33a1a"), [not run])
+#let note(body) = block(fill: rgb("#f3f5f8"), inset: 8pt, radius: 3pt, width: 100%, text(9pt, body))
+
+#align(center)[
+  #v(1.5em)
+  #text(20pt, weight: "bold")[NVIDIA Vera sandbox benchmarks]
+  #v(-0.3em)
+  #text(13pt)[Where Vera stands against AMD EPYC 9575F, AMD EPYC 9J45 (Turin) and AWS Graviton5]
+  #v(-0.1em)
+  #text(9pt, fill: gray)[Consolidated report · data as of 2026-10-15 00:30 UTC · Daytona rl-platform benchmark cells]
+  #v(0.8em)
+]
+
+#note[
+*Scope.* Daytona Linux sandboxes (Firecracker microVMs) on four bare-metal hosts running the *same Daytona build*,
+the same benchmark harness and the same recipes. Three measurements: *startup* (1,000 or 2,000 sandboxes created at once),
+*throughput* (jobs per second of a CPU-bound agent workload running inside packed sandboxes) and *density* (sandboxes
+alive at once). Plus a per-step breakdown of the create path, the fixes that changed the numbers, and the methodology
+corrections behind them. All four hosts are development benchmark cells, not production.
+]
+
+= Executive summary
+
+*Vera's real strength is fast cores under sustained CPU-bound sandbox work — but on our current data that lead is moderate,
+not decisive, and it does not extend to startup, density or reliability.*
+
+#table(columns: (1.2fr, 0.8fr, 3fr),
+  [Question], [Leader], [Evidence],
+  [Throughput (jobs/s)], [#w[Vera]#super[\*]], [Vera 26.7 · Graviton5 22.9 (+16 %) · EPYC 9575F 8.0 (×3.3, mostly core count: 176 vs 64 cores). Holds at 2,000 sandboxes (26.1 vs 8.0). #super[\*]Turin not yet measured.],
+  [Speed per core], [#w[Vera]], [0.152 jobs/s per physical core vs 0.126 (9575F) and 0.119 (Graviton5): +21–28 %. Fastest single job (5.9 s vs 6.6–7.1 s). Per hardware thread Graviton5 leads (0.119 vs 0.076).],
+  [Throughput per socket], [Graviton5], [Graviton5 22.9 on one socket vs Vera ≈ 13 per socket.],
+  [Platform startup (idle image)], [9575F, Graviton5], [1k burst, typical sandbox, fixes on: Graviton5 0.85 s · 9575F 1.06 s · Vera 1.57 s · Turin 2.35 s.],
+  [Startup under CPU load (agent image)], [Turin], [1k all ready: Turin 7.9 s · Graviton5 10–12 s · 9575F 19 s · Vera 22–28 s. 2k: Turin 21 s · Vera 50–55 s.],
+  [Density], [Turin], [8,000 live cleanly, peak 9,750 (limited by the runner heartbeat, not hardware). Vera and the 9575F verified to 2,000.],
+  [Reliability], [x86, Graviton5], [0 failures in thousands of startups. Vera: ≈ 0.2 % of guests wedge after snapshot resume (#3213).],
+)
+
+*Bottom line.* On Daytona's current sandbox benchmarks, Vera is *competitive* — fastest cores, steady clock under load,
+highest measured throughput — but *not significantly ahead*, and slower at startup. Three tests could still change that
+(section 9): Turin's throughput ladder, jobs per watt, and a memory-bandwidth-heavy sandbox workload, which is where
+Vera's design should matter and which our CPU-bound benchmark does not exercise.
+
+= Hosts and build
+
+#table(columns: (auto, 1fr, 1fr, 1fr, 1fr),
+  [], [HQ Vera], [EPYC 9575F], [Turin (OCI phoenix-e6)], [Graviton5 (AWS m9gd)],
+  [CPU], [NVIDIA Vera, 2 × 88 cores, SMT2 (352 threads)], [AMD Zen 5, 1 × 64 cores, SMT2 (128)], [AMD EPYC 9J45, 2 × 96 cores, SMT2 (384)], [Neoverse-V3, 1 × 192 cores, no SMT],
+  [Memory], [1,479 GiB], [1,133 GiB], [2,267 GiB], [754 GiB],
+  [Host kernel / pages], [6.17 nvidia / 64 KiB, `preempt=none`], [7.0 / 4 KiB], [6.17 oracle / 4 KiB], [6.17 aws / 4 KiB],
+  [Guest kernel], [6.12.34 arm64], [6.8.12 x86], [6.8.12 x86], [6.12.34 arm64],
+  [Storage], [1 NVMe], [NVMe RAID], [1 NVMe (RAID10 removed)], [1 NVMe instance store],
+  [`RLP_VM_MAXACK`], [256], [*2,048*], [256], [256],
+)
+Every host: Daytona `f0611fa13` + EROFS-4k (#1060) + 30 s Firecracker socket wait (#3212) + the four create-path fixes behind
+flags (section 6); Firecracker v1.16.1; daemon `rlp-rs-0.4.1`; balloon off; sandbox 1 vCPU, 0.025 CPU, 64 MiB; whole box,
+unpinned. Startup client: `mpfleet.py` with 16 processes. Results below are with the fixes *on* unless stated.
+
+= Results
+
+== Startup — 1,000 sandboxes at once
+
+#table(columns: (1.5fr, 1fr, 1fr, 1fr, 1fr),
+  [Metric (s)], [HQ Vera], [EPYC 9575F], [Turin], [Graviton5],
+  [Idle image: typical (p50), fixes off → on], [2.26 → 1.57], [2.51 → #w[1.06]], [3.70 → 2.35], [≈ 2.2 → #w[0.85]],
+  [Idle image: slow (p95), on], [2.54–2.61], [1.57–1.60], [3.76], [#w[1.54–1.56]],
+  [Idle image: all ready, on], [2.7–3.9#super[a]], [#w[2.05–2.26]], [3.87–3.88], [1.68–2.32#super[b]],
+  [Agent image: all ready, on], [21.8–28.1#super[a]], [18.8–19.1], [#w[7.84–7.88]], [10.1–12.3],
+  [Failures], [1 in 3,000 (idle), 2 in 3,000 (agent)], [0], [0], [0],
+)
+#text(8.3pt)[#super[a] one run held open by a wedged guest (10.4 s idle, 61 s agent). #super[b] one run 7.6 s: 5 sandboxes with 5 s toolbox waits (new, fixes-on only).]
+
+== Startup — 2,000 sandboxes at once
+
+#table(columns: (1.5fr, 1fr, 1fr, 1fr, 1fr),
+  [Metric (s)], [HQ Vera], [EPYC 9575F], [Turin], [Graviton5],
+  [Idle: p50 / p95], [2.9 / 6.5], [#w[2.4 / 3.6]], [3.5 / 6.8], miss,
+  [Idle: all ready], [6.6–7.2], [#w[4.6] (one run 17.7)], [7.1–7.2], miss,
+  [Agent: p50 / all ready], [28.5 / 50–55], [19.7 / 58–71], [#w[7.0 / 21.4]], miss,
+)
+
+== Throughput — dense agent ladder (jobs/s)
+
+Published recipe: 45 jobs × 8 episodes per sandbox, hold-then-exec, 0.025 CPU (max 1), 64 MiB (max 4 GiB).
+
+#table(columns: (1.8fr, 0.7fr, 0.7fr, 0.7fr, 0.7fr, 0.75fr),
+  [Host], [176], [352], [704], [1,056], [2,000],
+  [*HQ Vera*], [15.2], [#w[26.7]], [25.6], na, [#w[26.1]],
+  [Graviton5], [23.6], [22.3], [22.9], [22.8], [23.0#super[c]],
+  [EPYC 9575F], [8.0], [8.1], [8.0], na, [8.0],
+  [Turin], miss, miss, miss, miss, miss,
+  [Vera one socket (published Sep)], [11.8–13.7], [12.9–13.3], [12.8–13.1], [12.8–13.0], [12.7–14.2#super[d]],
+  [EPYC 9755 (published)], [9.6–10.0], [10.7–11.5], [10.7–11.3], [10.7–11.3], [10.9–12.0#super[d]],
+)
+#text(8.3pt)[#super[c] fixes-off run (fixes do not change throughput on any host). #super[d] with failures. Platform overhead is 0.5–0.6 % of each job,
+so throughput = cores × per-core speed under full load. Clock drop when packed: 9575F −24 %, Vera −6 %, Graviton5 −3 %.
+At 2,000 a 9575F job takes 239 s (p50), a Vera job 34 s.]
+
+#table(columns: (1.5fr, 0.9fr, 0.9fr, 0.8fr, 0.8fr, 1fr),
+  [Derived], [Plateau jobs/s], [Cores / threads], [Per core], [Per thread], [Single job, light load],
+  [HQ Vera], [26.7], [176 / 352], [#w[0.152]], [0.076], [#w[5.9 s]],
+  [Graviton5], [22.9], [192 / 192], [0.119], [#w[0.119]], [6.65 s],
+  [EPYC 9575F], [8.0], [64 / 128], [0.126], [0.063], [6.7 s],
+  [EPYC 9755 (published)], [≈ 11], [128 / 256], [0.086], [0.043], [7.1 s],
+  [Turin], miss, [192 / 384], [—], [—], [—],
+)
+
+== Density
+
+- *Turin:* bursts of 3,000 (42.7 s) and 4,000 (81.9 s) with 0 failures; waves of 2,000 kept alive to *8,000 with 0 failures*
+  (each wave ready in 10–15 s); peak *9,750* alive with 1.7 TB free. Configured limits found on the way: the API's 60 s
+  create-pickup cap, the scratch reservation (1 GiB per sandbox → 6,742), `RLP_MAX_QUEUED_CREATES` = 8,000. The final stop
+  was the runner's heartbeat starving under load: the API marked the runner lost and its lost-sweep marked 9,876 live
+  sandboxes terminal, orphaning them (evidence added to #2459).
+- *Vera / 9575F:* 2,000 alive, ≤ 1 failure per 16,000 jobs, ≈ 170–184 MiB host memory per sandbox under load. Configured cap 3,000.
+- *Graviton5:* 2,000 with 0 failures. 64 KiB host pages cost ≈ 8 % more memory per sandbox.
+
+= Where the create time goes
+
+From `POST /vms` to the first command answered, per sandbox; client timestamps joined with the runner's per-sandbox log on
+each host (same clock). Full tables in the appendix.
+
+#table(columns: (2.4fr, 1fr, 1fr, 1fr, 1fr),
+  [1,000 at once, idle image, fixes on (ms, p50)], [HQ Vera], [EPYC 9575F], [Graviton5], [Turin],
+  [A · API accepts the create (overlaps B)], [285], [652], [196], [252],
+  [B · request → runner starts the job (queue for a slot)], [715], [411], [321], [865],
+  [D2 · scratch + init-disk copy], [11], [38], [14], [10],
+  [D3 · Firecracker spawn + API socket], [#r[208]], [83], [83], [26],
+  [D4 · snapshot load + resume], [32], [39], [16], [#r[484]],
+  [D6 · cgroup, register, entrypoint trigger], [124], [155], [78], [17],
+  [D · runner clone total], [441], [413], [246], [706],
+  [E · running event → client sees it (SDK polling)], [319], [220], [182], [346],
+  [*Total, request → first command done*], [*1,591*], [*1,076*], [*889*], [*2,353*],
+)
+
+- *Idle host, one sandbox:* ≈ 88 ms on Vera (API ≈ 5 ms, runner ≈ 60 ms with Firecracker spawn 39 ms, event back 2 ms,
+  first command 21 ms). The harness reports ≈ 275 ms everywhere because its SDK first polls after 250 ms.
+- *In a burst the time is waiting:* for a runner slot (B; 256 in flight by default) and for the next SDK poll (E).
+- *Host-specific slow steps:* Vera's Firecracker spawn (208 ms, 2.5–8× the others) and Turin's snapshot load (484 ms vs
+  16–39 ms) — both unexplained and the obvious next investigations.
+
+= Fixes that changed the results
+
+== The four create-path fixes (each behind a flag; measurement builds, not merged)
+
+#table(columns: (1.4fr, 2fr, 2fr),
+  [Fix], [What it changes], [Effect],
+  [#3260 `RLP_INITDISK_MODE=nofsync`], [No fsync of the 16 MiB per-sandbox init disk (16 GB written per 1k burst)], [D2: 352 ms (Vera), 567 ms (Graviton5), 1,293 ms (9575F) → 10–38 ms],
+  [#3261 `RLP_CGROUP_POOL=1400`], [Per-sandbox cgroups pre-created at runner start], [188–201 ms → 24 ms on Vera],
+  [#3265 `RLP_NEIGH_PERMANENT=1`], [Permanent neighbour entry: removes a 580 ms post-resume stall on arm64], [Vera single-create p99 658 → 73 ms],
+  [#3269 `RLP_API_LISTEN_BACKLOG=4096`], [API listen queue 128 → 4,096], [Dropped connections 424–687 → 0 per burst],
+)
+Together: 1k idle startup p50 −30 % on Vera, −57 % on the 9575F, ≈ −60 % on Graviton5, −36 % on Turin (all ready 7.95 → 3.88 s).
+No change to agent-image startup or throughput. On Turin only #3260 and #3261 mattered; #3265 and #3269 fix symptoms Turin never had.
+
+== Other fixes behind earlier result changes
+
+#table(columns: (1.8fr, 3fr),
+  [Fix], [Effect],
+  [Sudo storm (#1754, upstream)], [BM pair at 1,800 sandboxes: 1,720 of 1,880 failed → 0 of 3,600; p50 260 → 20 s],
+  [Firecracker socket wait 3 → 30 s (#3212)], [Spawn timeouts and runner self-cordons → 0 (Vera 177–304 per 1k); medians unchanged],
+  [Balloon off on 64 KiB-page hosts (#1066)], [Guest memory corruption 14/64 → 0/544],
+  [EROFS 4 KiB blocks (#1060)], [Vera creates: always failing → working],
+  [Busy loop `rlp-cpu-weight-floor.sh` stopped (9575F)], [1k median 18.6 → 9.7 s; it ran during the published 2 Oct runs],
+  [ARP `gc_thresh3` 1,024 → 65,536], [704 sandboxes: 1,324 failures → 0; peak 55.9 → 62.7 jobs/s],
+  [Memory burst cap 32 GiB → 512 MiB], [2,112 sandboxes: 14.4 → 137.6 jobs/s; OOM kills 406 → 0],
+  [E2B huge pages released (HQ Vera)], [Usable memory ~2 GB → 1.44 TB],
+  [Hostname in `/etc/hosts`], [`sudo` 113 s → 0.2 s; runner could not start without it],
+  [Client: 16 processes, open-files limit, SDK disk rounding], [“Accept” 2.9–5.8 → 0.12–0.5 s; EMFILE failures → 0; Turin's density wall at 6,742 removed],
+)
+
+= Methodology corrections
+
+- *The agent image measures its own workload, not startup.* Each sandbox burns 3–4 core-seconds at boot; with an idle image the
+  platform starts 1,000 sandboxes in ≈ 4 s (fixes off) on Vera, the 9575F and Graviton5. Daytona's own CPU cost is ≈ 28 ms per sandbox.
+- *“Control plane accepts the request” was the single-process Python client*, not the API.
+- *Pinning to one socket helps only Vera, and only with CPU-heavy guests* (Vera's cross-socket memory costs 3.08× vs 1.25× on
+  Graviton5); it halves throughput everywhere. The published 13.3 jobs/s was one Vera socket.
+- *Published-data corrections:* the 9575F 2k mean kept a 151 s outlier and was taken with the busy loop on; the 9755's 88.4 s
+  drops a run (all four: 91.1 s); Vera's published 2k throughput point had 53–627 failures.
+- *Measurement traps:* a second operator on HQ Vera invalidated one night of runs (rule: one operator per box); a 120 s client
+  timeout reported healthy 9575F jobs as failures; SDK polling adds ≈ 0.2–0.35 s to every startup number.
+- *Turin's “8 s startup” is explained:* it was measured without the fixes; with them it is 3.9 s.
+
+= Host page size (64 KiB vs 4 KiB)
+
+Guests always use 4 KiB pages; the host page size only affects how the host backs and maps guest memory. On Graviton5 (same
+chip, same kernel version, one reboot) 64 KiB pages changed throughput by +1.5 % (noise), startup by +0.5 s and single-job time
+not at all, and cost ≈ 8 % more host memory per sandbox. The benchmark workload is CPU-bound with a small memory footprint, so
+cheaper address translation saves little. *On Vera itself this was never measured* — its 4 KiB kernel is installed but unused —
+so a gain there is unlikely for this workload but not ruled out.
+
+= Open questions and next tests
+
+#table(columns: (1.6fr, 2.4fr, 0.7fr),
+  [Test], [Why], [Time],
+  [*Turin throughput ladder* (fixes on, 176 → 2,000)], [The deciding number: Turin's agent bursts are 2.5–3× faster than Vera's, so it may match or beat Vera's 26.7 jobs/s.], [≈ 1 h],
+  [*Jobs per watt* (Vera vs Turin vs 9575F)], [NVIDIA's efficiency claim; Vera exposes per-socket power, AMD package power. Sampler ready (`gapfill-sampler.py`).], [with the ladders],
+  [*Memory-bandwidth-heavy sandbox workload*], [Vera's design point; the agent workload is ≈ 11 % memory-bound, so it cannot show it.], [≈ 1 day],
+  [Equalize `RLP_VM_MAXACK` (2,048 on Vera)], [The 9575F's startup lead may partly be its larger in-flight cap.], [≈ 15 min],
+  [Vera 4 KiB vs 64 KiB host pages], [Settles whether the large-page kernel helps Vera at all.], [≈ 1.5 h],
+  [Vera Firecracker spawn / Turin snapshot load], [The two unexplained slow create steps.], [≈ 0.5 day each],
+  [#3213 guest wedges, #2459 runner heartbeat at high density], [Reliability on Vera; density ceiling above ≈ 8,000.], [platform work],
+)
+
+#set page(flipped: true, margin: (x: 1.3cm, y: 1.4cm))
+#show table: set text(7.8pt)
+#set table(inset: (x: 3.5pt, y: 2.6pt))
+
+= Appendix — create path, per step (ms, p50 / p90)
+
+Steps: *A* API accepts the create (overlaps B) · *B* request sent → runner starts the job · *C* admission, image, template ·
+*D1* netns · *D2* scratch + init disk · *D3* Firecracker spawn · *D4* snapshot load + resume · *D5* guest toolbox accepts ·
+*D6* cgroup, register, trigger · *E* running event → client (SDK polling) · *F* first command. Medians of steps do not add up
+exactly to the median total. Turin: fixes-on only (its fixes-off runner log rotated out).
+
+== 10 sandboxes at once (low load, harness warm-up runs)
+#twarm
+
+#pagebreak()
+== 1,000 at once, idle image
+#t1kidle
+
+#pagebreak()
+== 1,000 at once, agent image
+#t1kagent
+
+#pagebreak()
+== 2,000 at once, fixes on (idle: first three columns; agent: last three)
+#t2k
+
+#v(0.6em)
+#text(8pt, fill: gray)[Sources: `vera-hq-cell-20261014/` (BASELINE-VERA/EPYC9575-FIXES, CREATE-PATH-STEPS, FINDINGS), `phoenix-e6-cell-20261014/FINDINGS.md`,
+`graviton5-cell-20261014/FINDINGS.md`, `gapfill-20261014/create-path-breakdown/` (runner journals, `analyze.py`, `agg.json`),
+`daniel-focus-here/public/` (published September data). Companion PDFs in `gapfill-20261014/`: comparison report v2, fixes and findings, create-path breakdown.]

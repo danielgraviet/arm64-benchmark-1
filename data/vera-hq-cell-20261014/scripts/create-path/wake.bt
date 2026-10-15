@@ -1,0 +1,11 @@
+// Sequential creates only (one guest at a time). Timeline of host<->guest packets on the tap and the vCPU's
+// sleep/wake/IRQ events, to explain the ~580 ms toolbox-probe stall after snapshot resume.
+tracepoint:net:net_dev_queue    /str(args.name) == "rlptap0"/ { printf("%lu TX2G len=%u cpu=%d\n", nsecs, args.len, cpu); }
+tracepoint:net:netif_receive_skb /str(args.name) == "rlptap0"/ { printf("%lu RXFG len=%u\n", nsecs, args.len); }
+tracepoint:kvm:kvm_wfx_arm64 /strncmp(comm, "fc_vcpu", 7) == 0/ { printf("%lu WFX pc=%lx wfe=%d tid=%d cpu=%d\n", nsecs, args.vcpu_pc, args.is_wfe, tid, cpu); }
+tracepoint:kvm:kvm_vcpu_wakeup /strncmp(comm, "fc_vcpu", 7) == 0/ { printf("%lu WAKE slept_ns=%lu waited=%d valid=%d tid=%d\n", nsecs, args.ns, args.waited, args.valid, tid); }
+tracepoint:kvm:vgic_update_irq_pending { printf("%lu VGIC vcpu=%lu irq=%u level=%d comm=%s\n", nsecs, args.vcpu_id, args.irq, args.level, comm); }
+tracepoint:kvm:kvm_set_irq { printf("%lu SETIRQ gsi=%u level=%d comm=%s\n", nsecs, args.gsi, args.level, comm); }
+tracepoint:kvm:kvm_timer_update_irq /strncmp(comm, "fc_vcpu", 7) == 0 || 1/ { printf("%lu TIMER vcpu=%lu irq=%u level=%d comm=%s\n", nsecs, args.vcpu_id, args.irq, args.level, comm); }
+tracepoint:kvm:kvm_timer_hrtimer_expire { printf("%lu HRTIMER idx=%d comm=%s\n", nsecs, args.timer_idx, comm); }
+tracepoint:kvm:kvm_userspace_exit /strncmp(comm, "fc_vcpu", 7) == 0/ { printf("%lu UEXIT reason=%u\n", nsecs, args.reason); }

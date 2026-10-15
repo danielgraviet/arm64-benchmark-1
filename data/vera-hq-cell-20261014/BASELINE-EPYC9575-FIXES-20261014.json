@@ -1,0 +1,390 @@
+{
+ "name": "EPYC 9575F create path, four fixes OFF vs ON (same build as HQ Vera)",
+ "date_utc": "2026-10-14",
+ "host": {
+  "name": "EPYC 9575F (RedSwitches)",
+  "ip": "<epyc9575-host>",
+  "cpu": "AMD EPYC 9575F 64-Core",
+  "sockets": 1,
+  "threads": 128,
+  "kernel": "7.0.0-38-generic",
+  "page_size": "4KiB"
+ },
+ "software": {
+  "daytona_base_commit": "f0611fa13",
+  "bench_build_patches": "patches/bench-build/ (same as HQ Vera)",
+  "runner_sha256_12": "739fc73a116d",
+  "api_sha256_12": "93fa5e93bf20",
+  "stock_runner_sha256_12": "558f9862595d",
+  "stock_api_sha256_12": "554a308e354c",
+  "stock_build_note": "stock = the 9575F's previous binaries (Oct 2 API, Oct 14 runner), NOT f0611fa13",
+  "runner_env_both_arms": {
+   "RLP_FC_SOCK_WAIT_MS": 30000,
+   "RLP_VM_CONCURRENCY": 512,
+   "RLP_NETNS_POOL": 2100,
+   "RLP_VM_MAXACK": 2048,
+   "RLP_BALLOON": 0,
+   "RLP_BURST_MAX_CPU": 1,
+   "RLP_CGROUP_ROOT": "/sys/fs/cgroup/rlp.slice/vms",
+   "note": "host's own tuned runner.env kept (incl. RLP_VM_MAXACK=2048, cpu.weight drop-ins)"
+  }
+ },
+ "fixes": {
+  "off": "all flags unset (= stock behaviour)",
+  "on": {
+   "RLP_INITDISK_MODE": "nofsync",
+   "RLP_CGROUP_POOL": 1400,
+   "RLP_NEIGH_PERMANENT": 1,
+   "RLP_API_LISTEN_BACKLOG": 4096
+  },
+  "issues": {
+   "RLP_INITDISK_MODE": "daytona/rlp#3260",
+   "RLP_CGROUP_POOL": "daytona/rlp#3261",
+   "RLP_NEIGH_PERMANENT": "daytona/rlp#3265",
+   "RLP_API_LISTEN_BACKLOG": "daytona/rlp#3269"
+  }
+ },
+ "method": {
+  "startup": "mpfleet.py --procs 16 --count 1000, SDK polling 0.25s x1.5 -> 2s, RLP_HTTP_MAX_CONNECTIONS=1024, RLP_HTTP_READ_TIMEOUT_S=120, probe 'echo ready'; sandbox 0.025 CPU / 64 MiB / 1 GiB disk / 1 vCPU",
+  "throughput": "main.py --benchmark agent --hold-then-exec --n 45 --seed 42 -E 8 --rlp-cpu 0.025 --rlp-cpu-max 1 --rlp-memory 0.0625 --rlp-memory-max 4 --rlp-disk 0.015625, RLP_HTTP_MAX_CONNECTIONS=512, RLP_HOLD_CREATE_BATCH=512, RLP_HTTP_READ_TIMEOUT_S=120",
+  "order": "off, on, off, on (interleaved); same binaries, flags only; preflight PASS before every rep",
+  "images": {
+   "idle": "alpine:3.20",
+   "agent": "dtgraviet/vera-agent-benchmark:v3"
+  },
+  "script": "scripts/create-path/bench-fixes.sh",
+  "raw": "fixes-bench.tgz"
+ },
+ "startup_1000": {
+  "idle": {
+   "off": [
+    {
+     "ok": 1000,
+     "failed": 0,
+     "all_ready_s": 3.821,
+     "create_p50_s": 2.472,
+     "create_p90_s": 3.338,
+     "create_p95_s": 3.36,
+     "create_p99_s": 3.735,
+     "post_p50_s": 0.333,
+     "rep": 1,
+     "listen_overflows": 490
+    },
+    {
+     "ok": 1000,
+     "failed": 0,
+     "all_ready_s": 3.995,
+     "create_p50_s": 2.577,
+     "create_p90_s": 3.891,
+     "create_p95_s": 3.912,
+     "create_p99_s": 3.944,
+     "post_p50_s": 0.368,
+     "rep": 2,
+     "listen_overflows": 0
+    },
+    {
+     "ok": 1000,
+     "failed": 0,
+     "all_ready_s": 4.527,
+     "create_p50_s": 2.491,
+     "create_p90_s": 3.367,
+     "create_p95_s": 3.759,
+     "create_p99_s": 3.816,
+     "post_p50_s": 0.336,
+     "rep": 3,
+     "listen_overflows": 510
+    }
+   ],
+   "on": [
+    {
+     "ok": 1000,
+     "failed": 0,
+     "all_ready_s": 2.262,
+     "create_p50_s": 1.102,
+     "create_p90_s": 1.565,
+     "create_p95_s": 1.59,
+     "create_p99_s": 1.672,
+     "post_p50_s": 0.655,
+     "rep": 1,
+     "listen_overflows": 0
+    },
+    {
+     "ok": 1000,
+     "failed": 0,
+     "all_ready_s": 2.115,
+     "create_p50_s": 0.977,
+     "create_p90_s": 1.561,
+     "create_p95_s": 1.599,
+     "create_p99_s": 1.639,
+     "post_p50_s": 0.709,
+     "rep": 2,
+     "listen_overflows": 0
+    },
+    {
+     "ok": 1000,
+     "failed": 0,
+     "all_ready_s": 2.051,
+     "create_p50_s": 1.093,
+     "create_p90_s": 1.532,
+     "create_p95_s": 1.573,
+     "create_p99_s": 1.604,
+     "post_p50_s": 0.612,
+     "rep": 3,
+     "listen_overflows": 0
+    }
+   ]
+  },
+  "agent": {
+   "off": [
+    {
+     "ok": 1000,
+     "failed": 0,
+     "all_ready_s": 20.352,
+     "create_p50_s": 7.826,
+     "create_p90_s": 17.893,
+     "create_p95_s": 18.026,
+     "create_p99_s": 19.967,
+     "post_p50_s": 0.378,
+     "rep": 1,
+     "listen_overflows": 0
+    },
+    {
+     "ok": 1000,
+     "failed": 0,
+     "all_ready_s": 20.236,
+     "create_p50_s": 7.841,
+     "create_p90_s": 16.009,
+     "create_p95_s": 17.94,
+     "create_p99_s": 19.855,
+     "post_p50_s": 0.385,
+     "rep": 2,
+     "listen_overflows": 0
+    },
+    {
+     "ok": 1000,
+     "failed": 0,
+     "all_ready_s": 20.563,
+     "create_p50_s": 7.881,
+     "create_p90_s": 17.844,
+     "create_p95_s": 17.984,
+     "create_p99_s": 19.988,
+     "post_p50_s": 0.381,
+     "rep": 3,
+     "listen_overflows": 0
+    }
+   ],
+   "on": [
+    {
+     "ok": 1000,
+     "failed": 0,
+     "all_ready_s": 18.853,
+     "create_p50_s": 6.598,
+     "create_p90_s": 16.435,
+     "create_p95_s": 16.611,
+     "create_p99_s": 18.582,
+     "post_p50_s": 0.895,
+     "rep": 1,
+     "listen_overflows": 0
+    },
+    {
+     "ok": 1000,
+     "failed": 0,
+     "all_ready_s": 19.135,
+     "create_p50_s": 6.631,
+     "create_p90_s": 16.606,
+     "create_p95_s": 18.502,
+     "create_p99_s": 18.675,
+     "post_p50_s": 0.975,
+     "rep": 2,
+     "listen_overflows": 0
+    },
+    {
+     "ok": 1000,
+     "failed": 0,
+     "all_ready_s": 18.767,
+     "create_p50_s": 8.282,
+     "create_p90_s": 16.392,
+     "create_p95_s": 16.53,
+     "create_p99_s": 18.546,
+     "post_p50_s": 0.844,
+     "rep": 3,
+     "listen_overflows": 0
+    }
+   ]
+  }
+ },
+ "throughput_ladder": {
+  "off": [
+   {
+    "concurrency": 176,
+    "runs": 1408,
+    "failures": 0,
+    "jobs_per_s": 8.13,
+    "p50_s": 19.58,
+    "p99_s": 35.92
+   },
+   {
+    "concurrency": 352,
+    "runs": 2816,
+    "failures": 0,
+    "jobs_per_s": 8.02,
+    "p50_s": 40.35,
+    "p99_s": 85.17
+   },
+   {
+    "concurrency": 704,
+    "runs": 5632,
+    "failures": 0,
+    "jobs_per_s": 8.04,
+    "p50_s": 82.88,
+    "p99_s": 146.14
+   }
+  ],
+  "on": [
+   {
+    "concurrency": 176,
+    "runs": 1408,
+    "failures": 0,
+    "jobs_per_s": 8.01,
+    "p50_s": 19.54,
+    "p99_s": 34.48
+   },
+   {
+    "concurrency": 352,
+    "runs": 2816,
+    "failures": 0,
+    "jobs_per_s": 8.05,
+    "p50_s": 39.92,
+    "p99_s": 84.8
+   },
+   {
+    "concurrency": 704,
+    "runs": 5632,
+    "failures": 0,
+    "jobs_per_s": 8.01,
+    "p50_s": 83.38,
+    "p99_s": 144.97
+   }
+  ]
+ },
+ "raw": {
+  "startup_and_176_352": "/mnt/data/bench/fixes-bench-9575-20261014_205332/",
+  "level_704_rerun_600s_read_timeout": "/mnt/data/bench/tput704-epyc9575-20261014_215253/"
+ },
+ "notes": [
+  "level 704 from the rerun with RLP_HTTP_READ_TIMEOUT_S=600 (the first pass used 120 s, which cut off healthy level-704 episodes: p50 83 s, p99 145 s on this host; 522/594 'failures' were the client giving up, not sandboxes failing)"
+ ],
+ "at_2000_fixes_on": {
+  "settings": "fixes ON; mpfleet --procs 16 --count 2000 --timeout 300; ladder --levels 2000 -E 8 --n 45 --exec-timeout 1800, RLP_HTTP_READ_TIMEOUT_S=1800; host memory sampled every 5 s",
+  "script": "scripts/create-path/run2k.sh",
+  "startup_2000": {
+   "idle": [
+    {
+     "rep": 1,
+     "ok": 2000,
+     "failed": 0,
+     "all_ready_s": 4.62,
+     "create_p50_s": 2.455,
+     "create_p90_s": 3.504,
+     "create_p95_s": 3.631,
+     "create_p99_s": 4.224
+    },
+    {
+     "rep": 2,
+     "ok": 2000,
+     "failed": 0,
+     "all_ready_s": 4.56,
+     "create_p50_s": 2.34,
+     "create_p90_s": 3.468,
+     "create_p95_s": 3.565,
+     "create_p99_s": 4.27
+    },
+    {
+     "rep": 3,
+     "ok": 2000,
+     "failed": 0,
+     "all_ready_s": 17.65,
+     "create_p50_s": 2.398,
+     "create_p90_s": 3.471,
+     "create_p95_s": 3.565,
+     "create_p99_s": 4.258
+    }
+   ],
+   "agent": [
+    {
+     "rep": 1,
+     "ok": 2000,
+     "failed": 0,
+     "all_ready_s": 58.09,
+     "create_p50_s": 19.748,
+     "create_p90_s": 45.365,
+     "create_p95_s": 49.56,
+     "create_p99_s": 53.493
+    },
+    {
+     "rep": 2,
+     "ok": 2000,
+     "failed": 0,
+     "all_ready_s": 70.73,
+     "create_p50_s": 19.595,
+     "create_p90_s": 54.13,
+     "create_p95_s": 61.467,
+     "create_p99_s": 67.474
+    }
+   ]
+  },
+  "monitor": {
+   "startup-idle-1": {
+    "peak_mem_used_gib": 116,
+    "mem_total_gib": 1133,
+    "baseline_gib": 22,
+    "peak_load": 58
+   },
+   "startup-idle-2": {
+    "peak_mem_used_gib": 117,
+    "mem_total_gib": 1133,
+    "baseline_gib": 24,
+    "peak_load": 132
+   },
+   "startup-idle-3": {
+    "peak_mem_used_gib": 118,
+    "mem_total_gib": 1133,
+    "baseline_gib": 24,
+    "peak_load": 185
+   },
+   "startup-agent-1": {
+    "peak_mem_used_gib": 295,
+    "mem_total_gib": 1133,
+    "baseline_gib": 26,
+    "peak_load": 1492
+   },
+   "startup-agent-2": {
+    "peak_mem_used_gib": 301,
+    "mem_total_gib": 1133,
+    "baseline_gib": 26,
+    "peak_load": 1838
+   },
+   "throughput-2000": {
+    "peak_mem_used_gib": 393,
+    "mem_total_gib": 1133,
+    "baseline_gib": 26,
+    "peak_load": 2158
+   }
+  },
+  "throughput_2000": {
+   "runs": 16000,
+   "failures": 1,
+   "jobs_per_s": 8.03,
+   "p50_s": 239.0,
+   "p95_s": 351.8,
+   "p99_s": 434.6,
+   "max_s": 553.0
+  },
+  "throughput_failures": [
+   {
+    "error": "DaytonaError: bad gateway: dial tcp 10.151.2.197:2280: i/o timeout\n"
+   }
+  ],
+  "raw": "run2k-epyc9575.tgz"
+ }
+}

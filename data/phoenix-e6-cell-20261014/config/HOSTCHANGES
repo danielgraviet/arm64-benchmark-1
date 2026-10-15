@@ -1,0 +1,12 @@
+2026-10-14T11:31:09Z hosts: added 127.0.1.1 vedran-test (backup /etc/hosts.bak-rlp)
+2026-10-14T11:31:09Z md127 (raid10 x12, empty) stopped and superblocks zeroed; /mnt/data moved to a single NVMe
+2026-10-14T11:31:33Z /mnt/data = ext4 on /dev/nvme0n1 (UUID=18abfc2d-5eff-4406-8d20-c68e5dab239f); nvme1n1..nvme11n1 left unused
+2026-10-14T11:31:44Z wrote /etc/sysctl.d/90-rlp-bench.conf (ARP 65536 v4+v6, conntrack 1M, hugepages 0) and applied
+2026-10-14T11:31:44Z udev: shadowed 70-iscsi-network-interface.rules to skip rlp*/veth*/tap*/fc* (rm /etc/udev/rules.d/70-iscsi-network-interface.rules to revert)
+2026-10-14T11:31:44Z stopped libvirtd/virtlogd/virtlockd/fwupd where present; runtime-masked libvirtd+fwupd (reboot restores)
+2026-10-14T11:31:44Z limits.conf: nofile 1048576
+2026-10-14T12:07:58Z numa_balancing=0 (HQ Vera boots numa_balancing=disable)
+2026-10-14T13:30:58Z capacity ladder: NETNS_POOL 2100->6200, MAX_LIVE_VMS 3000->8000, SUBNET_CIDR /20->/18 (a /20 caps the host at 4094 sandboxes)
+2026-10-14T15:30:32Z BENCH PATCH: api CREATE_MAX_QUEUE_SECS_CAP 60 -> 900 (api/src/events/mod.rs), RLP_CREATE_MAX_QUEUE_SECS=600. Revert by rebuilding from a clean tree. Reason: the 60s cap, not the hardware, ended the density ladder at ~4k burst / 6.7k held.
+2026-10-14T17:04:42Z MAX_LIVE_VMS 8000->20000; harness SDK scratch_mib int()->round() so sub-GiB disks are honoured (1 GiB default reservation capped the host at 6743)
+2026-10-14T19:16:06Z RLP_MAX_QUEUED_CREATES=40000 (API overload shed default 8000 was the ceiling at 8k live)

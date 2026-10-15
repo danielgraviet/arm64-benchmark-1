@@ -1,0 +1,767 @@
+{
+ "name": "HQ Vera create path, four fixes OFF vs ON",
+ "date_utc": "2026-10-14",
+ "host": {
+  "name": "HQ Vera",
+  "ip": "10.96.8.228",
+  "cpu": "NVIDIA Vera",
+  "sockets": 2,
+  "cores_per_socket": 88,
+  "threads": 352,
+  "kernel": "6.17.0-1032-nvidia-64k",
+  "page_size": "64KiB",
+  "preempt": "none",
+  "power_cap_w_per_socket": 600,
+  "placement": "unpinned (both sockets)"
+ },
+ "software": {
+  "daytona_base_commit": "f0611fa13",
+  "bench_build_patches": "patches/bench-build/",
+  "runner_sha256_12": "0fd55bab4ad6",
+  "api_sha256_12": "1648ab971fe5",
+  "stock_runner_sha256_12": "353a4060945c",
+  "stock_api_sha256_12": "c49d24e5ac54",
+  "daemon": "rlp-rs-0.4.1",
+  "firecracker": "v1.16.1 (stock)",
+  "guest_kernel": "6.12.34-rlp1-arm64",
+  "runner_env_common": {
+   "RLP_FC_SOCK_WAIT_MS": 30000,
+   "RLP_VM_CONCURRENCY": 512,
+   "RLP_NETNS_POOL": 2100,
+   "RLP_BALLOON": 0,
+   "RLP_BURST_MAX_CPU": 1
+  }
+ },
+ "fixes": {
+  "off": "all flags unset (= stock behaviour)",
+  "on": {
+   "RLP_INITDISK_MODE": "nofsync",
+   "RLP_CGROUP_POOL": 1400,
+   "RLP_NEIGH_PERMANENT": 1,
+   "RLP_API_LISTEN_BACKLOG": 4096
+  },
+  "issues": {
+   "RLP_INITDISK_MODE": "daytona/rlp#3260",
+   "RLP_CGROUP_POOL": "daytona/rlp#3261",
+   "RLP_NEIGH_PERMANENT": "daytona/rlp#3265",
+   "RLP_API_LISTEN_BACKLOG": "daytona/rlp#3269"
+  }
+ },
+ "harness_benchmarks": {
+  "method": {
+   "startup": "mpfleet.py --procs 16 --count 1000, SDK polling 0.25s x1.5 -> 2s, RLP_HTTP_MAX_CONNECTIONS=1024, RLP_HTTP_READ_TIMEOUT_S=120, probe 'echo ready'; sandbox 0.025 CPU / 64 MiB / 1 GiB disk / 1 vCPU",
+   "throughput": "main.py --benchmark agent --hold-then-exec --n 45 --seed 42 -E 8 --rlp-cpu 0.025 --rlp-cpu-max 1 --rlp-memory 0.0625 --rlp-memory-max 4 --rlp-disk 0.015625, RLP_HTTP_MAX_CONNECTIONS=512, RLP_HOLD_CREATE_BATCH=512, RLP_HTTP_READ_TIMEOUT_S=120",
+   "order": "off, on, off, on (interleaved); same binaries, flags only; preflight PASS before every rep",
+   "images": {
+    "idle": "alpine:3.20",
+    "agent": "dtgraviet/vera-agent-benchmark:v3"
+   },
+   "script": "scripts/create-path/bench-fixes.sh",
+   "raw": "fixes-bench.tgz"
+  },
+  "startup_1000": {
+   "idle": {
+    "off": [
+     {
+      "ok": 1000,
+      "failed": 0,
+      "all_ready_s": 4.698,
+      "create_p50_s": 2.066,
+      "create_p90_s": 3.263,
+      "create_p95_s": 3.296,
+      "create_p99_s": 4.516,
+      "post_p50_s": 0.717,
+      "rep": 1,
+      "listen_overflows": 210
+     },
+     {
+      "ok": 1000,
+      "failed": 0,
+      "all_ready_s": 3.859,
+      "create_p50_s": 2.392,
+      "create_p90_s": 3.737,
+      "create_p95_s": 3.758,
+      "create_p99_s": 3.792,
+      "post_p50_s": 0.233,
+      "rep": 2,
+      "listen_overflows": 0
+     },
+     {
+      "ok": 1000,
+      "failed": 0,
+      "all_ready_s": 3.657,
+      "create_p50_s": 2.316,
+      "create_p90_s": 3.424,
+      "create_p95_s": 3.456,
+      "create_p99_s": 3.551,
+      "post_p50_s": 0.285,
+      "rep": 3,
+      "listen_overflows": 447
+     }
+    ],
+    "on": [
+     {
+      "ok": 999,
+      "failed": 1,
+      "all_ready_s": 10.415,
+      "create_p50_s": 1.509,
+      "create_p90_s": 2.528,
+      "create_p95_s": 2.543,
+      "create_p99_s": 2.569,
+      "post_p50_s": 0.281,
+      "rep": 1,
+      "listen_overflows": 0
+     },
+     {
+      "ok": 1000,
+      "failed": 0,
+      "all_ready_s": 3.884,
+      "create_p50_s": 1.622,
+      "create_p90_s": 2.585,
+      "create_p95_s": 2.614,
+      "create_p99_s": 2.637,
+      "post_p50_s": 0.324,
+      "rep": 2,
+      "listen_overflows": 0
+     },
+     {
+      "ok": 1000,
+      "failed": 0,
+      "all_ready_s": 2.688,
+      "create_p50_s": 1.585,
+      "create_p90_s": 2.536,
+      "create_p95_s": 2.565,
+      "create_p99_s": 2.593,
+      "post_p50_s": 0.259,
+      "rep": 3,
+      "listen_overflows": 0
+     }
+    ]
+   },
+   "agent": {
+    "off": [
+     {
+      "ok": 999,
+      "failed": 1,
+      "all_ready_s": 21.822,
+      "create_p50_s": 13.581,
+      "create_p90_s": 19.712,
+      "create_p95_s": 21.639,
+      "create_p99_s": 21.726,
+      "post_p50_s": 0.3,
+      "rep": 1,
+      "listen_overflows": 0
+     },
+     {
+      "ok": 1000,
+      "failed": 0,
+      "all_ready_s": 21.98,
+      "create_p50_s": 11.765,
+      "create_p90_s": 21.8,
+      "create_p95_s": 21.864,
+      "create_p99_s": 21.904,
+      "post_p50_s": 0.4,
+      "rep": 2,
+      "listen_overflows": 0
+     },
+     {
+      "ok": 999,
+      "failed": 1,
+      "all_ready_s": 25.749,
+      "create_p50_s": 13.527,
+      "create_p90_s": 25.579,
+      "create_p95_s": 25.643,
+      "create_p99_s": 25.69,
+      "post_p50_s": 0.252,
+      "rep": 3,
+      "listen_overflows": 0
+     }
+    ],
+    "on": [
+     {
+      "ok": 998,
+      "failed": 2,
+      "all_ready_s": 61.024,
+      "create_p50_s": 13.723,
+      "create_p90_s": 23.872,
+      "create_p95_s": 23.897,
+      "create_p99_s": 23.929,
+      "post_p50_s": 0.335,
+      "rep": 1,
+      "listen_overflows": 0
+     },
+     {
+      "ok": 1000,
+      "failed": 0,
+      "all_ready_s": 28.105,
+      "create_p50_s": 11.843,
+      "create_p90_s": 25.906,
+      "create_p95_s": 26.053,
+      "create_p99_s": 27.954,
+      "post_p50_s": 0.415,
+      "rep": 2,
+      "listen_overflows": 0
+     },
+     {
+      "ok": 1000,
+      "failed": 0,
+      "all_ready_s": 21.819,
+      "create_p50_s": 7.55,
+      "create_p90_s": 21.696,
+      "create_p95_s": 21.73,
+      "create_p99_s": 21.758,
+      "post_p50_s": 0.256,
+      "rep": 3,
+      "listen_overflows": 0
+     }
+    ]
+   }
+  },
+  "throughput_ladder": {
+   "off": [
+    {
+     "concurrency": 176,
+     "runs": 1408,
+     "failures": 8,
+     "jobs_per_s": 1.47,
+     "p50_s": 9.2,
+     "p99_s": 18.89
+    },
+    {
+     "concurrency": 352,
+     "runs": 2816,
+     "failures": 0,
+     "jobs_per_s": 26.67,
+     "p50_s": 12.07,
+     "p99_s": 19.75
+    },
+    {
+     "concurrency": 704,
+     "runs": 5632,
+     "failures": 0,
+     "jobs_per_s": 25.93,
+     "p50_s": 17.27,
+     "p99_s": 71.6
+    }
+   ],
+   "on": [
+    {
+     "concurrency": 176,
+     "runs": 1408,
+     "failures": 0,
+     "jobs_per_s": 15.17,
+     "p50_s": 8.39,
+     "p99_s": 19.09
+    },
+    {
+     "concurrency": 352,
+     "runs": 2816,
+     "failures": 0,
+     "jobs_per_s": 26.65,
+     "p50_s": 12.12,
+     "p99_s": 19.74
+    },
+    {
+     "concurrency": 704,
+     "runs": 5632,
+     "failures": 4,
+     "jobs_per_s": 25.69,
+     "p50_s": 16.57,
+     "p99_s": 79.05
+    }
+   ]
+  },
+  "notes": [
+   "throughput level 176 with fixes off (1.47 jobs/s) was held by 8 episodes wedged in guests that oopsed after resume (daytona/rlp#3213); not a platform result",
+   "single failed sandboxes hold all_ready open (idle on rep1: 10.42 s; agent on rep1: 61.02 s)"
+  ],
+  "throughput_ladder_704_rerun_600s": {
+   "off": {
+    "concurrency": 704,
+    "runs": 5632,
+    "failures": 0,
+    "jobs_per_s": 25.51,
+    "p50_s": 16.0,
+    "p99_s": 72.3
+   },
+   "on": {
+    "concurrency": 704,
+    "runs": 5632,
+    "failures": 0,
+    "jobs_per_s": 25.62,
+    "p50_s": 14.9,
+    "p99_s": 77.3
+   },
+   "raw": "vera-tput704-rerun.tgz"
+  }
+ },
+ "create_path_steps": {
+  "method": "stepclient.py raw HTTP + server long-poll GET /vms/{id}?wait=running, 16 procs; per-step joins of client, audit_logs, vms, JetStream ack timestamps (natstap), runner journal; idle image alpine:3.20",
+  "burst_1000": {
+   "off": {
+    "runs": [
+     "steps-20261014_163834-ctl-1",
+     "steps-20261014_170514-ctl-2",
+     "steps-20261014_171323-ctl-3",
+     "steps-20261014_174128-ctl-4"
+    ],
+    "n": 3988,
+    "client_to_api": {
+     "p50_ms": 39.642,
+     "p90_ms": 1072.064,
+     "p99_ms": 2058.329,
+     "max_ms": 2100.419
+    },
+    "api_pre_txn": {
+     "p50_ms": 17.898,
+     "p90_ms": 79.964,
+     "p99_ms": 170.132,
+     "max_ms": 241.265
+    },
+    "api_txn_publish_commit_response": {
+     "p50_ms": 9.828,
+     "p90_ms": 35.189,
+     "p99_ms": 113.028,
+     "max_ms": 146.506
+    },
+    "queue_to_runner": {
+     "p50_ms": 792.713,
+     "p90_ms": 1246.804,
+     "p99_ms": 1519.972,
+     "max_ms": 1564.279
+    },
+    "runner_boot_prep": {
+     "p50_ms": 2.0,
+     "p90_ms": 25.0,
+     "p99_ms": 89.0,
+     "max_ms": 167.0
+    },
+    "scratch_initdisk": {
+     "p50_ms": 300,
+     "p90_ms": 700,
+     "p99_ms": 1033,
+     "max_ms": 1621
+    },
+    "fc_spawn_socket": {
+     "p50_ms": 63,
+     "p90_ms": 180,
+     "p99_ms": 352,
+     "max_ms": 421
+    },
+    "snapshot_load": {
+     "p50_ms": 12,
+     "p90_ms": 69,
+     "p99_ms": 390,
+     "max_ms": 505
+    },
+    "toolbox_accept": {
+     "p50_ms": 3,
+     "p90_ms": 11,
+     "p99_ms": 574,
+     "max_ms": 604
+    },
+    "cgroup_register_trigger": {
+     "p50_ms": 201,
+     "p90_ms": 381,
+     "p99_ms": 549,
+     "max_ms": 610
+    },
+    "api_longpoll_answer": {
+     "p50_ms": 2.691,
+     "p90_ms": 89.427,
+     "p99_ms": 179.011,
+     "max_ms": 381.312
+    },
+    "TOTAL_post_to_running": {
+     "p50_ms": 1926.606,
+     "p90_ms": 3034.813,
+     "p99_ms": 3483.367,
+     "max_ms": 3758.279
+    },
+    "TOTAL_post_to_first_exec": {
+     "p50_ms": 1937.042,
+     "p90_ms": 3054.909,
+     "p99_ms": 3503.22,
+     "max_ms": 3780.902
+    }
+   },
+   "on": {
+    "runs": [
+     "steps-20261014_173708-all-n3",
+     "steps-20261014_175532-all-n4"
+    ],
+    "n": 2000,
+    "client_to_api": {
+     "p50_ms": 31.918,
+     "p90_ms": 61.437,
+     "p99_ms": 73.592,
+     "max_ms": 93.244
+    },
+    "api_pre_txn": {
+     "p50_ms": 45.016,
+     "p90_ms": 72.496,
+     "p99_ms": 76.593,
+     "max_ms": 77.997
+    },
+    "api_txn_publish_commit_response": {
+     "p50_ms": 13.416,
+     "p90_ms": 54.97,
+     "p99_ms": 62.573,
+     "max_ms": 66.818
+    },
+    "queue_to_runner": {
+     "p50_ms": 421.128,
+     "p90_ms": 1172.382,
+     "p99_ms": 1377.47,
+     "max_ms": 1392.489
+    },
+    "runner_boot_prep": {
+     "p50_ms": 1.0,
+     "p90_ms": 15.0,
+     "p99_ms": 60.0,
+     "max_ms": 84.0
+    },
+    "scratch_initdisk": {
+     "p50_ms": 11,
+     "p90_ms": 35,
+     "p99_ms": 72,
+     "max_ms": 103
+    },
+    "fc_spawn_socket": {
+     "p50_ms": 200,
+     "p90_ms": 289,
+     "p99_ms": 346,
+     "max_ms": 401
+    },
+    "snapshot_load": {
+     "p50_ms": 20,
+     "p90_ms": 58,
+     "p99_ms": 96,
+     "max_ms": 152
+    },
+    "toolbox_accept": {
+     "p50_ms": 5,
+     "p90_ms": 76,
+     "p99_ms": 532,
+     "max_ms": 621
+    },
+    "cgroup_register_trigger": {
+     "p50_ms": 139,
+     "p90_ms": 269,
+     "p99_ms": 362,
+     "max_ms": 417
+    },
+    "api_longpoll_answer": {
+     "p50_ms": 1.466,
+     "p90_ms": 3.885,
+     "p99_ms": 57.92,
+     "max_ms": 78.902
+    },
+    "TOTAL_post_to_running": {
+     "p50_ms": 1054.46,
+     "p90_ms": 1748.029,
+     "p99_ms": 2290.481,
+     "max_ms": 2372.503
+    },
+    "TOTAL_post_to_first_exec": {
+     "p50_ms": 1070.966,
+     "p90_ms": 1776.793,
+     "p99_ms": 2321.288,
+     "max_ms": 2410.206
+    }
+   }
+  },
+  "sequential_60": {
+   "off": {
+    "runs": [
+     "steps-20261014_172530-seq-ctl"
+    ],
+    "n": 60,
+    "client_to_api": {
+     "p50_ms": 0.97,
+     "p90_ms": 1.26,
+     "p99_ms": 1.404,
+     "max_ms": 1.404
+    },
+    "api_pre_txn": {
+     "p50_ms": 2.146,
+     "p90_ms": 2.62,
+     "p99_ms": 2.869,
+     "max_ms": 2.869
+    },
+    "api_txn_publish_commit_response": {
+     "p50_ms": 1.623,
+     "p90_ms": 2.628,
+     "p99_ms": 3.198,
+     "max_ms": 3.198
+    },
+    "queue_to_runner": {
+     "p50_ms": -0.204,
+     "p90_ms": 0.333,
+     "p99_ms": 0.438,
+     "max_ms": 0.438
+    },
+    "runner_boot_prep": {
+     "p50_ms": 1.0,
+     "p90_ms": 1.0,
+     "p99_ms": 2.0,
+     "max_ms": 2.0
+    },
+    "scratch_initdisk": {
+     "p50_ms": 7,
+     "p90_ms": 8,
+     "p99_ms": 8,
+     "max_ms": 8
+    },
+    "fc_spawn_socket": {
+     "p50_ms": 43,
+     "p90_ms": 49,
+     "p99_ms": 54,
+     "max_ms": 54
+    },
+    "snapshot_load": {
+     "p50_ms": 6,
+     "p90_ms": 6,
+     "p99_ms": 7,
+     "max_ms": 7
+    },
+    "toolbox_accept": {
+     "p50_ms": 1,
+     "p90_ms": 2,
+     "p99_ms": 580,
+     "max_ms": 580
+    },
+    "cgroup_register_trigger": {
+     "p50_ms": 3,
+     "p90_ms": 4,
+     "p99_ms": 4,
+     "max_ms": 4
+    },
+    "api_longpoll_answer": {
+     "p50_ms": 1.043,
+     "p90_ms": 1.363,
+     "p99_ms": 1.618,
+     "max_ms": 1.618
+    },
+    "TOTAL_post_to_running": {
+     "p50_ms": 66.963,
+     "p90_ms": 75.067,
+     "p99_ms": 657.509,
+     "max_ms": 657.509
+    },
+    "TOTAL_post_to_first_exec": {
+     "p50_ms": 88.795,
+     "p90_ms": 98.94,
+     "p99_ms": 676.052,
+     "max_ms": 676.052
+    }
+   },
+   "on": {
+    "runs": [
+     "steps-20261014_173253-seq-all"
+    ],
+    "n": 60,
+    "client_to_api": {
+     "p50_ms": 1.052,
+     "p90_ms": 1.201,
+     "p99_ms": 1.505,
+     "max_ms": 1.505
+    },
+    "api_pre_txn": {
+     "p50_ms": 2.123,
+     "p90_ms": 2.478,
+     "p99_ms": 3.065,
+     "max_ms": 3.065
+    },
+    "api_txn_publish_commit_response": {
+     "p50_ms": 1.74,
+     "p90_ms": 2.889,
+     "p99_ms": 3.568,
+     "max_ms": 3.568
+    },
+    "queue_to_runner": {
+     "p50_ms": -0.172,
+     "p90_ms": 0.297,
+     "p99_ms": 0.807,
+     "max_ms": 0.807
+    },
+    "runner_boot_prep": {
+     "p50_ms": 1.0,
+     "p90_ms": 1.0,
+     "p99_ms": 1.0,
+     "max_ms": 1.0
+    },
+    "scratch_initdisk": {
+     "p50_ms": 4,
+     "p90_ms": 5,
+     "p99_ms": 5,
+     "max_ms": 5
+    },
+    "fc_spawn_socket": {
+     "p50_ms": 43,
+     "p90_ms": 50,
+     "p99_ms": 53,
+     "max_ms": 53
+    },
+    "snapshot_load": {
+     "p50_ms": 5,
+     "p90_ms": 6,
+     "p99_ms": 6,
+     "max_ms": 6
+    },
+    "toolbox_accept": {
+     "p50_ms": 2,
+     "p90_ms": 2,
+     "p99_ms": 2,
+     "max_ms": 2
+    },
+    "cgroup_register_trigger": {
+     "p50_ms": 2,
+     "p90_ms": 3,
+     "p99_ms": 7,
+     "max_ms": 7
+    },
+    "api_longpoll_answer": {
+     "p50_ms": 1.072,
+     "p90_ms": 1.422,
+     "p99_ms": 1.603,
+     "max_ms": 1.603
+    },
+    "TOTAL_post_to_running": {
+     "p50_ms": 63.848,
+     "p90_ms": 69.234,
+     "p99_ms": 73.114,
+     "max_ms": 73.114
+    },
+    "TOTAL_post_to_first_exec": {
+     "p50_ms": 85.334,
+     "p90_ms": 92.27,
+     "p99_ms": 98.874,
+     "max_ms": 98.874
+    }
+   },
+   "toolbox_stalls": {
+    "off": {
+     "n": 60,
+     "stalled_over_100ms": 4,
+     "max_ms": 580
+    },
+    "on": {
+     "n": 60,
+     "stalled_over_100ms": 0,
+     "max_ms": 2
+    }
+   }
+  },
+  "raw": [
+   "patched-arms.tgz"
+  ]
+ },
+ "at_2000_fixes_on": {
+  "settings": "fixes ON; mpfleet --procs 16 --count 2000 --timeout 300; ladder --levels 2000 -E 8 --n 45 --exec-timeout 1800, RLP_HTTP_READ_TIMEOUT_S=1800; host memory sampled every 5 s",
+  "script": "scripts/create-path/run2k.sh",
+  "startup_2000": {
+   "idle": [
+    {
+     "rep": 1,
+     "ok": 2000,
+     "failed": 0,
+     "all_ready_s": 6.59,
+     "create_p50_s": 3.005,
+     "create_p90_s": 6.321,
+     "create_p95_s": 6.398,
+     "create_p99_s": 6.469
+    },
+    {
+     "rep": 2,
+     "ok": 2000,
+     "failed": 0,
+     "all_ready_s": 7.23,
+     "create_p50_s": 2.789,
+     "create_p90_s": 5.05,
+     "create_p95_s": 6.573,
+     "create_p99_s": 6.824
+    },
+    {
+     "rep": 3,
+     "result": "no summary: client killed by the 1200 s outer timeout (a sandbox never answered)"
+    }
+   ],
+   "agent": [
+    {
+     "rep": 1,
+     "ok": 2000,
+     "failed": 0,
+     "all_ready_s": 50.21,
+     "create_p50_s": 29.371,
+     "create_p90_s": 45.963,
+     "create_p95_s": 46.085,
+     "create_p99_s": 49.965
+    },
+    {
+     "rep": 2,
+     "ok": 1998,
+     "failed": 2,
+     "all_ready_s": 54.53,
+     "create_p50_s": 27.472,
+     "create_p90_s": 52.021,
+     "create_p95_s": 53.989,
+     "create_p99_s": 54.268
+    }
+   ]
+  },
+  "monitor": {
+   "startup-idle-1": {
+    "peak_mem_used_gib": 250,
+    "mem_total_gib": 1479,
+    "baseline_gib": 106,
+    "peak_load": 48
+   },
+   "startup-idle-2": {
+    "peak_mem_used_gib": 254,
+    "mem_total_gib": 1479,
+    "baseline_gib": 126,
+    "peak_load": 73
+   },
+   "startup-idle-3": {
+    "peak_mem_used_gib": 257,
+    "mem_total_gib": 1479,
+    "baseline_gib": 126,
+    "peak_load": 69
+   },
+   "startup-agent-1": {
+    "peak_mem_used_gib": 447,
+    "mem_total_gib": 1479,
+    "baseline_gib": 131,
+    "peak_load": 490
+   },
+   "startup-agent-2": {
+    "peak_mem_used_gib": 445,
+    "mem_total_gib": 1479,
+    "baseline_gib": 131,
+    "peak_load": 580
+   },
+   "throughput-2000": {
+    "peak_mem_used_gib": 470,
+    "mem_total_gib": 1479,
+    "baseline_gib": 131,
+    "peak_load": 1972
+   }
+  },
+  "throughput_2000": {
+   "runs": 16000,
+   "failures": 1,
+   "jobs_per_s": 26.11,
+   "p50_s": 33.8,
+   "p95_s": 185.5,
+   "p99_s": 240.6,
+   "max_s": 356.5
+  },
+  "throughput_failures": [
+   {
+    "error": "DaytonaError: bad gateway: dial tcp 10.101.34.1:2280: i/o timeout\n"
+   }
+  ],
+  "raw": "run2k-vera.tgz"
+ }
+}

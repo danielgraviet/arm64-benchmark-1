@@ -1,0 +1,14 @@
+// bpftrace burst2.bt <runner_pid>: kernel-side latency of the cgroup + process-spawn paths during a burst.
+kprobe:cgroup_mkdir      { @a_mk[tid] = nsecs; }
+kretprobe:cgroup_mkdir   /@a_mk[tid]/ { @cgroup_mkdir_us = hist((nsecs - @a_mk[tid]) / 1000); @n_mkdir = count(); delete(@a_mk[tid]); }
+kprobe:cgroup_rmdir      { @a_rm[tid] = nsecs; }
+kretprobe:cgroup_rmdir   /@a_rm[tid]/ { @cgroup_rmdir_us = hist((nsecs - @a_rm[tid]) / 1000); delete(@a_rm[tid]); }
+kprobe:__cgroup_procs_write    { @a_pw[tid] = nsecs; }
+kretprobe:__cgroup_procs_write /@a_pw[tid]/ { @cgroup_procs_write_us = hist((nsecs - @a_pw[tid]) / 1000); delete(@a_pw[tid]); }
+kprobe:css_rstat_flush    { @a_fl[tid] = nsecs; @rstat_flush_by[comm] = count(); }
+kretprobe:css_rstat_flush /@a_fl[tid]/ { @rstat_flush_us = hist((nsecs - @a_fl[tid]) / 1000); @rstat_flush_total_ms = sum((nsecs - @a_fl[tid]) / 1000000); delete(@a_fl[tid]); }
+kprobe:cpu_stat_show { @cpu_stat_reads_by[comm] = count(); }
+tracepoint:sched:sched_process_fork /pid == $1/ { @fork_ts[args.child_pid] = nsecs; @forks = count(); }
+tracepoint:sched:sched_process_exec /@fork_ts[pid]/ { @fork_to_exec_us[comm] = hist((nsecs - @fork_ts[pid]) / 1000); @exec_ts[pid] = nsecs; delete(@fork_ts[pid]); }
+tracepoint:sched:sched_process_exit /@exec_ts[pid] && comm == "cp"/ { @cp_runtime_ms = hist((nsecs - @exec_ts[pid]) / 1000000); delete(@exec_ts[pid]); }
+END { clear(@a_mk); clear(@a_rm); clear(@a_pw); clear(@a_fl); clear(@fork_ts); clear(@exec_ts); }
