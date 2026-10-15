@@ -1,0 +1,1142 @@
+{
+"e9575|1k|agent|off": {
+"n": 3000,
+"steps": {
+"S1 client\u2192API: POST answered": [
+381,
+446
+],
+"S2 request sent \u2192 runner starts (API + queue)": [
+230,
+5126
+],
+"S3 runner admission/image (pre-clone)": [
+1,
+1
+],
+"S4a netns from pool": [
+0,
+0
+],
+"S4b scratch + init-disk copy": [
+1008,
+1578
+],
+"S4c Firecracker spawn + API socket": [
+468,
+3526
+],
+"S4d snapshot load + resume": [
+114,
+257
+],
+"S4e guest toolbox port accepts": [
+107,
+380
+],
+"S4f other (cgroup, register, entrypoint trigger)": [
+2976,
+8759
+],
+"S4 = runner clone total": [
+6237,
+11677
+],
+"S5 running event \u2192 client sees running": [
+765,
+1700
+],
+"S6 first exec (echo ready)": [
+51,
+228
+],
+"TOTAL request \u2192 first exec done": [
+7949,
+17934
+]
+}
+},
+"e9575|1k|agent|on": {
+"n": 3000,
+"steps": {
+"S1 client\u2192API: POST answered": [
+899,
+1118
+],
+"S2 request sent \u2192 runner starts (API + queue)": [
+563,
+4133
+],
+"S3 runner admission/image (pre-clone)": [
+1,
+5
+],
+"S4a netns from pool": [
+0,
+0
+],
+"S4b scratch + init-disk copy": [
+54,
+143
+],
+"S4c Firecracker spawn + API socket": [
+1799,
+5026
+],
+"S4d snapshot load + resume": [
+130,
+301
+],
+"S4e guest toolbox port accepts": [
+131,
+402
+],
+"S4f other (cgroup, register, entrypoint trigger)": [
+1736,
+7021
+],
+"S4 = runner clone total": [
+5487,
+11296
+],
+"S5 running event \u2192 client sees running": [
+625,
+1717
+],
+"S6 first exec (echo ready)": [
+54,
+236
+],
+"TOTAL request \u2192 first exec done": [
+6765,
+16566
+]
+}
+},
+"e9575|1k|idle|off": {
+"n": 3000,
+"steps": {
+"S1 client\u2192API: POST answered": [
+349,
+1169
+],
+"S2 request sent \u2192 runner starts (API + queue)": [
+268,
+1894
+],
+"S3 runner admission/image (pre-clone)": [
+1,
+2
+],
+"S4a netns from pool": [
+0,
+0
+],
+"S4b scratch + init-disk copy": [
+1293,
+1605
+],
+"S4c Firecracker spawn + API socket": [
+10,
+27
+],
+"S4d snapshot load + resume": [
+8,
+23
+],
+"S4e guest toolbox port accepts": [
+17,
+19
+],
+"S4f other (cgroup, register, entrypoint trigger)": [
+12,
+75
+],
+"S4 = runner clone total": [
+1341,
+1720
+],
+"S5 running event \u2192 client sees running": [
+474,
+909
+],
+"S6 first exec (echo ready)": [
+3,
+7
+],
+"TOTAL request \u2192 first exec done": [
+2522,
+3835
+]
+}
+},
+"e9575|1k|idle|on": {
+"n": 3000,
+"steps": {
+"S1 client\u2192API: POST answered": [
+652,
+774
+],
+"S2 request sent \u2192 runner starts (API + queue)": [
+411,
+760
+],
+"S3 runner admission/image (pre-clone)": [
+1,
+12
+],
+"S4a netns from pool": [
+0,
+6
+],
+"S4b scratch + init-disk copy": [
+38,
+79
+],
+"S4c Firecracker spawn + API socket": [
+83,
+193
+],
+"S4d snapshot load + resume": [
+39,
+172
+],
+"S4e guest toolbox port accepts": [
+18,
+30
+],
+"S4f other (cgroup, register, entrypoint trigger)": [
+155,
+339
+],
+"S4 = runner clone total": [
+413,
+640
+],
+"S5 running event \u2192 client sees running": [
+220,
+408
+],
+"S6 first exec (echo ready)": [
+5,
+11
+],
+"TOTAL request \u2192 first exec done": [
+1076,
+1559
+]
+}
+},
+"e9575|2k|agent|on": {
+"n": 4000,
+"steps": {
+"S1 client\u2192API: POST answered": [
+2398,
+2942
+],
+"S2 request sent \u2192 runner starts (API + queue)": [
+5957,
+25924
+],
+"S3 runner admission/image (pre-clone)": [
+1,
+1
+],
+"S4a netns from pool": [
+0,
+0
+],
+"S4b scratch + init-disk copy": [
+72,
+194
+],
+"S4c Firecracker spawn + API socket": [
+3052,
+9262
+],
+"S4d snapshot load + resume": [
+430,
+1064
+],
+"S4e guest toolbox port accepts": [
+271,
+940
+],
+"S4f other (cgroup, register, entrypoint trigger)": [
+5984,
+16766
+],
+"S4 = runner clone total": [
+11483,
+23433
+],
+"S5 running event \u2192 client sees running": [
+868,
+1800
+],
+"S6 first exec (echo ready)": [
+125,
+642
+],
+"TOTAL request \u2192 first exec done": [
+19879,
+50431
+]
+}
+},
+"e9575|2k|idle|on": {
+"n": 6000,
+"steps": {
+"S1 client\u2192API: POST answered": [
+1257,
+1603
+],
+"S2 request sent \u2192 runner starts (API + queue)": [
+868,
+2357
+],
+"S3 runner admission/image (pre-clone)": [
+1,
+2
+],
+"S4a netns from pool": [
+0,
+0
+],
+"S4b scratch + init-disk copy": [
+21,
+61
+],
+"S4c Firecracker spawn + API socket": [
+82,
+198
+],
+"S4d snapshot load + resume": [
+152,
+442
+],
+"S4e guest toolbox port accepts": [
+32,
+517
+],
+"S4f other (cgroup, register, entrypoint trigger)": [
+85,
+330
+],
+"S4 = runner clone total": [
+700,
+1244
+],
+"S5 running event \u2192 client sees running": [
+354,
+849
+],
+"S6 first exec (echo ready)": [
+6,
+12
+],
+"TOTAL request \u2192 first exec done": [
+2403,
+3486
+]
+}
+},
+"g5|1k|agent|off": {
+"n": 3000,
+"steps": {
+"S1 client\u2192API: POST answered": [
+124,
+182
+],
+"S2 request sent \u2192 runner starts (API + queue)": [
+949,
+4419
+],
+"S3 runner admission/image (pre-clone)": [
+1,
+1
+],
+"S4a netns from pool": [
+0,
+0
+],
+"S4b scratch + init-disk copy": [
+299,
+612
+],
+"S4c Firecracker spawn + API socket": [
+44,
+1170
+],
+"S4d snapshot load + resume": [
+30,
+606
+],
+"S4e guest toolbox port accepts": [
+21,
+142
+],
+"S4f other (cgroup, register, entrypoint trigger)": [
+565,
+2726
+],
+"S4 = runner clone total": [
+1655,
+3952
+],
+"S5 running event \u2192 client sees running": [
+556,
+1705
+],
+"S6 first exec (echo ready)": [
+54,
+296
+],
+"TOTAL request \u2192 first exec done": [
+3558,
+9469
+]
+}
+},
+"g5|1k|agent|on": {
+"n": 3000,
+"steps": {
+"S1 client\u2192API: POST answered": [
+228,
+381
+],
+"S2 request sent \u2192 runner starts (API + queue)": [
+685,
+5067
+],
+"S3 runner admission/image (pre-clone)": [
+1,
+2
+],
+"S4a netns from pool": [
+0,
+0
+],
+"S4b scratch + init-disk copy": [
+12,
+34
+],
+"S4c Firecracker spawn + API socket": [
+491,
+2421
+],
+"S4d snapshot load + resume": [
+30,
+476
+],
+"S4e guest toolbox port accepts": [
+19,
+531
+],
+"S4f other (cgroup, register, entrypoint trigger)": [
+561,
+2499
+],
+"S4 = runner clone total": [
+2050,
+4066
+],
+"S5 running event \u2192 client sees running": [
+479,
+1425
+],
+"S6 first exec (echo ready)": [
+38,
+252
+],
+"TOTAL request \u2192 first exec done": [
+5506,
+9626
+]
+}
+},
+"g5|1k|idle|off": {
+"n": 3000,
+"steps": {
+"S1 client\u2192API: POST answered": [
+143,
+208
+],
+"S2 request sent \u2192 runner starts (API + queue)": [
+756,
+1855
+],
+"S3 runner admission/image (pre-clone)": [
+1,
+1
+],
+"S4a netns from pool": [
+0,
+0
+],
+"S4b scratch + init-disk copy": [
+567,
+602
+],
+"S4c Firecracker spawn + API socket": [
+5,
+16
+],
+"S4d snapshot load + resume": [
+5,
+17
+],
+"S4e guest toolbox port accepts": [
+4,
+22
+],
+"S4f other (cgroup, register, entrypoint trigger)": [
+3,
+28
+],
+"S4 = runner clone total": [
+593,
+675
+],
+"S5 running event \u2192 client sees running": [
+282,
+1026
+],
+"S6 first exec (echo ready)": [
+5,
+24
+],
+"TOTAL request \u2192 first exec done": [
+2170,
+3475
+]
+}
+},
+"g5|1k|idle|on": {
+"n": 3000,
+"steps": {
+"S1 client\u2192API: POST answered": [
+196,
+334
+],
+"S2 request sent \u2192 runner starts (API + queue)": [
+321,
+748
+],
+"S3 runner admission/image (pre-clone)": [
+1,
+2
+],
+"S4a netns from pool": [
+0,
+0
+],
+"S4b scratch + init-disk copy": [
+14,
+36
+],
+"S4c Firecracker spawn + API socket": [
+83,
+136
+],
+"S4d snapshot load + resume": [
+16,
+66
+],
+"S4e guest toolbox port accepts": [
+28,
+43
+],
+"S4f other (cgroup, register, entrypoint trigger)": [
+78,
+162
+],
+"S4 = runner clone total": [
+246,
+349
+],
+"S5 running event \u2192 client sees running": [
+182,
+476
+],
+"S6 first exec (echo ready)": [
+15,
+48
+],
+"TOTAL request \u2192 first exec done": [
+889,
+1526
+]
+}
+},
+"turin|1k|agent|on": {
+"n": 2000,
+"steps": {
+"S1 client\u2192API: POST answered": [
+258,
+368
+],
+"S2 request sent \u2192 runner starts (API + queue)": [
+970,
+3102
+],
+"S3 runner admission/image (pre-clone)": [
+1,
+1
+],
+"S4a netns from pool": [
+0,
+1
+],
+"S4b scratch + init-disk copy": [
+17,
+72
+],
+"S4c Firecracker spawn + API socket": [
+74,
+200
+],
+"S4d snapshot load + resume": [
+866,
+1981
+],
+"S4e guest toolbox port accepts": [
+24,
+115
+],
+"S4f other (cgroup, register, entrypoint trigger)": [
+49,
+161
+],
+"S4 = runner clone total": [
+1188,
+2204
+],
+"S5 running event \u2192 client sees running": [
+391,
+1328
+],
+"S6 first exec (echo ready)": [
+13,
+70
+],
+"TOTAL request \u2192 first exec done": [
+2556,
+5767
+]
+}
+},
+"turin|1k|idle|on": {
+"n": 2000,
+"steps": {
+"S1 client\u2192API: POST answered": [
+252,
+340
+],
+"S2 request sent \u2192 runner starts (API + queue)": [
+865,
+2009
+],
+"S3 runner admission/image (pre-clone)": [
+1,
+1
+],
+"S4a netns from pool": [
+0,
+0
+],
+"S4b scratch + init-disk copy": [
+10,
+56
+],
+"S4c Firecracker spawn + API socket": [
+26,
+105
+],
+"S4d snapshot load + resume": [
+484,
+1196
+],
+"S4e guest toolbox port accepts": [
+16,
+19
+],
+"S4f other (cgroup, register, entrypoint trigger)": [
+17,
+100
+],
+"S4 = runner clone total": [
+706,
+1277
+],
+"S5 running event \u2192 client sees running": [
+346,
+1025
+],
+"S6 first exec (echo ready)": [
+4,
+8
+],
+"TOTAL request \u2192 first exec done": [
+2353,
+3734
+]
+}
+},
+"turin|2k|agent|on": {
+"n": 2000,
+"steps": {
+"S1 client\u2192API: POST answered": [
+793,
+1327
+],
+"S2 request sent \u2192 runner starts (API + queue)": [
+3946,
+11721
+],
+"S3 runner admission/image (pre-clone)": [
+1,
+1
+],
+"S4a netns from pool": [
+0,
+11
+],
+"S4b scratch + init-disk copy": [
+42,
+98
+],
+"S4c Firecracker spawn + API socket": [
+296,
+1885
+],
+"S4d snapshot load + resume": [
+255,
+1912
+],
+"S4e guest toolbox port accepts": [
+82,
+341
+],
+"S4f other (cgroup, register, entrypoint trigger)": [
+249,
+2101
+],
+"S4 = runner clone total": [
+2189,
+4166
+],
+"S5 running event \u2192 client sees running": [
+692,
+1685
+],
+"S6 first exec (echo ready)": [
+29,
+148
+],
+"TOTAL request \u2192 first exec done": [
+7073,
+17184
+]
+}
+},
+"turin|2k|idle|on": {
+"n": 4000,
+"steps": {
+"S1 client\u2192API: POST answered": [
+652,
+1079
+],
+"S2 request sent \u2192 runner starts (API + queue)": [
+2284,
+4565
+],
+"S3 runner admission/image (pre-clone)": [
+0,
+1
+],
+"S4a netns from pool": [
+0,
+0
+],
+"S4b scratch + init-disk copy": [
+10,
+36
+],
+"S4c Firecracker spawn + API socket": [
+28,
+67
+],
+"S4d snapshot load + resume": [
+657,
+1248
+],
+"S4e guest toolbox port accepts": [
+17,
+20
+],
+"S4f other (cgroup, register, entrypoint trigger)": [
+9,
+77
+],
+"S4 = runner clone total": [
+789,
+1316
+],
+"S5 running event \u2192 client sees running": [
+509,
+1281
+],
+"S6 first exec (echo ready)": [
+5,
+11
+],
+"TOTAL request \u2192 first exec done": [
+3496,
+6754
+]
+}
+},
+"vera|1k|agent|off": {
+"n": 2998,
+"steps": {
+"S1 client\u2192API: POST answered": [
+283,
+455
+],
+"S2 request sent \u2192 runner starts (API + queue)": [
+4187,
+13736
+],
+"S3 runner admission/image (pre-clone)": [
+1,
+2
+],
+"S4a netns from pool": [
+0,
+0
+],
+"S4b scratch + init-disk copy": [
+218,
+741
+],
+"S4c Firecracker spawn + API socket": [
+1335,
+4931
+],
+"S4d snapshot load + resume": [
+211,
+2373
+],
+"S4e guest toolbox port accepts": [
+11,
+512
+],
+"S4f other (cgroup, register, entrypoint trigger)": [
+1121,
+4832
+],
+"S4 = runner clone total": [
+5232,
+9350
+],
+"S5 running event \u2192 client sees running": [
+649,
+1772
+],
+"S6 first exec (echo ready)": [
+9,
+37
+],
+"TOTAL request \u2192 first exec done": [
+11846,
+21834
+]
+}
+},
+"vera|1k|agent|on": {
+"n": 2998,
+"steps": {
+"S1 client\u2192API: POST answered": [
+322,
+506
+],
+"S2 request sent \u2192 runner starts (API + queue)": [
+2446,
+18456
+],
+"S3 runner admission/image (pre-clone)": [
+1,
+2
+],
+"S4a netns from pool": [
+0,
+0
+],
+"S4b scratch + init-disk copy": [
+14,
+133
+],
+"S4c Firecracker spawn + API socket": [
+1677,
+11007
+],
+"S4d snapshot load + resume": [
+36,
+650
+],
+"S4e guest toolbox port accepts": [
+5,
+513
+],
+"S4f other (cgroup, register, entrypoint trigger)": [
+372,
+2929
+],
+"S4 = runner clone total": [
+4318,
+12153
+],
+"S5 running event \u2192 client sees running": [
+859,
+1523
+],
+"S6 first exec (echo ready)": [
+11,
+41
+],
+"TOTAL request \u2192 first exec done": [
+11725,
+23940
+]
+}
+},
+"vera|1k|idle|off": {
+"n": 3000,
+"steps": {
+"S1 client\u2192API: POST answered": [
+324,
+1208
+],
+"S2 request sent \u2192 runner starts (API + queue)": [
+1271,
+2244
+],
+"S3 runner admission/image (pre-clone)": [
+1,
+1
+],
+"S4a netns from pool": [
+0,
+0
+],
+"S4b scratch + init-disk copy": [
+352,
+665
+],
+"S4c Firecracker spawn + API socket": [
+56,
+143
+],
+"S4d snapshot load + resume": [
+11,
+51
+],
+"S4e guest toolbox port accepts": [
+3,
+9
+],
+"S4f other (cgroup, register, entrypoint trigger)": [
+151,
+370
+],
+"S4 = runner clone total": [
+629,
+1129
+],
+"S5 running event \u2192 client sees running": [
+421,
+805
+],
+"S6 first exec (echo ready)": [
+4,
+7
+],
+"TOTAL request \u2192 first exec done": [
+2362,
+3693
+]
+}
+},
+"vera|1k|idle|on": {
+"n": 2999,
+"steps": {
+"S1 client\u2192API: POST answered": [
+285,
+438
+],
+"S2 request sent \u2192 runner starts (API + queue)": [
+715,
+1493
+],
+"S3 runner admission/image (pre-clone)": [
+1,
+2
+],
+"S4a netns from pool": [
+0,
+0
+],
+"S4b scratch + init-disk copy": [
+11,
+33
+],
+"S4c Firecracker spawn + API socket": [
+208,
+320
+],
+"S4d snapshot load + resume": [
+32,
+110
+],
+"S4e guest toolbox port accepts": [
+6,
+510
+],
+"S4f other (cgroup, register, entrypoint trigger)": [
+124,
+273
+],
+"S4 = runner clone total": [
+441,
+822
+],
+"S5 running event \u2192 client sees running": [
+319,
+686
+],
+"S6 first exec (echo ready)": [
+4,
+9
+],
+"TOTAL request \u2192 first exec done": [
+1591,
+2553
+]
+}
+},
+"vera|2k|agent|on": {
+"n": 3998,
+"steps": {
+"S1 client\u2192API: POST answered": [
+952,
+1809
+],
+"S2 request sent \u2192 runner starts (API + queue)": [
+15616,
+40159
+],
+"S3 runner admission/image (pre-clone)": [
+1,
+3
+],
+"S4a netns from pool": [
+0,
+0
+],
+"S4b scratch + init-disk copy": [
+29,
+761
+],
+"S4c Firecracker spawn + API socket": [
+3625,
+8509
+],
+"S4d snapshot load + resume": [
+140,
+1791
+],
+"S4e guest toolbox port accepts": [
+11,
+550
+],
+"S4f other (cgroup, register, entrypoint trigger)": [
+694,
+2855
+],
+"S4 = runner clone total": [
+6285,
+11616
+],
+"S5 running event \u2192 client sees running": [
+930,
+1795
+],
+"S6 first exec (echo ready)": [
+10,
+39
+],
+"TOTAL request \u2192 first exec done": [
+27620,
+46069
+]
+}
+},
+"vera|2k|idle|on": {
+"n": 4000,
+"steps": {
+"S1 client\u2192API: POST answered": [
+727,
+1068
+],
+"S2 request sent \u2192 runner starts (API + queue)": [
+1858,
+4106
+],
+"S3 runner admission/image (pre-clone)": [
+1,
+1
+],
+"S4a netns from pool": [
+0,
+0
+],
+"S4b scratch + init-disk copy": [
+16,
+63
+],
+"S4c Firecracker spawn + API socket": [
+188,
+424
+],
+"S4d snapshot load + resume": [
+37,
+335
+],
+"S4e guest toolbox port accepts": [
+11,
+523
+],
+"S4f other (cgroup, register, entrypoint trigger)": [
+104,
+284
+],
+"S4 = runner clone total": [
+589,
+1098
+],
+"S5 running event \u2192 client sees running": [
+413,
+1415
+],
+"S6 first exec (echo ready)": [
+4,
+9
+],
+"TOTAL request \u2192 first exec done": [
+2965,
+6315
+]
+}
+}
+}

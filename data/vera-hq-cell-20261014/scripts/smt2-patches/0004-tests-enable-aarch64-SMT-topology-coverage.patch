@@ -1,0 +1,208 @@
+From 1aad1864841a3e623df59a4fedca94a6cc3e5c47 Mon Sep 17 00:00:00 2001
+From: Nathan Chen <nathanc@nvidia.com>
+Date: Fri, 7 Aug 2026 01:12:47 +0000
+Subject: [PATCH 4/4] tests: enable aarch64 SMT topology coverage
+
+Update integration tests to verify SMT can be configured on aarch64 and
+that guest CPU topology reflects the configured thread count. Add
+focused 2-vCPU and 4-vCPU cases that assert two threads per core.
+
+Signed-off-by: Nathan Chen <nathanc@nvidia.com>
+(cherry picked from commit bf4c108939349daa144380cc9c8ac5f713d505bf)
+---
+ .../integration_tests/functional/test_api.py  | 11 +--
+ .../functional/test_cmd_line_start.py         |  9 +--
+ .../functional/test_topology.py               | 71 ++++++++++++++++---
+ 3 files changed, 66 insertions(+), 25 deletions(-)
+
+diff --git a/tests/integration_tests/functional/test_api.py b/tests/integration_tests/functional/test_api.py
+index a2d5d6e7c..e3499e8ef 100644
+--- a/tests/integration_tests/functional/test_api.py
++++ b/tests/integration_tests/functional/test_api.py
+@@ -353,15 +353,8 @@ def test_api_machine_config(uvm):
+     response = test_microvm.api.machine_config.get()
+     assert response.json()["smt"] is False
+ 
+-    # Test that smt=True errors on ARM.
+-    if platform.machine() == "x86_64":
+-        test_microvm.api.machine_config.patch(smt=True)
+-    elif platform.machine() == "aarch64":
+-        expected_msg = (
+-            "Enabling simultaneous multithreading is not supported on aarch64"
+-        )
+-        with pytest.raises(RuntimeError, match=expected_msg):
+-            test_microvm.api.machine_config.patch(smt=True)
++    # Test that smt=True is accepted.
++    test_microvm.api.machine_config.patch(smt=True)
+ 
+     # Test invalid mem_size_mib < 0.
+     with pytest.raises(RuntimeError):
+diff --git a/tests/integration_tests/functional/test_cmd_line_start.py b/tests/integration_tests/functional/test_cmd_line_start.py
+index 524a0a284..74b02ba68 100644
+--- a/tests/integration_tests/functional/test_cmd_line_start.py
++++ b/tests/integration_tests/functional/test_cmd_line_start.py
+@@ -4,7 +4,6 @@
+ 
+ import json
+ import os
+-import platform
+ import re
+ import shutil
+ from pathlib import Path
+@@ -198,8 +197,8 @@ def test_config_bad_machine_config(uvm_plain, vm_config_file):
+ @pytest.mark.parametrize(
+     "test_config",
+     [
+-        ("framework/vm_config_cpu_template_C3.json", True, False),
+-        ("framework/vm_config_smt_true.json", False, True),
++        ("framework/vm_config_cpu_template_C3.json", True),
++        ("framework/vm_config_smt_true.json", False),
+     ],
+ )
+ def test_config_machine_config_params(uvm_plain, test_config):
+@@ -210,7 +209,7 @@ def test_config_machine_config_params(uvm_plain, test_config):
+ 
+     # Test configuration determines if the file is a valid config or not
+     # based on the CPU
+-    vm_config_file, cpu_template_used, smt_used = test_config
++    vm_config_file, cpu_template_used = test_config
+ 
+     _configure_vm_from_json(test_microvm, vm_config_file)
+     test_microvm.jailer.extra_args.update({"no-api": None})
+@@ -220,8 +219,6 @@ def test_config_machine_config_params(uvm_plain, test_config):
+     should_fail = False
+     if cpu_template_used and "C3" not in SUPPORTED_CPU_TEMPLATES:
+         should_fail = True
+-    if smt_used and (platform.machine() == "aarch64"):
+-        should_fail = True
+ 
+     if should_fail:
+         test_microvm.check_any_log_message(
+diff --git a/tests/integration_tests/functional/test_topology.py b/tests/integration_tests/functional/test_topology.py
+index 8a57a349e..a3a46fa30 100644
+--- a/tests/integration_tests/functional/test_topology.py
++++ b/tests/integration_tests/functional/test_topology.py
+@@ -9,6 +9,7 @@ import pytest
+ from packaging import version
+ 
+ import framework.utils_cpuid as utils
++from framework.artifacts import GUEST_KERNEL_DEFAULT, pin_guest_kernel
+ from framework.properties import global_props
+ from framework.utils import get_kernel_version
+ 
+@@ -35,7 +36,7 @@ def _check_cpu_topology(
+         expected_lscpu_output = {
+             "CPU(s)": str(expected_cpu_count),
+             "On-line CPU(s) list": expected_cpus_list,
+-            "Thread(s) per core": "1",
++            "Thread(s) per core": str(expected_threads_per_core),
+             "Core(s) per cluster": str(
+                 int(expected_cpu_count / expected_threads_per_core)
+             ),
+@@ -58,6 +59,21 @@ def _check_cpu_topology(
+             "depth 6": f"{int(expected_cpu_count / expected_threads_per_core)} Core (type #2)",
+             "depth 7": f"{expected_cpu_count} PU (type #3)",
+         }
++    elif expected_threads_per_core > 1:
++        # On aarch64 the L1 caches are attributes of the cpu node in the FDT, so
++        # Linux always reports them as private to a vCPU. A Core spanning its
++        # thread siblings therefore contains the per-vCPU caches, and hwloc,
++        # which orders objects by containment, places Core above them.
++        expected_hwloc_output = {
++            "depth 0": "1 Machine (type #0)",
++            "depth 1": "1 Package (type #1)",
++            "depth 2": "1 L3Cache (type #6)",
++            "depth 3": f"{int(expected_cpu_count / expected_threads_per_core)} Core (type #2)",
++            "depth 4": f"{expected_cpu_count} L2Cache (type #5)",
++            "depth 5": f"{expected_cpu_count} L1dCache (type #4)",
++            "depth 6": f"{expected_cpu_count} L1iCache (type #9)",
++            "depth 7": f"{expected_cpu_count} PU (type #3)",
++        }
+     else:
+         expected_hwloc_output = {
+             "depth 0": "1 Machine (type #0)",
+@@ -192,21 +208,49 @@ def _check_cache_topology_arm(test_microvm, no_cpus, kernel_version_tpl):
+         assert guest_slice == host_slice
+ 
+ 
++@pin_guest_kernel(GUEST_KERNEL_DEFAULT)
++@pytest.mark.parametrize("num_vcpus", [2, 4])
++def test_aarch64_smt_threads_per_core(uvm, num_vcpus):
++    """
++    Check the guest-visible SMT topology without asserting cache hierarchy details.
++    """
++    if PLATFORM != "aarch64":
++        pytest.skip("This test verifies aarch64 SMT topology.")
++
++    vm = uvm
++    vm.spawn()
++    vm.basic_config(vcpu_count=num_vcpus, smt=True)
++    vm.add_net_iface()
++    vm.start()
++
++    utils.check_guest_cpuid_output(
++        vm,
++        "lscpu",
++        None,
++        ":",
++        {
++            "CPU(s)": str(num_vcpus),
++            "On-line CPU(s) list": "0,1" if num_vcpus == 2 else "0-3",
++            "Thread(s) per core": "2",
++            "Core(s) per cluster": str(num_vcpus // 2),
++            "Cluster(s)": "1",
++            "NUMA node(s)": "1",
++        },
++    )
++
++
+ @pytest.mark.parametrize("num_vcpus", [1, 2, 16])
+ @pytest.mark.parametrize("htt", [True, False], ids=["HTT_ON", "HTT_OFF"])
+-def test_cpu_topology(uvm_plain_any, num_vcpus, htt):
++def test_cpu_topology(uvm, num_vcpus, htt):
+     """
+     Check the CPU topology for a microvm with the specified config.
+     """
+-    if htt and PLATFORM == "aarch64":
+-        pytest.skip("SMT is configurable only on x86.")
+-
+     # TODO:Remove (or adapt) this once we unify the way we expose the CPU cache hierarchy on
+     # Aarch64 systems.
+     if version.parse(get_kernel_version()) >= version.parse("6.14"):
+         pytest.skip("Starting on 6.14 KVM exposes a different CPU cache hierarchy")
+ 
+-    vm = uvm_plain_any
++    vm = uvm
+     vm.spawn()
+     vm.basic_config(vcpu_count=num_vcpus, smt=htt)
+     vm.add_net_iface()
+@@ -217,15 +261,22 @@ def test_cpu_topology(uvm_plain_any, num_vcpus, htt):
+     )
+ 
+ 
++@pytest.mark.skipif(
++    (6, 3) <= global_props.host_linux_version_tpl
++    and global_props.host_linux_version_tpl < (6, 10)
++    and PLATFORM == "aarch64",
++    reason="""On the range [6.3..6.10) of host kernels on aarch64 platform, the
++    cache topology provided by DT and CRIDR_EL1 register do not match. In that
++    case guest uses values from CLIDR_EL1 which will not contain info about L1$
++    and so this test will fail.""",
++)
+ @pytest.mark.parametrize("num_vcpus", [1, 2, 16])
+ @pytest.mark.parametrize("htt", [True, False], ids=["HTT_ON", "HTT_OFF"])
+-def test_cache_topology(uvm_plain_any, num_vcpus, htt):
++def test_cache_topology(uvm, num_vcpus, htt):
+     """
+     Check the cache topology for a microvm with the specified config.
+     """
+-    if htt and PLATFORM == "aarch64":
+-        pytest.skip("SMT is configurable only on x86.")
+-    vm = uvm_plain_any
++    vm = uvm
+     vm.spawn()
+     vm.basic_config(vcpu_count=num_vcpus, smt=htt)
+     vm.add_net_iface()
+-- 
+2.43.0
+

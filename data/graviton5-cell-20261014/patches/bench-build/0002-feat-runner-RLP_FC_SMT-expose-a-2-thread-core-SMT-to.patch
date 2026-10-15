@@ -1,0 +1,326 @@
+From d053f03175bf1ca2cdcc77b1c01694a5ea5f8e52 Mon Sep 17 00:00:00 2001
+From: Vedran Jukic <vedran.jukic@gmail.com>
+Date: Tue, 25 Aug 2026 00:13:29 +0200
+Subject: [PATCH 2/2] =?UTF-8?q?feat(runner):=20RLP=5FFC=5FSMT=20=E2=80=94?=
+ =?UTF-8?q?=20expose=20a=202-thread/core=20SMT=20topology=20to=20guests?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Adds the runner half of aarch64 SMT support (PLAN-ARM64-SMT.md). The
+Firecracker half is a 4-commit fork rebased onto v1.16.1
+(v1.16.1-rlpsmt1): MPIDR_EL1 affinity + a `cpu-map` FDT node, and the
+lifting of aarch64's blanket `SmtNotSupported` rejection. Needed for the
+NVIDIA Vera runner, whose Olympus CPUs are the fleet's first arm64 parts
+with real SMT (2 threads/core, 88 cores x 2 sockets).
+
+Manager.smt comes from RLP_FC_SMT (default off, per-runner A/B like ksm
+and balloon) and reaches Firecracker through one helper, m.fcSmt, at all
+three fc.Config sites — cold boot, template build, persistent boot.
+
+fcSmt returns nil (field OMITTED, not false) unless BOTH hold:
+
+  * RLP_FC_SMT=1 — the operator asserts an SMT-capable Firecracker is
+    installed. This is not cosmetic: models.MachineConfiguration.Smt is
+    *bool+omitempty, and upstream FC rejects the field on aarch64 with
+    MachineConfigError::SmtNotSupported, so an explicit `smt: false`
+    would fail every boot on a stock arm64 runner. Until now the runner
+    only ever worked on arm64 because nothing set the field at all — by
+    accident, with no test pinning it. TestFirecrackerConfigsUseFcSmtHelper
+    now makes that deliberate, in the same source-level style as the
+    ForwardSignals guard.
+
+  * an EVEN vcpu count > 1 — every Firecracker rejects smt=true with an
+    odd vcpu_count (InvalidVcpuCount), and the fork pairs vCPUs
+    (2i, 2i+1) as the two threads of core i, so an odd count has no
+    valid pairing. Odd and single-vCPU shapes silently boot without SMT
+    instead of failing the create; sizing, capacity and billing are
+    untouched.
+
+TemplateKey gains SMT (omitempty) for the same reason Balloon is in the
+key: the flag is frozen into the snapshot's machine config at build time
+and restored from it, so a clone inherits the template's topology and an
+SMT sandbox must never resume a non-SMT template. It records the
+EFFECTIVE value — an odd-vCPU template under RLP_FC_SMT=1 boots exactly
+as before and keeps its historical hash, which matters because the hash
+is both the on-disk dir name and the chunk-CAS content address.
+
+No pause/fullsnap manifest change is needed: smt lives in the snapshot's
+own machine config, so a restore cannot disagree with its source. The
+existing fc_version gate already separates forked from stock runners.
+
+Signed-off-by: Vedran Jukic <vedran.jukic@gmail.com>
+(cherry picked from commit 8d2b090ffbd43f2edf10de8d5971c3f6055be86e)
+---
+ runner/internal/vm/persistent_boot.go |   1 +
+ runner/internal/vm/smt_test.go        | 135 ++++++++++++++++++++++++++
+ runner/internal/vm/template.go        |  18 ++++
+ runner/internal/vm/vm.go              |  34 +++++++
+ 4 files changed, 188 insertions(+)
+ create mode 100644 runner/internal/vm/smt_test.go
+
+diff --git a/runner/internal/vm/persistent_boot.go b/runner/internal/vm/persistent_boot.go
+index 822651826..de353519b 100644
+--- a/runner/internal/vm/persistent_boot.go
++++ b/runner/internal/vm/persistent_boot.go
+@@ -170,6 +170,7 @@ func (m *Manager) BootPersistentResumable(ctx context.Context, spec BootSpec, de
+ 		MachineCfg: models.MachineConfiguration{
+ 			VcpuCount:  fcInt64(int64(spec.Vcpus)),
+ 			MemSizeMib: fcInt64(int64(spec.MemMiB)),
++			Smt:        m.fcSmt(spec.Vcpus),
+ 		},
+ 		NetworkInterfaces: []fc.NetworkInterface{{
+ 			StaticConfiguration: &fc.StaticNetworkConfiguration{
+diff --git a/runner/internal/vm/smt_test.go b/runner/internal/vm/smt_test.go
+new file mode 100644
+index 000000000..f6ff18aec
+--- /dev/null
++++ b/runner/internal/vm/smt_test.go
+@@ -0,0 +1,135 @@
++package vm
++
++import (
++	"encoding/json"
++	"os"
++	"path/filepath"
++	"strings"
++	"testing"
++)
++
++func mustMarshal(t *testing.T, v any) string {
++	t.Helper()
++	b, err := json.Marshal(v)
++	if err != nil {
++		t.Fatal(err)
++	}
++	return string(b)
++}
++
++// ---------------- aarch64 SMT (PLAN-ARM64-SMT.md) ----------------
++
++// TestFcSmtOmittedUnlessEnabledAndEven pins the two rules that make the `smt`
++// machine-config field safe to emit at all.
++//
++// Rule 1 — omitted by default. models.MachineConfiguration.Smt is `*bool` +
++// `omitempty`, so nil keeps `smt` out of the PUT /machine-config body. Upstream
++// Firecracker rejects the field on aarch64 with SmtNotSupported, so an explicit
++// `false` is NOT equivalent to omitting it: it would fail every boot on a stock
++// arm64 runner. Before this feature the field was left unset only by accident;
++// this test makes it deliberate.
++//
++// Rule 2 — even vCPU counts only. Every Firecracker rejects smt=true with an odd
++// vcpu_count (InvalidVcpuCount), and the fork pairs vCPUs (2i, 2i+1) as the two
++// threads of core i, so an odd count has no valid pairing.
++func TestFcSmtOmittedUnlessEnabledAndEven(t *testing.T) {
++	cases := []struct {
++		name    string
++		smtFlag bool
++		vcpus   int
++		want    bool // true => expect smt=true sent; false => expect field omitted
++	}{
++		{"disabled/even", false, 2, false},
++		{"disabled/odd", false, 3, false},
++		{"disabled/single", false, 1, false},
++		{"enabled/single", true, 1, false},
++		{"enabled/odd", true, 3, false},
++		{"enabled/odd-large", true, 15, false},
++		{"enabled/zero", true, 0, false},
++		{"enabled/negative", true, -2, false},
++		{"enabled/even", true, 2, true},
++		{"enabled/even-large", true, 16, true},
++	}
++	for _, tc := range cases {
++		t.Run(tc.name, func(t *testing.T) {
++			m := &Manager{smt: tc.smtFlag}
++			got := m.fcSmt(tc.vcpus)
++			if !tc.want {
++				if got != nil {
++					t.Fatalf("fcSmt(smt=%v, vcpus=%d) = %v, want nil (field must be OMITTED — "+
++						"an explicit smt=false is rejected by upstream FC on aarch64)",
++						tc.smtFlag, tc.vcpus, *got)
++				}
++				return
++			}
++			if got == nil {
++				t.Fatalf("fcSmt(smt=%v, vcpus=%d) = nil, want smt=true", tc.smtFlag, tc.vcpus)
++			}
++			if !*got {
++				t.Fatalf("fcSmt(smt=%v, vcpus=%d) = false, want true — we never send an "+
++					"explicit false", tc.smtFlag, tc.vcpus)
++			}
++		})
++	}
++}
++
++// TestTemplateKeySMTOmitEmptyPreservesLegacyHash guards the content-address of
++// every template built before SMT existed. TemplateKey.Hash() is both the
++// on-disk directory name and the chunk-CAS address, so a non-omitempty field
++// would silently orphan the entire existing template cache.
++func TestTemplateKeySMTOmitEmptyPreservesLegacyHash(t *testing.T) {
++	base := TemplateKey{
++		ManifestName: "alpine", ManifestDigest: "sha256:abc", DaemonVersion: "v1",
++		KernelPath: "/k", FCVersion: "v1.16.1", CPUMarker: "deadbeef",
++		Vcpus: 2, MemMiB: 512, ScratchMiB: 512,
++	}
++	withSMT := base
++	withSMT.SMT = true
++
++	if base.Hash() == withSMT.Hash() {
++		t.Fatal("SMT=true must produce a DIFFERENT template hash — an SMT guest and a " +
++			"non-SMT guest cannot share a frozen machine config")
++	}
++
++	// The zero value must serialize away entirely, leaving legacy hashes intact.
++	if strings.Contains(mustMarshal(t, base), "smt") {
++		t.Error("TemplateKey{SMT:false} must not serialize an `smt` field — omitempty is " +
++			"what keeps pre-SMT template hashes (dir names + CAS addresses) stable")
++	}
++	if !strings.Contains(mustMarshal(t, withSMT), "smt") {
++		t.Error("TemplateKey{SMT:true} must serialize an `smt` field")
++	}
++}
++
++// TestFirecrackerConfigsUseFcSmtHelper is a source-level guard, in the same
++// spirit as TestFirecrackerConfigsDisableSignalForwarding: an fc.Config may only
++// obtain its Smt value from the m.fcSmt helper. A hand-written `Smt:
++// fcBool(...)` at a boot site would bypass both the enablement flag and the
++// even-vCPU rule — and on a stock-FC arm64 runner that fails every boot.
++func TestFirecrackerConfigsUseFcSmtHelper(t *testing.T) {
++	files, err := filepath.Glob("*.go")
++	if err != nil {
++		t.Fatal(err)
++	}
++	for _, f := range files {
++		if strings.HasSuffix(f, "_test.go") {
++			continue
++		}
++		src, err := os.ReadFile(f)
++		if err != nil {
++			t.Fatal(err)
++		}
++		for i, line := range strings.Split(string(src), "\n") {
++			body := stripLineComments(line)
++			if !strings.Contains(body, "Smt:") {
++				continue
++			}
++			if !strings.Contains(body, "fcSmt(") {
++				t.Errorf("%s:%d: `Smt:` must be set from m.fcSmt(vcpus), got %q — a literal "+
++					"value bypasses the RLP_FC_SMT gate and the even-vCPU rule, and an "+
++					"explicit smt=false is rejected outright by upstream FC on aarch64",
++					f, i+1, strings.TrimSpace(line))
++			}
++		}
++	}
++}
+diff --git a/runner/internal/vm/template.go b/runner/internal/vm/template.go
+index a9b9cfb37..0d7ac58f9 100644
+--- a/runner/internal/vm/template.go
++++ b/runner/internal/vm/template.go
+@@ -66,6 +66,15 @@ type TemplateKey struct {
+ 	// templates (Balloon==false) keep their exact historical hash (the hash is
+ 	// both the on-disk dir name and the chunk-CAS content address).
+ 	Balloon bool `json:"balloon,omitempty"`
++	// SMT (true) marks a template built with Firecracker's `smt` flag set, i.e.
++	// a guest that boots seeing a 2-thread-per-core topology
++	// (PLAN-ARM64-SMT.md). Like Balloon it is part of the key because the flag
++	// is frozen into the snapshot's machine config at build time and restored
++	// from it — a clone inherits the template's topology, so an SMT and a
++	// non-SMT sandbox must never share a template. `omitempty` so pre-SMT
++	// templates (SMT==false) keep their exact historical hash (the hash is both
++	// the on-disk dir name and the chunk-CAS content address).
++	SMT bool `json:"smt,omitempty"`
+ 	// ExtraKey is an opaque discriminator that forces a DISTINCT template dir
+ 	// (PLAN-FUNCTIONS.md phase 3). It is `omitempty` so ordinary sandbox
+ 	// templates (ExtraKey=="") keep their exact historical hash — critical,
+@@ -734,6 +743,11 @@ func (m *Manager) TemplateKeyFor(spec BootSpec) (TemplateKey, bool) {
+ 		// expects to actuate (PLAN-BALLOON.md). omitempty keeps pre-balloon
+ 		// hashes unchanged.
+ 		Balloon: m.balloon,
++		// EFFECTIVE smt, not the raw flag: fcSmt returns nil for odd/1-vCPU
++		// shapes even with RLP_FC_SMT=1, and those boot exactly as before — so
++		// they must keep their historical (omitempty) hash rather than fork a
++		// second, identical template. PLAN-ARM64-SMT.md.
++		SMT: m.fcSmt(spec.Vcpus) != nil,
+ 	}
+ 	// Function-ready snapshots get a distinct template (paused after handler
+ 	// init). ExtraKey is omitempty, so ordinary sandbox keys are byte-identical
+@@ -984,6 +998,10 @@ func (m *Manager) buildTemplateInto(ctx context.Context, spec BootSpec, key Temp
+ 		MachineCfg: models.MachineConfiguration{
+ 			VcpuCount:  fcInt64(int64(spec.Vcpus)),
+ 			MemSizeMib: fcInt64(int64(spec.MemMiB)),
++			// SMT is frozen into the snapshot's machine config, so it must be
++			// set at BUILD time; TemplateKey.SMT keeps SMT and non-SMT
++			// templates in separate dirs.
++			Smt: m.fcSmt(spec.Vcpus),
+ 		},
+ 		NetworkInterfaces: []fc.NetworkInterface{{
+ 			StaticConfiguration: &fc.StaticNetworkConfiguration{
+diff --git a/runner/internal/vm/vm.go b/runner/internal/vm/vm.go
+index 41c9ed320..6121f19d5 100644
+--- a/runner/internal/vm/vm.go
++++ b/runner/internal/vm/vm.go
+@@ -66,6 +66,13 @@ type Manager struct {
+ 	// Ships default-off for per-runner A/B, mirroring ksm.
+ 	balloon    bool
+ 	balloonCfg BalloonConfig
++	// smt (RLP_FC_SMT) asks Firecracker to expose a 2-thread-per-core SMT
++	// topology to the guest (PLAN-ARM64-SMT.md). Requires an SMT-capable FC:
++	// upstream FC REJECTS smt=true on aarch64 outright
++	// (MachineConfigError::SmtNotSupported), so this must stay default-off and
++	// be enabled per-runner only where the forked binary is installed. See
++	// fcSmt for the (also mandatory) even-vcpu rule.
++	smt bool
+ 
+ 	sys *systemResolver // daemon system-layer resolver (nil-safe)
+ 
+@@ -727,6 +734,7 @@ func NewManager() *Manager {
+ 		fcnsBin:         resolveFcnsBin(),
+ 		ksm:             getenv("RLP_KSM", "0") != "0",
+ 		balloon:         getenv("RLP_BALLOON", "0") != "0",
++		smt:             getenv("RLP_FC_SMT", "0") != "0",
+ 		balloonCfg:      balloonConfigFromEnv(),
+ 		sys:             newSystemResolver(root),
+ 		gpus:            hostres.NewGPUAllocator(),
+@@ -1197,6 +1205,7 @@ func (m *Manager) coldBoot(ctx context.Context, spec BootSpec, extraDrives func(
+ 		MachineCfg: models.MachineConfiguration{
+ 			VcpuCount:  fcInt64(int64(spec.Vcpus)),
+ 			MemSizeMib: fcInt64(int64(spec.MemMiB)),
++			Smt:        m.fcSmt(spec.Vcpus),
+ 		},
+ 		// Do NOT let the SDK forward our signals to Firecracker
+ 		// (PLAN-RUNNER-RESTART.md §1). With a nil ForwardSignals the SDK
+@@ -2660,6 +2669,31 @@ func coldLauncherWrap(cmd *exec.Cmd, spec BootSpec, fcnsBin string, ksm bool, cg
+ func fcBool(b bool) *bool    { return &b }
+ func fcInt64(i int64) *int64 { return &i }
+ 
++// fcSmt returns the machine-config `smt` flag for a boot of `vcpus` vCPUs, or
++// nil to OMIT the field entirely (PLAN-ARM64-SMT.md).
++//
++// Omitting is the load-bearing default. models.MachineConfiguration.Smt is
++// `*bool` + `omitempty`, so a nil here keeps `smt` out of the PUT /machine-config
++// body — which is the only reason this runner has ever worked on aarch64:
++// upstream Firecracker rejects the field on aarch64 with
++// MachineConfigError::SmtNotSupported, so even an explicit `smt: false` would
++// fail every boot on a stock arm64 runner. Never "set it for determinism".
++//
++// Two conditions must BOTH hold before we send it:
++//   - m.smt (RLP_FC_SMT=1) — the operator asserts an SMT-capable FC is installed
++//     (the v1.16.1-rlpsmt1 fork on arm64; x86 FC supports smt natively).
++//   - an EVEN vcpu count > 1 — every Firecracker rejects smt=true with an odd
++//     vcpu_count (MachineConfigError::InvalidVcpuCount), and the fork pairs
++//     vCPUs (2i, 2i+1) as the two threads of core i, so an odd count has no
++//     valid pairing. Odd/1-vCPU shapes silently boot without SMT rather than
++//     failing the create; sizing, capacity and billing are untouched.
++func (m *Manager) fcSmt(vcpus int) *bool {
++	if !m.smt || vcpus <= 1 || vcpus%2 != 0 {
++		return nil
++	}
++	return fcBool(true)
++}
++
+ // b64Lines joins items with newlines and base64-encodes (std encoding, no
+ // padding issues since the guest uses busybox base64 -d).
+ func b64Lines(items []string) string {
+-- 
+2.43.0
+

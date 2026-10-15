@@ -1,0 +1,37 @@
+diff --git a/api/src/main.rs b/api/src/main.rs
+index 8f7e331a5..ce6dbbe38 100644
+--- a/api/src/main.rs
++++ b/api/src/main.rs
+@@ -665,7 +665,31 @@ async fn main() -> Result<()> {
+ 
+     let addr: SocketAddr = bind.parse().context("parse API_BIND")?;
+     tracing::info!("rlp-api listening on {addr}");
+-    let listener = tokio::net::TcpListener::bind(addr).await?;
++    // Accept backlog (issue #3269). tokio's TcpListener::bind goes through mio,
++    // which hard-codes listen(fd, 128) regardless of net.core.somaxconn. A burst
++    // of new connections then overflows the queue and the client's TCP stack
++    // retries ~1s later, which lands as a whole second on a share of the
++    // requests in a create burst (measured on HQ Vera: TcpExtListenOverflows
++    // +~550 per 1k burst, POST->audit p50 1.01-1.03s, vs p50 30ms on
++    // pre-opened connections). Bind explicitly so the depth is ours to set.
++    // RLP_API_LISTEN_BACKLOG=0 restores the mio default path.
++    let backlog: u32 = std::env::var("RLP_API_LISTEN_BACKLOG")
++        .ok()
++        .and_then(|s| s.parse().ok())
++        .unwrap_or(4096);
++    let listener = if backlog == 0 {
++        tokio::net::TcpListener::bind(addr).await?
++    } else {
++        let sock = match addr {
++            SocketAddr::V4(_) => tokio::net::TcpSocket::new_v4()?,
++            SocketAddr::V6(_) => tokio::net::TcpSocket::new_v6()?,
++        };
++        sock.set_reuseaddr(true)?;
++        sock.bind(addr)?;
++        let l = sock.listen(backlog)?;
++        tracing::info!(backlog, "rlp-api listen backlog set");
++        l
++    };
+     // Graceful shutdown so main() returns and the OtelGuard drop can flush the
+     // batch exporters; previously axum::serve ran until the process was killed.
+     // ConnectInfo exposes the TCP peer address to the auth guards for

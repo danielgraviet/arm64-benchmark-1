@@ -1,0 +1,35 @@
+2026-10-14T11:57:40Z disk: mkfs.ext4 /dev/nvme0n1 (instance store, label rlp-data) mounted /mnt/data via fstab (nofail); nvme1n1/nvme2n1 left unused
+2026-10-14T11:57:40Z grub: /etc/default/grub.d/99-rlp-bench.cfg adds numa_balancing=disable preempt=none init_on_alloc=0 (HQ Vera cmdline); remove + update-grub to revert
+2026-10-14T12:03:39Z /etc/hosts: added 127.0.1.1 ip-172-31-5-229 (backup /etc/hosts.bak-rlp)
+2026-10-14T12:03:57Z apt: installed docker.io nftables iptables conntrack erofs-utils xfsprogs jq tmux numactl sysstat (+linux-tools if available)
+2026-10-14T12:03:57Z wrote /etc/sysctl.d/90-rlp-bench.conf (ARP 65536 v4+v6, conntrack 1M, syn backlog, max_map_count, hugepages 0) and applied
+2026-10-14T12:03:57Z udev: shadowed 70-iscsi-network-interface.rules to skip rlp*/veth*/tap*/fc* (remove /etc/udev/rules.d/70-iscsi-network-interface.rules to revert)
+2026-10-14T12:04:29Z grub: dropped preempt=none (AWS kernel is CONFIG_PREEMPT_VOLUNTARY, no PREEMPT_DYNAMIC; parameter is ignored). Effective: numa_balancing=disable init_on_alloc=0
+daytona f0611fa13 + cherry-pick 6883d3366 (EROFS -b 4096) + convert-system-layer -b 4096; built 2026-10-14 on graviton5; same Daytona build as the HQ Vera + epyc9755 cells
+floor_script                 OK    procs=0 (doubled 9575F startup)
+netns_pool_warm              OK    2100/2100 (a filling pool burns CPU during the run)
+background_cpu               OK    none >20%
+clean_fleet                  OK    firecracker=0 live_rows=0
+hugepages_reserved           OK    nr_hugepages=0 (E2B reserves 1.44 TB at boot)
+mem_available                OK    741 GiB
+runner_online                OK    online=1
+arp_gc_thresh3               OK    65536 (1024 caps density ~1k)
+balloon_off                  OK    RLP_BALLOON=0 (corrupts guests on 64 KiB hosts)
+client_nofile_hard           OK    1048576
+cpu                          INFO  Neoverse-V3 sockets=1 online=0-191
+kernel                       INFO  6.17.0-1017-aws page=4096
+cmdline                      INFO  BOOT_IMAGE=/vmlinuz-6.17.0-1017-aws root=PARTUUID=23e0751a-2d36-4ff9-8635-cd6fa1331f14 ro console=tty1 console=ttyS0 nvme_core.io_timeout=4294967295 numa_balancing=disable preempt=none init_on_alloc=0 panic=-1
+numa_balancing               INFO  0
+governor_idle                INFO  governor= idle=none max_khz=
+power_cap                    INFO  
+kvm                          INFO  halt_poll_ns=500000 mode=
+bin_rlp-runner               INFO  sha=353a4060945c
+bin_rlp-proxy                INFO  sha=d1e93049f417
+bin_firecracker              INFO  sha=71ca07335765
+bin_rlp-api                  INFO  sha=c49d24e5ac54 path=/opt/rlp/rlp-api
+build                        INFO  daytona f0611fa13 + cherry-pick 6883d3366 (EROFS -b 4096) + convert-system-layer -b 4096; built 2026-10-14 on graviton5; same Daytona build as the HQ Vera + epyc9755 cells
+slice_cpus                   INFO  rlp.slice=0-191 runner=0-191 api=0-191
+runner_env                   INFO  RLP_SNAPSHOTS=1 RLP_NETNS_POOL=2100 RLP_VM_CONCURRENCY=512 RLP_MAX_LIVE_VMS=3000 RLP_RESERVE_PCT=95 
+api_env                      INFO  RLP_MIN_CPU=0.025 RLP_MIN_MEM_MIB=64 RLP_MIN_SCRATCH_MIB=16 RLP_BURST_MAX_CPU=1 RLP_BURST_MAX_MEM_MIB=4096 
+disk                         INFO  /dev/nvme0n1    3.5T  3.3T
+PREFLIGHT PASS -> /mnt/data/bench/startup-graviton5-1000-20261014_121217/rep1/preflight.txt

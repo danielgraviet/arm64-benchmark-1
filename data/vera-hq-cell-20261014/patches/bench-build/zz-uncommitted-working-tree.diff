@@ -1,0 +1,357 @@
+diff --git a/runner/internal/hostres/netns_netlink.go b/runner/internal/hostres/netns_netlink.go
+index f9ab913cf..d93dc8250 100644
+--- a/runner/internal/hostres/netns_netlink.go
++++ b/runner/internal/hostres/netns_netlink.go
+@@ -633,6 +633,9 @@ func (o netlinkNetnsOps) setupInnerTap(nsHandle netns.NsHandle) error {
+ 		if err := pinTapMAC(tap); err != nil {
+ 			return fmt.Errorf("inner tap mac: %w", err)
+ 		}
++		if err := pinGuestNeigh(tap); err != nil {
++			return fmt.Errorf("inner tap neigh: %w", err)
++		}
+ 		if err := netlink.AddrAdd(tap, mustAddr(innerGwIP, 30)); err != nil {
+ 			return fmt.Errorf("inner tap addr: %w", err)
+ 		}
+@@ -643,6 +646,45 @@ func (o netlinkNetnsOps) setupInnerTap(nsHandle netns.NsHandle) error {
+ 	})
+ }
+ 
++// pinGuestNeigh installs a PERMANENT neighbour entry for the guest's frozen
++// inner identity (innerGuestIP -> macFromIP(innerGuestIP)) on the inner tap, so
++// the resume hot path never resolves ARP.
++//
++// Why (issue #3265): a recycled pool slot keeps a FAILED neighbour entry for the
++// guest (measured: 53 of 60 slots on an idle runner), so the runner's first
++// probe SYN triggers a fresh resolution. That ARP request is queued to the tap
++// during the snapshot-restore window, the guest never raises an RX interrupt for
++// it, and the kernel does not retry for retrans_time_ms (1s). The guest's own
++// announcement cannot rescue it on arm64 either: the daemon's resume detector
++// keys on a monotonic-clock jump that a restored guest does not have
++// (uptime resumes at the snapshot instant), so only its 1s keepalive does -- and
++// that ticker's phase is frozen in the template, which is why the stall is a
++// FIXED ~580ms on ~25% of clones.
++//
++// Both the IP and the MAC are compile-time constants of the frozen inner
++// identity (every clone of every template boots with them), so one permanent
++// entry per slot is correct for every tenant the slot will ever hold -- the same
++// reasoning that lets pinTapMAC fix the MAC in the other direction.
++//
++// Gated RLP_NEIGH_PERMANENT=1 while it is being measured; the entry is removed
++// with the netns.
++func pinGuestNeigh(tap netlink.Link) error {
++	if os.Getenv("RLP_NEIGH_PERMANENT") != "1" {
++		return nil
++	}
++	hw, err := net.ParseMAC(macFromIP(innerGuestIP))
++	if err != nil {
++		return err
++	}
++	return netlink.NeighSet(&netlink.Neigh{
++		LinkIndex:    tap.Attrs().Index,
++		Family:       netlink.FAMILY_V4,
++		State:        netlink.NUD_PERMANENT,
++		IP:           net.ParseIP(innerGuestIP),
++		HardwareAddr: hw,
++	})
++}
++
+ // pinTapMAC sets the inner tap to the DETERMINISTIC gateway MAC
+ // (macFromIP(innerGwIP)) instead of the kernel's per-creation random one.
+ //
+@@ -692,6 +734,9 @@ func (o netlinkNetnsOps) replaceInnerTap(nsHandle netns.NsHandle) error {
+ 		if err := pinTapMAC(tap); err != nil {
+ 			return fmt.Errorf("tap mac: %w", err)
+ 		}
++		if err := pinGuestNeigh(tap); err != nil {
++			return fmt.Errorf("tap neigh: %w", err)
++		}
+ 		if err := netlink.AddrAdd(tap, mustAddr(innerGwIP, 30)); err != nil {
+ 			return fmt.Errorf("tap addr: %w", err)
+ 		}
+diff --git a/runner/internal/vm/cgroup.go b/runner/internal/vm/cgroup.go
+index e91c95a24..db2fe55fe 100644
+--- a/runner/internal/vm/cgroup.go
++++ b/runner/internal/vm/cgroup.go
+@@ -1,12 +1,14 @@
+ package vm
+ 
+ import (
++	"fmt"
+ 	"log/slog"
+ 	"os"
+ 	"path/filepath"
+ 	"strconv"
+ 	"strings"
+ 	"sync"
++	"sync/atomic"
+ 	"time"
+ )
+ 
+@@ -134,15 +136,81 @@ func cgroupDirFor(vmID string) string {
+ 	return filepath.Join(root, "vm-"+vmID)
+ }
+ 
++// ---- pre-created cgroup pool (issue #3261) ----
++//
++// Creating a cgroup is serialized by the kernel and is NOT cheap at this host
++// size: 1000 mkdirs in one parent with the cpu+memory+pids controllers cost
++// ~0.86s wall even 256-way parallel on a 352-CPU host (~0.47s with cpu alone —
++// the per-CPU memcg state is the price). That lands in every clone's critical
++// path, where it was measured at p50 157ms / p90 417ms during a 1k burst, and
++// at p50 498ms once the init-disk I/O (#3260) stopped hiding it.
++//
++// The netns pool already solves this shape of problem for network namespaces:
++// make the expensive object ahead of time, off the hot path. Pool entries are
++// single use — a clone takes one, teardown rmdir's it exactly as before, and
++// the fillers keep the pool topped up.
++//
++// Gated RLP_CGROUP_POOL=<size> (0 = off, the historical inline mkdir). While it
++// is on a per-VM cgroup's name no longer encodes the VM id, so startup adoption
++// of a VM that outlived a runner restart cannot find its cgroup and usage falls
++// back to /proc (cgroupDirFor / adopt.go). That is why it is not on by default.
++var (
++	cgPoolCh   chan string
++	cgPoolOnce sync.Once
++	cgPoolSeq  atomic.Uint64
++)
++
++func cgPoolStart() {
++	n := envInt("RLP_CGROUP_POOL", 0)
++	root := cgroupBase()
++	if n <= 0 || root == "" {
++		return
++	}
++	cgPoolCh = make(chan string, n)
++	slog.Warn("cgroup pool enabled: per-VM cgroups are pool-named, so adoption after a runner restart will not find them",
++		"size", n, "fillers", envInt("RLP_CGROUP_POOL_FILLERS", 8))
++	for i := 0; i < envInt("RLP_CGROUP_POOL_FILLERS", 8); i++ {
++		go func() {
++			for {
++				dir := filepath.Join(root, fmt.Sprintf("vm-pool-%d-%d", os.Getpid(), cgPoolSeq.Add(1)))
++				if err := os.Mkdir(dir, 0o755); err != nil && !os.IsExist(err) {
++					slog.Warn("cgroup pool mkdir failed", "dir", dir, "err", err)
++					time.Sleep(500 * time.Millisecond)
++					continue
++				}
++				cgPoolCh <- dir // blocks while the pool is full
++			}
++		}()
++	}
++}
++
++// cgPoolGet returns a pre-created cgroup dir, or "" when the pool is off or
++// momentarily empty (the caller then does the inline mkdir, as before).
++func cgPoolGet() string {
++	cgPoolOnce.Do(cgPoolStart)
++	if cgPoolCh == nil {
++		return ""
++	}
++	select {
++	case d := <-cgPoolCh:
++		return d
++	default:
++		return ""
++	}
++}
++
+ func (m *Manager) setupCgroup(vmID string, cpu float64) string {
+ 	root := cgroupBase()
+ 	if root == "" {
+ 		return ""
+ 	}
+-	dir := filepath.Join(root, "vm-"+vmID)
+-	if err := os.Mkdir(dir, 0o755); err != nil && !os.IsExist(err) {
+-		slog.Warn("cgroup mkdir failed", "dir", dir, "err", err)
+-		return ""
++	dir := cgPoolGet()
++	if dir == "" {
++		dir = filepath.Join(root, "vm-"+vmID)
++		if err := os.Mkdir(dir, 0o755); err != nil && !os.IsExist(err) {
++			slog.Warn("cgroup mkdir failed", "dir", dir, "err", err)
++			return ""
++		}
+ 	}
+ 	w := cpuWeight(cpu)
+ 	if err := os.WriteFile(filepath.Join(dir, "cpu.weight"), []byte(strconv.Itoa(w)), 0o644); err != nil {
+diff --git a/runner/internal/vm/fullsnap.go b/runner/internal/vm/fullsnap.go
+index 037153b95..2b7d44e6b 100644
+--- a/runner/internal/vm/fullsnap.go
++++ b/runner/internal/vm/fullsnap.go
+@@ -571,7 +571,7 @@ func (m *Manager) RestoreFullSnapshot(ctx context.Context, vmID, artifactRef, sc
+ 		os.RemoveAll(hydrateDir)
+ 		return nil, fmt.Errorf("restore fc start: %w", err)
+ 	}
+-	if err := waitForSocket(ctx, sock, 3*time.Second); err != nil {
++	if err := waitForSocket(ctx, sock, fcSockWait()); err != nil {
+ 		cancel()
+ 		reapAsync(cmd)
+ 		ns.TapMaybeHeld = true
+diff --git a/runner/internal/vm/migrate.go b/runner/internal/vm/migrate.go
+index 0587f095a..9e99116e5 100644
+--- a/runner/internal/vm/migrate.go
++++ b/runner/internal/vm/migrate.go
+@@ -755,7 +755,7 @@ func (m *Manager) CommitMigration(ctx context.Context, vmID, migrationID string)
+ 		m.AbortMigration(vmID)
+ 		return nil, fmt.Errorf("commit: fc start: %w", err)
+ 	}
+-	if err := waitForSocket(ctx, sock, 3*time.Second); err != nil {
++	if err := waitForSocket(ctx, sock, fcSockWait()); err != nil {
+ 		cancel()
+ 		reapAsync(cmd)
+ 		t.ns.TapMaybeHeld = true
+diff --git a/runner/internal/vm/pausesnap.go b/runner/internal/vm/pausesnap.go
+index 63ffd6466..ca98401a8 100644
+--- a/runner/internal/vm/pausesnap.go
++++ b/runner/internal/vm/pausesnap.go
+@@ -477,7 +477,7 @@ func (m *Manager) ResumeFromCAS(ctx context.Context, vmID, artifactRef, scratchD
+ 		os.RemoveAll(cloneDir)
+ 		return nil, fmt.Errorf("resume fc start: %w", err)
+ 	}
+-	if err := waitForSocket(ctx, sock, 3*time.Second); err != nil {
++	if err := waitForSocket(ctx, sock, fcSockWait()); err != nil {
+ 		cancel()
+ 		reapAsync(cmd)
+ 		ns.TapMaybeHeld = true
+diff --git a/runner/internal/vm/template.go b/runner/internal/vm/template.go
+index 0d7ac58f9..fcf5a3d77 100644
+--- a/runner/internal/vm/template.go
++++ b/runner/internal/vm/template.go
+@@ -1315,7 +1315,7 @@ func (m *Manager) Clone(ctx context.Context, vmID, sandboxID string, tpl *Templa
+ 		link := filepath.Join(cloneDir, base)
+ 		_ = os.Remove(link)
+ 		if base == "initdisk.ext4" {
+-			if err := copyFileContents(src, privInitdisk); err != nil {
++			if err := provisionInitdisk(src, privInitdisk); err != nil {
+ 				failCleanup()
+ 				os.RemoveAll(cloneDir)
+ 				return nil, fmt.Errorf("clone private init disk: %w", err)
+@@ -1370,7 +1370,7 @@ func (m *Manager) Clone(ctx context.Context, vmID, sandboxID string, tpl *Templa
+ 		return nil, fmt.Errorf("clone fc start: %w", err)
+ 	}
+ 	// Wait for the api socket to appear before loading.
+-	if err := waitForSocket(ctx, sock, 3*time.Second); err != nil {
++	if err := waitForSocket(ctx, sock, fcSockWait()); err != nil {
+ 		cancel()
+ 		reapAsync(cmd)
+ 		// The FC is reaped ASYNCHRONOUSLY here (a bare FC without a loaded
+@@ -1567,6 +1567,42 @@ func (m *Manager) Clone(ctx context.Context, vmID, sandboxID string, tpl *Templa
+ 
+ // sparseCopy copies src->dst preserving holes (cp --sparse=always style). The
+ // golden scratch is mostly empty ext4, so this is fast and space-cheap.
++// provisionInitdisk creates the clone's PRIVATE vda target. Mode is
++// RLP_INITDISK_MODE (issue #3260):
++//
++//	copy    (default) io.Copy + fsync -- the historical behavior.
++//	nofsync io.Copy, no fsync. The file is per-clone scratch removed at teardown,
++//	        so durability buys nothing, and the fsync is what serializes a burst
++//	        (measured: 64ms-1s per call, 1000 per 1k burst, NVMe pinned at 97%).
++//	sparse  no data written at all: ftruncate to the master's size. Valid only
++//	        because the resumed guest has already pivoted off vda and never reads
++//	        it (see the caller's comment) -- FC just reopens a writable file of
++//	        the right size at restore.
++func provisionInitdisk(src, dst string) error {
++	switch getenv("RLP_INITDISK_MODE", "copy") {
++	case "nofsync":
++		return copyFileContentsNoSync(src, dst)
++	case "sparse":
++		fi, err := os.Stat(src)
++		if err != nil {
++			return err
++		}
++		_ = os.Remove(dst)
++		f, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
++		if err != nil {
++			return err
++		}
++		if err := f.Truncate(fi.Size()); err != nil {
++			f.Close()
++			_ = os.Remove(dst)
++			return err
++		}
++		return f.Close()
++	default:
++		return copyFileContents(src, dst)
++	}
++}
++
+ func sparseCopy(src, dst string) error {
+ 	cmd := exec.Command("cp", "--sparse=always", "--reflink=auto", src, dst)
+ 	if out, err := cmd.CombinedOutput(); err != nil {
+@@ -1575,6 +1611,18 @@ func sparseCopy(src, dst string) error {
+ 	return nil
+ }
+ 
++// fcSockWait is how long a freshly spawned Firecracker gets to start ACCEPTING
++// on its API socket (RLP_FC_SOCK_WAIT_MS, default 3000). The 3s literal this
++// replaces dates from the original snapshot-resume commit, when a create burst
++// was a handful of VMs; at 1000-wide the spawn storm routinely exceeds it, and
++// the timeout fails the clone -> job redelivery -> retried create, which is
++// also what feeds the consecutive-boot-failure self-cordon breaker. Raising it
++// trades a slower failure verdict for not re-queueing a VM that was merely
++// slow to accept.
++func fcSockWait() time.Duration {
++	return time.Duration(envInt("RLP_FC_SOCK_WAIT_MS", 3000)) * time.Millisecond
++}
++
+ // waitForSocket polls until path exists (FC api socket ready) or timeout.
+ func waitForSocket(ctx context.Context, path string, timeout time.Duration) error {
+ 	deadline := time.Now().Add(timeout)
+diff --git a/runner/internal/vm/vm.go b/runner/internal/vm/vm.go
+index 6121f19d5..48499bcb4 100644
+--- a/runner/internal/vm/vm.go
++++ b/runner/internal/vm/vm.go
+@@ -714,6 +714,13 @@ type BootTimings struct {
+ }
+ 
+ func NewManager() *Manager {
++	// Start filling the cgroup pool at runner start, not on the first create
++	// (issue #3261): the kernel creates ~1160 cgroups/s in one parent, so a pool
++	// that only begins filling when the burst arrives is drained as fast as it
++	// fills and every clone falls back to the inline mkdir. Measured: 9f stayed
++	// at p50 454ms lazily vs 24ms once the pool was already full. Same lifetime
++	// as the netns pool, which is warm before the first job for the same reason.
++	go cgPoolOnce.Do(cgPoolStart)
+ 	root := getenv("RLP_NFS_ROOT", "/mnt/nfs00")
+ 	scratchDir := getenv("RLP_LOCAL_SCRATCH", "/scratch")
+ 	layersMount := getenv("RLP_LAYERS_MOUNT", "/mnt/layers/layers")
+@@ -2462,6 +2469,27 @@ func makeExt4(path string, sizeMiB int) error {
+ // disk (vda) so concurrent boots can't corrupt a shared image (see Boot). The
+ // init disk is tiny (~16 MiB) so a plain content copy is cheap; no reflink is
+ // assumed (the local scratch fs is ext4 without reflink on the live fleet).
++// copyFileContentsNoSync is copyFileContents without the fsync, for files whose
++// only requirement is to exist and be writable until teardown (issue #3260).
++func copyFileContentsNoSync(src, dst string) error {
++	in, err := os.Open(src)
++	if err != nil {
++		return err
++	}
++	defer in.Close()
++	_ = os.Remove(dst)
++	out, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
++	if err != nil {
++		return err
++	}
++	if _, err := io.Copy(out, in); err != nil {
++		out.Close()
++		_ = os.Remove(dst)
++		return err
++	}
++	return out.Close()
++}
++
+ func copyFileContents(src, dst string) error {
+ 	in, err := os.Open(src)
+ 	if err != nil {
+diff --git a/tools/daemon/convert-system-layer.sh b/tools/daemon/convert-system-layer.sh
+index 9276fb321..5ecc086fa 100755
+--- a/tools/daemon/convert-system-layer.sh
++++ b/tools/daemon/convert-system-layer.sh
+@@ -143,7 +143,7 @@ else
+ 	UUID="${DIFF_ID:0:8}-${DIFF_ID:8:4}-${DIFF_ID:12:4}-${DIFF_ID:16:4}-${DIFF_ID:20:12}"
+ 	TMP="${OUT}.tmp.$$"
+ 	log "converting to erofs (uuid=${UUID}) ..."
+-	mkfs.erofs -T0 -U "$UUID" --tar=f "$TMP" "$LAYER_TAR" >/dev/null \
++	mkfs.erofs -b 4096 -T0 -U "$UUID" --tar=f "$TMP" "$LAYER_TAR" >/dev/null \
+ 		|| { rm -f "$TMP"; die "mkfs.erofs failed"; }
+ 	mv "$TMP" "$OUT"
+ fi
