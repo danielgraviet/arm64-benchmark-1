@@ -1,0 +1,39 @@
+.gitignore
+  s_c24e898b263207::t_c1c83bb65d8f04 26-29
+scripts/power-mem/README.md
+  s_c24e898b263207::t_dd792b49131993 1-61
+scripts/power-mem/SHA256SUMS
+  s_c24e898b263207::t_aaf7ed3ea1a28a 1-8
+scripts/power-mem/common.sh
+  s_c24e898b263207::t_939d66aa339cc9 1-37
+scripts/power-mem/mem-ladder.sh
+  s_c24e898b263207::t_57c8cd13e617f1 1-25
+scripts/power-mem/mem-report.py
+  s_c24e898b263207::t_49b9aef4724c84 1-32
+scripts/power-mem/memfleet.py
+  s_c24e898b263207::t_adecbc55706feb 1-107
+scripts/power-mem/memtest.c
+  s_c24e898b263207::t_21f83b1d86078b 1-33
+scripts/power-mem/power-ladder.sh
+  s_c24e898b263207::t_f0259e81750b91 1-26
+scripts/power-mem/power-report.py
+  s_c24e898b263207::t_f85adb25cb806b 1-44
+scripts/power-mem/power-sampler.py
+  s_c24e898b263207::t_329fe8952ce608 1-88
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fbe90362f48330085426c5811d1a860f38f3ad9e",
+  "prompts": {},
+  "sessions": {
+    "s_c24e898b263207": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec547b1e1ffehWcdUVTM4CafxF",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Vedran Jukic <vedran.jukic@gmail.com>"
+    }
+  }
+}
