@@ -1,0 +1,574 @@
+data/gapfill-20261014/power-memory-audit-20261015.json
+  s_c24e898b263207::t_ee05e4fb0dfead 1-1313
+data/gapfill-20261014/PLAN.md
+  s_c24e898b263207::t_46a0e9e80a2659 44-45
+  s_c24e898b263207::t_763a3a2077f2af 1-43,46-79
+data/vera-hq-cell-20261014/power-mem-20261015/RESULTS.md
+  s_5fa36428907df3::t_efc7eec5a99b79 1-128
+data/README-vera-comparison-20261015.md
+  s_c24e898b263207::t_b36f6842eed824 1-74
+data/gapfill-20261014/vera-report.typ
+  s_c24e898b263207::t_44e5e76f2259a6 26,41-45,50-52,58-59,65,68-71,86-88,117-118,122-125,129-132,136-139,142-146,159,161-189,204-275
+  s_c24e898b263207::t_ba6d93cde288cf 160
+  s_c24e898b263207::t_bbd8332a4bef21 30,38-39
+  s_c24e898b263207::t_bc3735fc63b9da 336-338,344-347,362-376,382-387,440-445
+  s_c24e898b263207::t_93682518ab5812 31-37,190-203
+  s_c24e898b263207::t_ce5d7960049f12 64,73,114,330,377,393-409
+  s_c24e898b263207::t_44e9a44ae9032f 1-25,27-29,40,46-49,53-55,61,66-67,72,74-85,89-113,115-116,119,128,133,140-141,147-158,276-329,331-335,339-343,348-356,378-381,388-392,410-439
+  s_c24e898b263207::t_3a2b01c5085256 56-57
+  s_c24e898b263207::t_11c6d66888b984 60
+  s_c24e898b263207::t_7461ba58ff0b75 62-63
+  s_c24e898b263207::t_f9a259891cc91c 120-121
+  s_c24e898b263207::t_04db99ac895aac 126-127
+  s_c24e898b263207::t_ff7d571298be69 134-135
+  s_c24e898b263207::t_b8208eac2e1b49 357-361
+data/phoenix-e6-cell-20261014/INDEX.md
+  s_40cb0aa5ce261a::t_06fe9242417eb1 1-80
+data/gapfill-20261014/POWER-MEMORY-UPDATE-20261015.md
+  s_c24e898b263207::t_ae54607f03af7e 1-76
+data/gapfill-20261014/fixes-findings.typ
+  s_c24e898b263207::t_3f535834c29b4a 1-159
+data/gapfill-20261014/report.typ
+  s_c24e898b263207::t_e635bc2a10b1a8 1-197
+  s_c24e898b263207::t_e9470d89e39371 198-204
+data/vera-hq-cell-20261014/BASELINE-EPYC9575-FIXES-20261014.md
+  s_5fa36428907df3::t_3fe67431e76edf 1-83
+  s_5fa36428907df3::t_c2974d18825e5d 84-141
+data/vera-hq-cell-20261014/FINDINGS.md
+  s_5fa36428907df3::t_8f8164af900aad 7-87
+  s_5fa36428907df3::t_454e7c11b3489a 1-6,88-132
+data/gapfill-20261014/audit-power-memory.py
+  s_c24e898b263207::t_1e491b9e8d1794 1-176
+data/gapfill-20261014/create-path-breakdown/breakdown.typ
+  s_c24e898b263207::t_e8d7c21783003b 1-180
+data/gapfill-20261014/comparison-v2.typ
+  s_c24e898b263207::t_f46f30d235a3b1 1-190
+data/vera-hq-cell-20261014/SESSION-SUMMARY.md
+  s_5fa36428907df3::t_d43bef01014a5c 3,5-22,34-35,38-52,54-68,71,73,75,77-82,86-87,91-96,99,101-103,108-109,112-114,117-123
+  s_5fa36428907df3::t_8ad6ede3606713 23,25-33,36-37,69-70,74,76,83-84,88-90,97-98,100,105,110-111
+  s_5fa36428907df3::t_6d1e208523d200 1-2,4,24,53,72,85,104,106-107,115-116
+  s_c24e898b263207::t_78cba4edaa3d64 124-147
+data/vera-hq-cell-20261014/CREATE-PATH-STEPS.md
+  s_5fa36428907df3::t_7635bb23f5e6ba 1-121,161-177
+  s_5fa36428907df3::t_8150e4e53c36eb 122-160
+  s_5fa36428907df3::t_c0ca4e439df633 178-301
+data/vera-hq-cell-20261014/NOTE-TO-DANIEL.md
+  s_5fa36428907df3::t_aeb8c4ac13b142 1-2,7,9,11,13,15,17,19
+  s_5fa36428907df3::t_84cd9e1681457a 3-6,8,10,12,14,16,18,20-22
+  s_5fa36428907df3::t_d7acf7901ba0b9 23-46
+data/vera-hq-cell-20261014/BASELINE-VERA-FIXES-20261014.md
+  s_5fa36428907df3::t_6fdf894ec6fa95 1-119
+  s_5fa36428907df3::t_10ab657d5eac31 120-130
+data/gapfill-20261014/benchmark-fixes-findings-20261014.pdf
+  s_c24e898b263207::t_86afecf0b3ef95 1-2236
+data/gapfill-20261014/capacity.sh
+  s_c24e898b263207::t_85877612991a2d 1-32
+data/gapfill-20261014/create-path-breakdown/agg-warm.json
+  s_c24e898b263207::t_3c81706a02dc33 1
+data/gapfill-20261014/create-path-breakdown/agg.json
+  s_c24e898b263207::t_088e6b45c18f2a 1-1142
+data/gapfill-20261014/create-path-breakdown/analyze.py
+  s_c24e898b263207::t_b3ce024494971b 1-51
+data/gapfill-20261014/create-path-breakdown/fetch.sh
+  s_c24e898b263207::t_c16ac024be829a 1-4
+data/gapfill-20261014/create-path-breakdown/gen_tables.py
+  s_c24e898b263207::t_b5e92356496056 1-42
+data/gapfill-20261014/create-path-breakdown/tables.typ
+  s_c24e898b263207::t_df20b9e33410d6 1-72
+data/gapfill-20261014/create-path-breakdown/win-e9575.txt
+  s_c24e898b263207::t_4c5892ce56d577 1-17
+data/gapfill-20261014/create-path-breakdown/win-g5.txt
+  s_c24e898b263207::t_a14de5b5cc9764 1-12
+data/gapfill-20261014/create-path-breakdown/win-turin.txt
+  s_c24e898b263207::t_7c5758a5265b30 1-7
+data/gapfill-20261014/create-path-breakdown/win-vera.txt
+  s_c24e898b263207::t_98055010ad832d 1-16
+data/gapfill-20261014/create-path-breakdown/windows.json
+  s_c24e898b263207::t_674ff2083d5765 1
+data/gapfill-20261014/create-path-breakdown/winw-e9575.txt
+  s_c24e898b263207::t_518c9b63a3cb68 1-4
+data/gapfill-20261014/create-path-breakdown/winw-g5.txt
+  s_c24e898b263207::t_26c9258cc3f725 1-6
+data/gapfill-20261014/create-path-breakdown/winw-vera.txt
+  s_c24e898b263207::t_efe5cf57dfcb4b 1-4
+data/gapfill-20261014/gapfill-sampler.py
+  s_c24e898b263207::t_bf5a2c5ccba7c8 1-28
+data/gapfill-20261014/gapfill.sh
+  s_c24e898b263207::t_d6ab93fab363b9 1-127
+data/gapfill-20261014/mpfleet.py
+  s_c24e898b263207::t_fe104eaf0b6188 1-86
+data/gapfill-20261014/sandbox-create-path-breakdown-20261015.pdf
+  s_c24e898b263207::t_8989dc5c4a7697 1-4375
+data/gapfill-20261014/vera-benchmark-report-20261015-v2.pdf
+  s_c24e898b263207::t_b2bcab69341b49 1-5360
+data/gapfill-20261014/vera-benchmark-report-20261015-v3.pdf
+  s_c24e898b263207::t_630453e27b987e 1-6613
+data/gapfill-20261014/vera-benchmark-report-20261015.pdf
+  s_c24e898b263207::t_587d24a6d353c0 1-5060
+data/gapfill-20261014/vera-comparison-report-v2-20261014.pdf
+  s_c24e898b263207::t_56242b7dc756f9 1-2544
+data/gapfill-20261014/vera-report-20261015a.typ.bak
+  s_c24e898b263207::t_4d800e9aa7522e 1-250
+data/gapfill-20261014/vera-turin-graviton5-status-20261014.pdf
+  s_c24e898b263207::t_8aeb9d9b335e16 1-2540
+data/graviton5-cell-20261014/FINDINGS.md
+  s_5fa36428907df3::t_6502d424ffb190 1-228
+data/graviton5-cell-20261014/README.md
+  s_c24e898b263207::t_863c02606a1ddb 1-39
+data/graviton5-cell-20261014/harness-graviton5-target.patch
+  s_40cb0aa5ce261a::t_19ed1e4deeb0ba 1-134
+data/graviton5-cell-20261014/host-state.txt
+  s_40cb0aa5ce261a::t_292bedc8f43006 1-35
+data/graviton5-cell-20261014/patches/api-backlog.diff
+  s_5fa36428907df3::t_e936ba4b36ebc0 1-34
+data/graviton5-cell-20261014/patches/bench-build/0001-fix-runner-pin-erofs-block-size-to-4k-64k-page-hosts.patch
+  s_5fa36428907df3::t_ab9967983d7088 1-120
+data/graviton5-cell-20261014/patches/bench-build/0002-feat-runner-RLP_FC_SMT-expose-a-2-thread-core-SMT-to.patch
+  s_5fa36428907df3::t_24ca7ef82b9c63 1-326
+data/graviton5-cell-20261014/patches/bench-build/README.md
+  s_5fa36428907df3::t_ef545d9638ed61 1-20
+data/graviton5-cell-20261014/patches/bench-build/zz-uncommitted-working-tree.diff
+  s_5fa36428907df3::t_0f8b26cd99f607 1-357
+data/graviton5-cell-20261014/scripts/bench-preflight.sh
+  s_40cb0aa5ce261a::t_34181ddaeaacec 1-44
+data/graviton5-cell-20261014/scripts/bench-startup.sh
+  s_40cb0aa5ce261a::t_2f644c91a814e8 1-26
+data/graviton5-cell-20261014/scripts/burstcpu.sh
+  s_40cb0aa5ce261a::t_fc21295234c13a 1-30
+data/graviton5-cell-20261014/scripts/entry.sh
+  s_40cb0aa5ce261a::t_daab127d6f3d98 1-8
+data/graviton5-cell-20261014/scripts/fixes-on.sh
+  s_40cb0aa5ce261a::t_b74770c2c66689 1-29
+data/graviton5-cell-20261014/scripts/g5-bench-fixes.sh
+  s_5fa36428907df3::t_cb74c8c264cf23 1-79
+data/graviton5-cell-20261014/scripts/g5-build.sh
+  s_40cb0aa5ce261a::t_190f915762a743 1-19
+data/graviton5-cell-20261014/scripts/g5-cell-setup.sh
+  s_40cb0aa5ce261a::t_d5f61345af571b 1-159
+data/graviton5-cell-20261014/scripts/g5-harness.sh
+  s_40cb0aa5ce261a::t_18765ad8bfb131 1-21
+data/graviton5-cell-20261014/scripts/g5-hostprep.sh
+  s_40cb0aa5ce261a::t_e7cfec17a458bb 1-52
+data/graviton5-cell-20261014/scripts/g5-layer.sh
+  s_40cb0aa5ce261a::t_a8c15dd23fb117 1-13
+data/graviton5-cell-20261014/scripts/g5-run2k.sh
+  s_40cb0aa5ce261a::t_ad884ae2bfb46d 1-94
+data/graviton5-cell-20261014/scripts/g5-suite.sh
+  s_40cb0aa5ce261a::t_52b144ae2b2b6f 1-83
+data/graviton5-cell-20261014/scripts/guestview.sh
+  s_40cb0aa5ce261a::t_2aa1f9e436a3a3 1-6
+data/graviton5-cell-20261014/scripts/handoff.sh
+  s_40cb0aa5ce261a::t_2a43f1a014c428 1-5
+data/graviton5-cell-20261014/scripts/k64-post.sh
+  s_40cb0aa5ce261a::t_86a02d699d326f 1-11
+data/graviton5-cell-20261014/scripts/k64-switch.sh
+  s_40cb0aa5ce261a::t_1eeef6f20f52f5 1-13
+data/graviton5-cell-20261014/scripts/lad.py
+  s_40cb0aa5ce261a::t_9816af37a0b35f 1-8
+data/graviton5-cell-20261014/scripts/ladder-smoke.sh
+  s_40cb0aa5ce261a::t_ff8887fd8065a1 1-6
+data/graviton5-cell-20261014/scripts/lat/lat.c
+  s_40cb0aa5ce261a::t_af436f83e113d8 1-19
+data/graviton5-cell-20261014/scripts/memdig.sh
+  s_40cb0aa5ce261a::t_4d16ffdf70a402 1-19
+data/graviton5-cell-20261014/scripts/memimg.sh
+  s_40cb0aa5ce261a::t_5a51ba85a3d5a8 1-10
+data/graviton5-cell-20261014/scripts/memload.sh
+  s_40cb0aa5ce261a::t_576ca95ec09fe1 1-21
+data/graviton5-cell-20261014/scripts/memprobe.sh
+  s_40cb0aa5ce261a::t_d67e1a068f8d60 1-24
+data/graviton5-cell-20261014/scripts/memskew.py
+  s_5fa36428907df3::t_c35160999de463 1-7
+data/graviton5-cell-20261014/scripts/memtime.sh
+  s_40cb0aa5ce261a::t_174ea38554e768 1-13
+data/graviton5-cell-20261014/scripts/mpfleet-pr.py
+  s_5fa36428907df3::t_2d7574dd3befd6 1-86
+data/graviton5-cell-20261014/scripts/mpfleet.py
+  s_40cb0aa5ce261a::t_cce2ca23b40f3a 1-85
+data/graviton5-cell-20261014/scripts/patch-tuning.py
+  s_40cb0aa5ce261a::t_e1db10c6773584 1-18
+data/graviton5-cell-20261014/scripts/percore-g5.sh
+  s_40cb0aa5ce261a::t_e7f7fad6f20daf 1-26
+data/graviton5-cell-20261014/scripts/phases.py
+  s_40cb0aa5ce261a::t_08ff0d4541a181 1-18
+data/graviton5-cell-20261014/scripts/pmap.py
+  s_40cb0aa5ce261a::t_9db5c7566c2a11 1-39
+data/graviton5-cell-20261014/scripts/pmap.sh
+  s_40cb0aa5ce261a::t_f5851fd610a22a 1-6
+data/graviton5-cell-20261014/scripts/recover.sh
+  s_40cb0aa5ce261a::t_e03c7d14051ad7 1-11
+data/graviton5-cell-20261014/scripts/run64.sh
+  s_40cb0aa5ce261a::t_9c2741182547db 1-2
+data/graviton5-cell-20261014/scripts/tbw.py
+  s_5fa36428907df3::t_c0c54fe76b1b90 1-7
+data/phoenix-e6-cell-20261014/FINDINGS.md
+  s_c24e898b263207::t_1e38636a1294b6 1-376
+data/phoenix-e6-cell-20261014/RUNBOOK.md
+  s_c24e898b263207::t_c091702b436761 1-110
+data/phoenix-e6-cell-20261014/SHA256SUMS
+  s_c24e898b263207::t_bfa868a60b88d0 1-7
+data/phoenix-e6-cell-20261014/benchmark-methodology.md
+  s_40cb0aa5ce261a::t_3238bb8f5098b8 1-116
+data/phoenix-e6-cell-20261014/config/HOSTCHANGES
+  s_40cb0aa5ce261a::t_257afed5dbda4a 1-12
+data/phoenix-e6-cell-20261014/config/bench-preflight.sh
+  s_40cb0aa5ce261a::t_45f193ad0706a2 1-44
+data/phoenix-e6-cell-20261014/config/benchmark-methodology.md
+  s_40cb0aa5ce261a::t_46213f1d490455 1-116
+data/phoenix-e6-cell-20261014/config/cell-config-redacted-before-ceiling-work.txt
+  s_40cb0aa5ce261a::t_1d139f60328212 1-132
+data/phoenix-e6-cell-20261014/config/cell-config-redacted.txt
+  s_40cb0aa5ce261a::t_e7b1349c0b6265 1-132
+data/phoenix-e6-cell-20261014/config/mpfleet.py
+  s_40cb0aa5ce261a::t_b333c6b0edf691 1-91
+data/phoenix-e6-cell-20261014/evidence/api-runner-lost.txt
+  s_40cb0aa5ce261a::t_0ef083eb3a001f 1
+data/phoenix-e6-cell-20261014/evidence/runner-capacity-and-adopt.txt
+  s_40cb0aa5ce261a::t_cf9d608f6d5e7c 1-30
+data/phoenix-e6-cell-20261014/evidence/scratch-gate-6742.md
+  s_40cb0aa5ce261a::t_85a37cd51b5e2d 1-54
+data/phoenix-e6-cell-20261014/evidence/vms-by-status-final.txt
+  s_40cb0aa5ce261a::t_7287a4ae4ebf4e 1
+data/phoenix-e6-cell-20261014/power-mem/idle.samp
+  s_40cb0aa5ce261a::t_730fc5dc699c85 1-90
+data/phoenix-e6-cell-20261014/power-mem/ladder.jsonl
+  s_40cb0aa5ce261a::t_7007e78f784b25 1-11
+data/phoenix-e6-cell-20261014/power-mem/ladder.samp
+  s_40cb0aa5ce261a::t_259ba1dba92529 1-1653
+data/phoenix-e6-cell-20261014/power-mem/memfleet-static.patch.py
+  s_40cb0aa5ce261a::t_50dcc3d4bc93dc 1-23
+data/phoenix-e6-cell-20261014/power-mem/power-report.md
+  s_40cb0aa5ce261a::t_08614cb64949df 1-21
+data/phoenix-e6-cell-20261014/scripts/api-3269-listen-backlog.patch
+  s_40cb0aa5ce261a::t_b70bf5fb24cc59 1-37
+data/phoenix-e6-cell-20261014/scripts/clock-probe.sh
+  s_40cb0aa5ce261a::t_a9fe7fe7589d6f 1-33
+data/phoenix-e6-cell-20261014/scripts/create-path-fixes-3260-3261-3265.patch
+  s_40cb0aa5ce261a::t_619d73c51215f5 1-357
+data/phoenix-e6-cell-20261014/scripts/ladder-sum.py
+  s_40cb0aa5ce261a::t_1a5bc25403bf49 1-12
+data/phoenix-e6-cell-20261014/scripts/meth-patch.py
+  s_40cb0aa5ce261a::t_d68f7a0e41f911 1-62
+data/phoenix-e6-cell-20261014/scripts/mpfleet.py
+  s_40cb0aa5ce261a::t_9d524e6f288139 1-91
+data/phoenix-e6-cell-20261014/scripts/ph-2k.sh
+  s_40cb0aa5ce261a::t_5ce5233e1ae0e1 1-31
+data/phoenix-e6-cell-20261014/scripts/ph-build-fixes.sh
+  s_40cb0aa5ce261a::t_d561ecdbf2bfcc 1-20
+data/phoenix-e6-cell-20261014/scripts/ph-build.sh
+  s_40cb0aa5ce261a::t_b4524c4eae3a5c 1-47
+data/phoenix-e6-cell-20261014/scripts/ph-capacity.sh
+  s_40cb0aa5ce261a::t_32e7503671ef81 1-37
+data/phoenix-e6-cell-20261014/scripts/ph-capraise.sh
+  s_40cb0aa5ce261a::t_558d5181b09d0f 1-26
+data/phoenix-e6-cell-20261014/scripts/ph-cell.sh
+  s_40cb0aa5ce261a::t_cf4ff6f18416fb 1-162
+data/phoenix-e6-cell-20261014/scripts/ph-clean.sh
+  s_40cb0aa5ce261a::t_2cbd881e2c04d7 1-13
+data/phoenix-e6-cell-20261014/scripts/ph-config-dump.sh
+  s_40cb0aa5ce261a::t_ec9a9cb026d233 1-8
+data/phoenix-e6-cell-20261014/scripts/ph-deploy-fixes.sh
+  s_40cb0aa5ce261a::t_6d350ff2789714 1-38
+data/phoenix-e6-cell-20261014/scripts/ph-fixed-run.sh
+  s_40cb0aa5ce261a::t_61a096c8fdb238 1-67
+data/phoenix-e6-cell-20261014/scripts/ph-harness.sh
+  s_40cb0aa5ce261a::t_a30c3dc0c56de9 1-41
+data/phoenix-e6-cell-20261014/scripts/ph-harness2.sh
+  s_40cb0aa5ce261a::t_5aae92146bdfa2 1-36
+data/phoenix-e6-cell-20261014/scripts/ph-hostprep.sh
+  s_40cb0aa5ce261a::t_a70d90adb89fd8 1-97
+data/phoenix-e6-cell-20261014/scripts/ph-ladder.sh
+  s_40cb0aa5ce261a::t_ae77c6dd0809d4 1-47
+data/phoenix-e6-cell-20261014/scripts/ph-orphanclean.sh
+  s_40cb0aa5ce261a::t_c33bf5a76f0f1f 1-15
+data/phoenix-e6-cell-20261014/scripts/ph-pin-ab.sh
+  s_40cb0aa5ce261a::t_60126d0742ed7f 1-71
+data/phoenix-e6-cell-20261014/scripts/ph-pull.sh
+  s_c24e898b263207::t_7c7654eda99cdb 1-17
+data/phoenix-e6-cell-20261014/scripts/ph-scratchfix.sh
+  s_40cb0aa5ce261a::t_d6e2cd309bb5e8 1-31
+data/phoenix-e6-cell-20261014/scripts/ph-verify-state.sh
+  s_40cb0aa5ce261a::t_0d02cdf6ad3c56 1-69
+data/phoenix-e6-cell-20261014/scripts/ph-warm.sh
+  s_40cb0aa5ce261a::t_ead8eb387a26e1 1-28
+data/phoenix-e6-cell-20261014/scripts/ph-waves.sh
+  s_40cb0aa5ce261a::t_a626d026e56034 1-60
+data/phoenix-e6-cell-20261014/scripts/samp-sum.py
+  s_40cb0aa5ce261a::t_285d12ccaef6c5 1-23
+data/vera-hq-cell-20261014/BASELINE-EPYC9575-FIXES-20261014.json
+  s_c24e898b263207::t_af0e6e7019f4f7 1-390
+data/vera-hq-cell-20261014/BASELINE-VERA-FIXES-20261014.json
+  s_5fa36428907df3::t_378bd9fd088eac 1-767
+data/vera-hq-cell-20261014/cell-config/cell-config-redacted.txt
+  s_5fa36428907df3::t_c04692b1e640ba 1-107
+data/vera-hq-cell-20261014/fixes-bench-log.txt
+  s_5fa36428907df3::t_d53acdbb69623f 1-26
+data/vera-hq-cell-20261014/patches/api-backlog.diff
+  s_5fa36428907df3::t_4fe72c31bd8603 1-34
+data/vera-hq-cell-20261014/patches/bench-build/0001-fix-runner-pin-erofs-block-size-to-4k-64k-page-hosts.patch
+  s_5fa36428907df3::t_698e9f137c347d 1-120
+data/vera-hq-cell-20261014/patches/bench-build/0002-feat-runner-RLP_FC_SMT-expose-a-2-thread-core-SMT-to.patch
+  s_5fa36428907df3::t_544ddd379f223a 1-326
+data/vera-hq-cell-20261014/patches/bench-build/README.md
+  s_5fa36428907df3::t_5e69b97d88d2cb 1-20
+data/vera-hq-cell-20261014/patches/bench-build/zz-uncommitted-working-tree.diff
+  s_5fa36428907df3::t_5fd6c9b2fdce38 1-357
+data/vera-hq-cell-20261014/patches/runner-fixes.diff
+  s_5fa36428907df3::t_ea5a293e77b2c6 1-305
+data/vera-hq-cell-20261014/posted/arp.md
+  s_5fa36428907df3::t_67c8067ea45140 1-40
+data/vera-hq-cell-20261014/posted/backlog.md
+  s_5fa36428907df3::t_ec4f739854b622 1-28
+data/vera-hq-cell-20261014/posted/c3213.md
+  s_5fa36428907df3::t_1365e32b5452fb 1-40
+data/vera-hq-cell-20261014/posted/c3213b.md
+  s_5fa36428907df3::t_7e3476b4c1ec02 1-75
+data/vera-hq-cell-20261014/posted/c3260.md
+  s_5fa36428907df3::t_fb660f7b0e28ce 1-41
+data/vera-hq-cell-20261014/posted/c3261.md
+  s_5fa36428907df3::t_02c12530aba187 1-27
+data/vera-hq-cell-20261014/posted/c3265.md
+  s_5fa36428907df3::t_47163eb01a02d1 1-20
+data/vera-hq-cell-20261014/posted/c3269.md
+  s_5fa36428907df3::t_74525ea8e5c502 1-29
+data/vera-hq-cell-20261014/posted/c391-fix.md
+  s_5fa36428907df3::t_2afe3bab7e5dce 1-24
+data/vera-hq-cell-20261014/posted/c391.md
+  s_5fa36428907df3::t_c1073207399fd9 1-34
+data/vera-hq-cell-20261014/posted/c767.md
+  s_5fa36428907df3::t_a8f08518d5e0a0 1-16
+data/vera-hq-cell-20261014/posted/cgroup.md
+  s_5fa36428907df3::t_de4040820c0cb0 1-49
+data/vera-hq-cell-20261014/posted/initdisk.md
+  s_5fa36428907df3::t_202be0a986998c 1-47
+data/vera-hq-cell-20261014/posted/ready-issue.md
+  s_5fa36428907df3::t_7254a3f3b1e7c8 1-42
+data/vera-hq-cell-20261014/power-mem-20261015/SSDT6.dsl
+  s_5fa36428907df3::t_67f36b2aaa2078 1-2463
+data/vera-hq-cell-20261014/power-mem-20261015/SSDT7.dsl
+  s_5fa36428907df3::t_f7f401fa4b570e 1-2436
+data/vera-hq-cell-20261014/power-mem-20261015/acpi-meters.sh
+  s_5fa36428907df3::t_ead7d5d3314358 1-14
+data/vera-hq-cell-20261014/power-mem-20261015/gcc-diag.sh
+  s_5fa36428907df3::t_a53722a4ed88e5 1-25
+data/vera-hq-cell-20261014/power-mem-20261015/imgenv.py
+  s_5fa36428907df3::t_17b58e98e22aa9 1-21
+data/vera-hq-cell-20261014/power-mem-20261015/mem-power.py
+  s_5fa36428907df3::t_8f345c77dbec59 1-36
+data/vera-hq-cell-20261014/power-mem-20261015/pm-check.sh
+  s_5fa36428907df3::t_00bf6984fbf98f 1-16
+data/vera-hq-cell-20261014/power-mem-20261015/sdr-an.sh
+  s_5fa36428907df3::t_d1d0ae85fa6ce2 1-27
+data/vera-hq-cell-20261014/power-mem-20261015/vera-meter-an.py
+  s_5fa36428907df3::t_49e17794f67f8c 1-39
+data/vera-hq-cell-20261014/power-mem-20261015/vera-meters.sh
+  s_5fa36428907df3::t_9834a4a1a9bef3 1-7
+data/vera-hq-cell-20261014/scripts/audit-ab.sh
+  s_5fa36428907df3::t_32c1c6deaa3637 1-57
+data/vera-hq-cell-20261014/scripts/bench-preflight.sh
+  s_5fa36428907df3::t_8af2c4e4bacfe2 1-44
+data/vera-hq-cell-20261014/scripts/bench-startup.sh
+  s_5fa36428907df3::t_8c3fe0856b9bdc 1-26
+data/vera-hq-cell-20261014/scripts/build-smt2.sh
+  s_5fa36428907df3::t_e92786886b08eb 1-28
+data/vera-hq-cell-20261014/scripts/burst-ab.sh
+  s_5fa36428907df3::t_66f7f0b82cfb76 1-54
+data/vera-hq-cell-20261014/scripts/burst-profile.py
+  s_5fa36428907df3::t_64084b2f6d35d8 1-25
+data/vera-hq-cell-20261014/scripts/burst-profile2.py
+  s_5fa36428907df3::t_ec4150e0fe2588 1-28
+data/vera-hq-cell-20261014/scripts/client-split.sh
+  s_5fa36428907df3::t_de280e1666d165 1-37
+data/vera-hq-cell-20261014/scripts/cp-split.sh
+  s_5fa36428907df3::t_b48252e974a501 1-74
+data/vera-hq-cell-20261014/scripts/cpu-burst.sh
+  s_5fa36428907df3::t_5580bf3fba5c2b 1-67
+data/vera-hq-cell-20261014/scripts/create-path/api-ab.sh
+  s_5fa36428907df3::t_8346bef18fa002 1-37
+data/vera-hq-cell-20261014/scripts/create-path/arm.sh
+  s_5fa36428907df3::t_085a58fe5b8c37 1-39
+data/vera-hq-cell-20261014/scripts/create-path/arms-table.py
+  s_5fa36428907df3::t_d4f2136310f8c9 1-75
+data/vera-hq-cell-20261014/scripts/create-path/bench-fixes-9575.sh
+  s_5fa36428907df3::t_17e7326ea1b942 1-81
+data/vera-hq-cell-20261014/scripts/create-path/bench-fixes.sh
+  s_5fa36428907df3::t_5258f21d9917c6 1-78
+data/vera-hq-cell-20261014/scripts/create-path/burst.bt
+  s_5fa36428907df3::t_6122c30bc35e44 1-19
+data/vera-hq-cell-20261014/scripts/create-path/burst2.bt
+  s_5fa36428907df3::t_a59492aa8857e9 1-14
+data/vera-hq-cell-20261014/scripts/create-path/cg-bench.sh
+  s_5fa36428907df3::t_becc4fa8f7efb4 1-20
+data/vera-hq-cell-20261014/scripts/create-path/cg-bench2.sh
+  s_5fa36428907df3::t_ec7d9315aadc0a 1-12
+data/vera-hq-cell-20261014/scripts/create-path/clockcheck.py
+  s_5fa36428907df3::t_35496949db1f53 1-11
+data/vera-hq-cell-20261014/scripts/create-path/deploy-9575.sh
+  s_5fa36428907df3::t_f710a5b96d8dba 1-19
+data/vera-hq-cell-20261014/scripts/create-path/deploy-patched.sh
+  s_5fa36428907df3::t_2f82e0d89947db 1-15
+data/vera-hq-cell-20261014/scripts/create-path/fail2k.py
+  s_5fa36428907df3::t_c4a7eb54b393ca 1-15
+data/vera-hq-cell-20261014/scripts/create-path/fdm-ab.sh
+  s_5fa36428907df3::t_b985a194fc2943 1-13
+data/vera-hq-cell-20261014/scripts/create-path/fixes-on.sh
+  s_5fa36428907df3::t_8f31b697a7703d 1-29
+data/vera-hq-cell-20261014/scripts/create-path/fork-overlap.py
+  s_5fa36428907df3::t_08a5218b093bfa 1-19
+data/vera-hq-cell-20261014/scripts/create-path/forks.bt
+  s_5fa36428907df3::t_7b538b5d2c82d7 1-6
+data/vera-hq-cell-20261014/scripts/create-path/hung-probe.sh
+  s_5fa36428907df3::t_d165f87bf08394 1-9
+data/vera-hq-cell-20261014/scripts/create-path/io.bt
+  s_5fa36428907df3::t_33e6e5c483a38e 1-7
+data/vera-hq-cell-20261014/scripts/create-path/make-9575.py
+  s_5fa36428907df3::t_d76e7872b94d90 1-51
+data/vera-hq-cell-20261014/scripts/create-path/make-baseline.py
+  s_5fa36428907df3::t_db42b8a7fd0eff 1-121
+data/vera-hq-cell-20261014/scripts/create-path/make2k.py
+  s_5fa36428907df3::t_5d44737f9028cd 1-32
+data/vera-hq-cell-20261014/scripts/create-path/natstap/go.mod
+  s_5fa36428907df3::t_d8f41281da5433 1-5
+data/vera-hq-cell-20261014/scripts/create-path/natstap/main.go
+  s_5fa36428907df3::t_75d7d7901ff540 1-74
+data/vera-hq-cell-20261014/scripts/create-path/neigh-ab.sh
+  s_5fa36428907df3::t_ce9a1072f1d97c 1-17
+data/vera-hq-cell-20261014/scripts/create-path/neigh-sample.sh
+  s_5fa36428907df3::t_53386376ed5303 1-9
+data/vera-hq-cell-20261014/scripts/create-path/oops-ladder.sh
+  s_5fa36428907df3::t_0f77ab19a2f89c 1-39
+data/vera-hq-cell-20261014/scripts/create-path/oops-repro.sh
+  s_5fa36428907df3::t_2efd0a126255e9 1-41
+data/vera-hq-cell-20261014/scripts/create-path/patch-api-9575.py
+  s_5fa36428907df3::t_c3cb6a94a1950a 1-33
+data/vera-hq-cell-20261014/scripts/create-path/patch-api.py
+  s_5fa36428907df3::t_4a153b3879b3c3 1-33
+data/vera-hq-cell-20261014/scripts/create-path/patch-tuning-9575.py
+  s_5fa36428907df3::t_24462f5e19de4b 1-18
+data/vera-hq-cell-20261014/scripts/create-path/patch-tuning.py
+  s_5fa36428907df3::t_bc1a417d32e5f7 1-18
+data/vera-hq-cell-20261014/scripts/create-path/phase1.sh
+  s_5fa36428907df3::t_3e2d5d29439492 1-9
+data/vera-hq-cell-20261014/scripts/create-path/phase2.sh
+  s_5fa36428907df3::t_c5306e6a176784 1-13
+data/vera-hq-cell-20261014/scripts/create-path/phase3.sh
+  s_5fa36428907df3::t_8cf9ab57925dac 1-10
+data/vera-hq-cell-20261014/scripts/create-path/prewarm-run.sh
+  s_5fa36428907df3::t_b9a4f9a3302724 1-7
+data/vera-hq-cell-20261014/scripts/create-path/procs.bt
+  s_5fa36428907df3::t_bc743f863e2cd1 1-5
+data/vera-hq-cell-20261014/scripts/create-path/run2k.sh
+  s_5fa36428907df3::t_28f16a37713622 1-86
+data/vera-hq-cell-20261014/scripts/create-path/stepclient.py
+  s_5fa36428907df3::t_38736cb51b5db9 1-116
+data/vera-hq-cell-20261014/scripts/create-path/steps-all.sh
+  s_5fa36428907df3::t_b8de59d718a38c 1-7
+data/vera-hq-cell-20261014/scripts/create-path/steps-analyze.py
+  s_5fa36428907df3::t_89491ec330cc77 1-156
+data/vera-hq-cell-20261014/scripts/create-path/steps-combine.py
+  s_5fa36428907df3::t_d4cbe4ac2d8dd5 1-51
+data/vera-hq-cell-20261014/scripts/create-path/steps-dbexport.sh
+  s_5fa36428907df3::t_9f79d652e6a2ff 1-11
+data/vera-hq-cell-20261014/scripts/create-path/steps-run.sh
+  s_5fa36428907df3::t_d31768f6bc8a67 1-28
+data/vera-hq-cell-20261014/scripts/create-path/tb-pcap.sh
+  s_5fa36428907df3::t_5b7933e09f5cea 1-12
+data/vera-hq-cell-20261014/scripts/create-path/tmpfs-ab.sh
+  s_5fa36428907df3::t_c441761f199a56 1-20
+data/vera-hq-cell-20261014/scripts/create-path/tmpl-variance.sh
+  s_5fa36428907df3::t_87476b78d0d2ff 1-41
+data/vera-hq-cell-20261014/scripts/create-path/tput704.sh
+  s_5fa36428907df3::t_79e0319d6c566f 1-52
+data/vera-hq-cell-20261014/scripts/create-path/wake-an.py
+  s_5fa36428907df3::t_91ed987373173d 1-23
+data/vera-hq-cell-20261014/scripts/create-path/wake-an2.py
+  s_5fa36428907df3::t_2732c36c0139ec 1-31
+data/vera-hq-cell-20261014/scripts/create-path/wake-an3.py
+  s_5fa36428907df3::t_082cb542c18458 1-20
+data/vera-hq-cell-20261014/scripts/create-path/wake-an4.py
+  s_5fa36428907df3::t_b1fe2262c78ca1 1-23
+data/vera-hq-cell-20261014/scripts/create-path/wake-an5.py
+  s_5fa36428907df3::t_5a691fde2972d5 1-21
+data/vera-hq-cell-20261014/scripts/create-path/wake-run.sh
+  s_5fa36428907df3::t_5fc37329b52e15 1-7
+data/vera-hq-cell-20261014/scripts/create-path/wake.bt
+  s_5fa36428907df3::t_dba8afbb0b390b 1-11
+data/vera-hq-cell-20261014/scripts/entry-ab-9575.sh
+  s_5fa36428907df3::t_3deaad6556914e 1-51
+data/vera-hq-cell-20261014/scripts/entry-ab.sh
+  s_5fa36428907df3::t_2c025d0527044c 1-7
+data/vera-hq-cell-20261014/scripts/entry-probe.py
+  s_5fa36428907df3::t_32db2e1b9405d5 1-24
+data/vera-hq-cell-20261014/scripts/entry-probe2.py
+  s_5fa36428907df3::t_0c046fefce81f0 1-24
+data/vera-hq-cell-20261014/scripts/fc-arms.sh
+  s_5fa36428907df3::t_a0aef5ce8d11e6 1-68
+data/vera-hq-cell-20261014/scripts/fcsock-ab.sh
+  s_5fa36428907df3::t_c9895aa70cead7 1-59
+data/vera-hq-cell-20261014/scripts/idle-probe.py
+  s_5fa36428907df3::t_b46455648aa6e2 1-42
+data/vera-hq-cell-20261014/scripts/mig-ab.sh
+  s_5fa36428907df3::t_f22ee14c5de284 1-71
+data/vera-hq-cell-20261014/scripts/mpfleet.py
+  s_5fa36428907df3::t_6583ad1f51bd9b 1-86
+data/vera-hq-cell-20261014/scripts/perf-burst.sh
+  s_5fa36428907df3::t_6aa693eb6772b1 1-35
+data/vera-hq-cell-20261014/scripts/pin-ab.sh
+  s_5fa36428907df3::t_5e1d2667f25d3a 1-58
+data/vera-hq-cell-20261014/scripts/preempt-ab.sh
+  s_5fa36428907df3::t_fa073d4aec072e 1-56
+data/vera-hq-cell-20261014/scripts/proxy-scale.sh
+  s_5fa36428907df3::t_892cd099d744df 1-72
+data/vera-hq-cell-20261014/scripts/restore-ours.sh
+  s_5fa36428907df3::t_1302ec9900a425 1-46
+data/vera-hq-cell-20261014/scripts/smt2-patches/0001-aarch64-describe-CPU-topology-to-guests-via-cpu-map-.patch
+  s_5fa36428907df3::t_db00f3a2380c4f 1-73
+data/vera-hq-cell-20261014/scripts/smt2-patches/0002-aarch64-describe-SMT-thread-siblings-in-the-cpu-map-.patch
+  s_5fa36428907df3::t_8ef2cc435a5765 1-169
+data/vera-hq-cell-20261014/scripts/smt2-patches/0003-vmm_config-allow-enabling-SMT-on-aarch64.patch
+  s_5fa36428907df3::t_1f91fce1b73e61 1-870
+data/vera-hq-cell-20261014/scripts/smt2-patches/0004-tests-enable-aarch64-SMT-topology-coverage.patch
+  s_5fa36428907df3::t_23c1a44cdea180 1-208
+data/vera-hq-cell-20261014/scripts/tput-ab.sh
+  s_5fa36428907df3::t_069eccd8cbd193 1-46
+data/vera-hq-cell-20261014/scripts/vera-cell-setup.sh
+  s_5fa36428907df3::t_b7df415172ac25 1-154
+data/vera-hq-cell-20261014/scripts/vera-d041.sh
+  s_5fa36428907df3::t_5736f502d9e067 1-13
+data/vera-hq-cell-20261014/scripts/vera-hostclean.sh
+  s_5fa36428907df3::t_23a65b89a2d5f6 1-23
+data/vera-hq-cell-20261014/scripts/vera-netreset.sh
+  s_5fa36428907df3::t_f035a205582834 1-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7abf81a71ba687bf43e2b7cc38c105bb4b37397c",
+  "prompts": {},
+  "sessions": {
+    "s_40cb0aa5ce261a": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec5d8920cffe9zxhiz3T4G7KDU",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Vedran Jukic <vedran.jukic@gmail.com>"
+    },
+    "s_5fa36428907df3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fa3c61e74ffeDTVau8vzjc33Tp",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Vedran Jukic <vedran.jukic@gmail.com>"
+    },
+    "s_c24e898b263207": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec547b1e1ffehWcdUVTM4CafxF",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Vedran Jukic <vedran.jukic@gmail.com>"
+    }
+  }
+}
