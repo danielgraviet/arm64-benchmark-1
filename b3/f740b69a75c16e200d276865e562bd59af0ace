@@ -1,0 +1,22 @@
+harness/regions.py
+  s_c24e898b263207::t_b25217ba915429 35-44
+  s_c24e898b263207::t_7f57f3917949a2 57-59
+harness/paths.py
+  s_c24e898b263207::t_768888e720d050 63-68
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b3f740b69a75c16e200d276865e562bd59af0ace",
+  "prompts": {},
+  "sessions": {
+    "s_c24e898b263207": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ec547b1e1ffehWcdUVTM4CafxF",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Vedran Jukic <vedran.jukic@gmail.com>"
+    }
+  }
+}
