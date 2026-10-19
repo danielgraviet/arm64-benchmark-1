@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Mac break-glass SSH to the AMD EPYC 9996 vendor cell.
+# Prefer pubkey after first login. Password from amd/.env.amd (gitignored).
+set -euo pipefail
+
+AMD_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="${AMD_DIR}/.env.amd"
+
+if [[ -f "${ENV_FILE}" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "${ENV_FILE}"
+  set +a
+fi
+
+HOST="${AMD_SSH_HOST:-165.204.53.121}"
+PORT="${AMD_SSH_PORT:-30208}"
+USER="${AMD_SSH_USER:-daytonaio}"
+
+ssh_base=(ssh -p "${PORT}" -o StrictHostKeyChecking=accept-new)
+
+# Try pubkey first (BatchMode). Fall back to sshpass + AMD_SSH_PASS.
+if "${ssh_base[@]}" -o BatchMode=yes -o ConnectTimeout=8 "${USER}@${HOST}" true 2>/dev/null; then
+  exec "${ssh_base[@]}" "${USER}@${HOST}" "$@"
+fi
+
+if [[ -z "${AMD_SSH_PASS:-}" ]]; then
+  echo "no pubkey auth and AMD_SSH_PASS unset. Fill ${ENV_FILE} (see .env.amd.example)." >&2
+  exit 1
+fi
+
+if ! command -v sshpass >/dev/null 2>&1; then
+  echo "sshpass missing. Install: brew install hudochenkov/sshpass/sshpass" >&2
+  echo "Or: ssh -p ${PORT} ${USER}@${HOST}" >&2
+  exit 1
+fi
+
+export SSHPASS="${AMD_SSH_PASS}"
+exec sshpass -e "${ssh_base[@]}" "${USER}@${HOST}" "$@"

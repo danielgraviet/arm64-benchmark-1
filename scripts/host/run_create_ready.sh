@@ -22,6 +22,7 @@ TARGET="${TARGET:-epyc9575}"
 case "${TARGET}" in
   epyc9575) OUT_DIR="daniel-focus-here/zen5-9575f-jsonl" ;;
   epyc9755) OUT_DIR="daniel-focus-here/zen5-9755-jsonl" ;;
+  epyc9996) OUT_DIR="daniel-focus-here/zen5-9996-jsonl" ;;
   phoenix-e6) OUT_DIR="daniel-focus-here/zen5-9j45-jsonl" ;;
   vera)
     if [[ -n "${OCI_VERA:-}" ]]; then
@@ -36,7 +37,7 @@ esac
 # into JSONL wall_share for create-ready compare across chips.
 SCRAPE_BOOT_PHASES=0
 case "${TARGET}" in
-  vera|epyc9755|epyc9575|phoenix-e6) SCRAPE_BOOT_PHASES=1 ;;
+  vera|epyc9755|epyc9575|epyc9996|phoenix-e6) SCRAPE_BOOT_PHASES=1 ;;
 esac
 LOG="${LOG:-/tmp/${TARGET}-create-ready-${COUNT}.log}"
 LOG_NVME="${LOG_NVME:-/mnt/data/bench-logs/${TARGET}-create-ready-${COUNT}-$(date -u +%Y%m%d_%H%M%S).log}"
@@ -122,6 +123,32 @@ if [[ "${TARGET}" == "phoenix-e6" ]]; then
   if [[ "${cur_cpus}" != "${want_cpus}" || "${cur_mems}" != "${want_mems}" ]]; then
     echo "phoenix-e6 not pinned to socket 0 (cpus=${cur_cpus:-unset} mems=${cur_mems:-unset}); pinning"
     bash "${ROOT}/tickets/9j45-pin-single-socket.sh" 0
+    cur_cpus="$(sudo -n cat /sys/fs/cgroup/rlp.slice/cpuset.cpus 2>/dev/null | tr -d '[:space:]' || true)"
+    cur_mems="$(sudo -n cat /sys/fs/cgroup/rlp.slice/cpuset.mems 2>/dev/null | tr -d '[:space:]' || true)"
+  fi
+  if [[ "${cur_cpus}" != "${want_cpus}" || "${cur_mems}" != "${want_mems}" ]]; then
+    echo "refusing create-ready: pin is cpus=${cur_cpus} mems=${cur_mems}, want ${want_cpus}/${want_mems}" >&2
+    exit 1
+  fi
+  export SOCKET_PIN_CPUS="${cur_cpus}"
+  export SOCKET_PIN_MEMS="${cur_mems}"
+  echo "PINNED cpus=${SOCKET_PIN_CPUS} mems=${SOCKET_PIN_MEMS}"
+fi
+
+# Dual-socket EPYC 9996: pin to NUMA node 0 for fair single-socket compare.
+if [[ "${TARGET}" == "epyc9996" ]]; then
+  want_cpus="$(tr -d '[:space:]' </sys/devices/system/node/node0/cpulist 2>/dev/null || true)"
+  want_cpus="${want_cpus:-0-127,512-639}"
+  want_mems="0"
+  cur_cpus="$(tr -d '[:space:]' </sys/fs/cgroup/rlp.slice/cpuset.cpus 2>/dev/null || true)"
+  cur_mems="$(tr -d '[:space:]' </sys/fs/cgroup/rlp.slice/cpuset.mems 2>/dev/null || true)"
+  if [[ -z "${cur_cpus}" ]]; then
+    cur_cpus="$(sudo -n cat /sys/fs/cgroup/rlp.slice/cpuset.cpus 2>/dev/null | tr -d '[:space:]' || true)"
+    cur_mems="$(sudo -n cat /sys/fs/cgroup/rlp.slice/cpuset.mems 2>/dev/null | tr -d '[:space:]' || true)"
+  fi
+  if [[ "${cur_cpus}" != "${want_cpus}" || "${cur_mems}" != "${want_mems}" ]]; then
+    echo "epyc9996 not pinned to node 0 (cpus=${cur_cpus:-unset} mems=${cur_mems:-unset}); pinning"
+    bash "${ROOT}/amd/scripts/pin_socket.sh" 0
     cur_cpus="$(sudo -n cat /sys/fs/cgroup/rlp.slice/cpuset.cpus 2>/dev/null | tr -d '[:space:]' || true)"
     cur_mems="$(sudo -n cat /sys/fs/cgroup/rlp.slice/cpuset.mems 2>/dev/null | tr -d '[:space:]' || true)"
   fi

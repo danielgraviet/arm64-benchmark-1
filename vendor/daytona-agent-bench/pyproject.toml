@@ -1,0 +1,25 @@
+[project]
+name = "daytona-agent-bench"
+version = "0.1.0"
+description = "On-node agent sandbox ladder for a dual-socket EPYC 9755"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "click>=8.3.1",
+    "click-default-group>=1.2.3",
+    "pluggy",
+    "python-dateutil",
+    "sqlite-fts4",
+    "tabulate",
+    "pytest",
+    "python-dotenv>=1.0.0",
+    "rlp-sdk>=0.3.2",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "workload/repos/sqlite-utils"]
+markers = [
+    "e2e: live RLP cell tests; excluded by default",
+]
+addopts = ["-m", "not e2e"]

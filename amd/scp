@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Mac break-glass scp to the AMD EPYC 9996 vendor cell.
+set -euo pipefail
+
+AMD_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="${AMD_DIR}/.env.amd"
+
+if [[ -f "${ENV_FILE}" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "${ENV_FILE}"
+  set +a
+fi
+
+HOST="${AMD_SSH_HOST:-165.204.53.121}"
+PORT="${AMD_SSH_PORT:-30208}"
+USER="${AMD_SSH_USER:-daytonaio}"
+
+scp_base=(scp -P "${PORT}" -o StrictHostKeyChecking=accept-new)
+
+if [[ -n "${AMD_SSH_PASS:-}" ]] && command -v sshpass >/dev/null 2>&1; then
+  export SSHPASS="${AMD_SSH_PASS}"
+  exec sshpass -e "${scp_base[@]}" "$@"
+fi
+
+exec "${scp_base[@]}" "$@"

@@ -13,6 +13,8 @@ wheels/
 .env
 .env.oci
 .env.nvidia
+.env.amd
+amd/.env.amd
 secrets/*.plain
 secrets/*.env
 secrets/*.tmp

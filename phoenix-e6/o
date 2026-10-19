@@ -15,20 +15,10 @@ cmd="${1:-help}"
 shift || true
 
 require_pin() {
-  local want_cpus want_mems cur_cpus cur_mems
-  want_cpus="$(tr -d '[:space:]' </sys/devices/system/node/node0/cpulist 2>/dev/null || true)"
-  want_cpus="${want_cpus:-0-95,192-287}"
-  want_mems="0"
-  cur_cpus="$(tr -d '[:space:]' </sys/fs/cgroup/rlp.slice/cpuset.cpus 2>/dev/null || true)"
-  cur_mems="$(tr -d '[:space:]' </sys/fs/cgroup/rlp.slice/cpuset.mems 2>/dev/null || true)"
-  if [[ -z "${cur_cpus}" ]]; then
-    cur_cpus="$(sudo -n cat /sys/fs/cgroup/rlp.slice/cpuset.cpus 2>/dev/null | tr -d '[:space:]' || true)"
-    cur_mems="$(sudo -n cat /sys/fs/cgroup/rlp.slice/cpuset.mems 2>/dev/null | tr -d '[:space:]' || true)"
-  fi
-  if [[ "${cur_cpus}" != "${want_cpus}" || "${cur_mems}" != "${want_mems}" ]]; then
-    echo "[phoenix-e6/o] pinning to socket 0 before timed run" >&2
-    bash "${ROOT}/tickets/9j45-pin-single-socket.sh" 0
-  fi
+  # Never read cpuset.cpus while runner/FC may be in the slice — that open can hang
+  # the whole process. Pin script stops runner + drains FC before any cgroup I/O.
+  echo "[phoenix-e6/o] ensure socket-0 pin before timed run" >&2
+  bash "${ROOT}/tickets/9j45-pin-single-socket.sh" 0
 }
 
 tmux_run() {

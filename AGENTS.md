@@ -1,10 +1,12 @@
 # On-box operator (RedSwitches / Vera HQ / Codex)
 
-This repo is the harness. On a RedSwitches DUT or Vera HQ, Codex is the operator. GitHub is the sync plane. The Mac only `git pull`s to graph (and leave notes under `codex-direction-log/`).
+This repo is the harness. On a RedSwitches DUT, Vera HQ, or the AMD vendor EPYC 9996 cell, Codex is the operator. GitHub is the sync plane. The Mac only `git pull`s to graph (and leave notes under `codex-direction-log/`).
 
-Vera HQ is Axis-only (`ssh.axisapps.io`). Agents on the Mac cannot usefully Remote-SSH it. See `tickets/vera-codex-host.md`. RedSwitches: `tickets/redswitches-codex-host.md`.
+Vera HQ is Axis-only (`ssh.axisapps.io`). Agents on the Mac cannot usefully Remote-SSH it. See `tickets/vera-codex-host.md`. RedSwitches: `tickets/redswitches-codex-host.md`. AMD 9996: `tickets/amd-codex-host.md`.
 
 **NVIDIA single-socket EPYC 9755 (empty Ubuntu bare cell):** start at [`nvidia/RUNBOOK.md`](nvidia/RUNBOOK.md) (`cd nvidia && ./o start`).
+
+**AMD vendor dual-socket EPYC 9996 (empty Ubuntu bare cell):** start at [`amd/RUNBOOK.md`](amd/RUNBOOK.md) (`cd amd && ./o start`, `--target epyc9996`, pin NUMA node 0).
 
 Cwd is the clone (usually `/home/ubuntu/arm64-benchmark-1`). The RLP API and toolbox are on localhost. Never drive a ladder from a laptop SSH tunnel. That measures the tunnel.
 

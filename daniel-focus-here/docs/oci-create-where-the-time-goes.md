@@ -15,35 +15,58 @@ For each run, we measured the median across 1,000 requests. The ranges below sho
 | All 1,000 ready   | 18.7–19.1 s            | 30.6–35.0 s            | Total batch wall time                                         |
 
 
+
+
 ### What the host does to start each sandbox
 
 
-| Step on the host          | Vera     | Zen5 (9575F) | What happens                                       |
-| ------------------------- | -------- | ------------ | -------------------------------------------------- |
-| Prepare sandbox disk      | 13 ms    | 143–166 ms   | Set up the sandbox's writable disk                 |
-| Load saved memory         | 16–17 ms | 377–426 ms   | Restore the sandbox's saved memory                 |
-| Start virtual machine     | 29–31 ms | 450–752 ms   | Start the virtual machine                          |
-| Wait for guest to respond | 8–9 ms   | 226–247 ms   | Wait until the guest toolbox accepts a connection  |
-| Total host startup        | 67–70 ms | 1.3–1.6 s    | Sum of the four steps above, added within each run |
+| Step on the host          | Vera     | Zen5 (9575F) | What happens                                      |
+| ------------------------- | -------- | ------------ | ------------------------------------------------- |
+| Prepare sandbox disk      | 13 ms    | 143–166 ms   | Set up the sandbox's writable disk                |
+| Load saved memory         | 16–17 ms | 377–426 ms   | Restore the sandbox's saved memory                |
+| Start virtual machine     | 29–31 ms | 450–752 ms   | Start the virtual machine                         |
+| Wait for guest to respond | 8–9 ms   | 226–247 ms   | Wait until the guest toolbox accepts a connection |
+| Total host startup        | 67–70 ms | 1.3–1.6 s    | Time for the runner to start the sandbox          |
 
+### Ten at a time, and one hundred at a time
 
-Both hosts started from a prebuilt, saved sandbox state. That avoids building the state from scratch, but each new sandbox still needs host setup and a virtual machine start.
+Ten sandboxes start together, and one hundred start together. We time each one until it is ready, then take the average.
 
-### One sandbox at a time
+The first table is that average. The control plane plus the wait for the runner add to it. The second table is the runner's own clock for the same sandboxes. Disk, memory, the virtual machine, the toolbox, and the remaining runner time add to the runner time. That clock overlaps the wait, so it keeps its own total.
 
-The numbers above are for 1,000 sandboxes started together. We also started one sandbox, deleted it, and repeated that. Three rounds of 15 on each host. The client checked every 10 ms.
+| Ten at a time | Vera | 9575F |
+| --- | ---: | ---: |
+| Control plane accepts the request | 49 ms | 20 ms |
+| Wait for the runner | 67 ms | 84 ms |
+| Average time until ready | 116 ms | 104 ms |
 
-The average time until the sandbox is ready is 86 ms on Vera and 67 ms on the 9575F. Each row is a separate piece of that time. The rows add up to the total. The runner steps alone, without the control plane, are 59 ms on Vera and 56 ms on the 9575F.
+| Ten at a time, on the runner | Vera | 9575F |
+| --- | ---: | ---: |
+| Prepare sandbox disk | 8 ms | 39 ms |
+| Load saved memory | 8 ms | 6 ms |
+| Start virtual machine | 30 ms | 8 ms |
+| Wait for guest to respond | 7 ms | 19 ms |
+| Other runner time | 6 ms | 16 ms |
+| Runner time | 59 ms | 88 ms |
 
-| Step | Vera | 9575F | What is timed |
-| --- | ---: | ---: | --- |
-| Control plane accepts the request | 27 ms | 11 ms | Time to take the create and queue the job |
-| Prepare sandbox disk | 7 ms | 8 ms | Runner sets up the writable disk |
-| Load saved memory | 8 ms | 4 ms | Runner restores the saved memory |
-| Start virtual machine | 27 ms | 23 ms | Runner starts the virtual machine |
-| Wait for guest to respond | 14 ms | 19 ms | Runner waits until the toolbox accepts a connection |
-| Entrypoint release | 3 ms | 2 ms | Runner asks the guest to start its program |
-| Time until ready | 86 ms | 67 ms | Sum of the rows above | 
+| One hundred at a time | Vera | 9575F |
+| --- | ---: | ---: |
+| Control plane accepts the request | 523 ms | 259 ms |
+| Wait for the runner | 120 ms | 457 ms |
+| Average time until ready | 643 ms | 716 ms |
+
+| One hundred at a time, on the runner | Vera | 9575F |
+| --- | ---: | ---: |
+| Prepare sandbox disk | 8 ms | 63 ms |
+| Load saved memory | 8 ms | 178 ms |
+| Start virtual machine | 24 ms | 7 ms |
+| Wait for guest to respond | 7 ms | 197 ms |
+| Other runner time | 6 ms | 5 ms |
+| Runner time | 53 ms | 450 ms |
+
+At 10, the average time until ready is 116 ms on Vera and 104 ms on the 9575F.
+
+At 100, the average time until ready is 643 ms on Vera and 716 ms on the 9575F. The 9575F runner at 100 is 450 ms, because loading memory and the toolbox wait both stretched. 
 
 **Internal note.** The runner's full clone timer is longer than the sum shown in the table: 79–83 ms on Vera and 7.2–8.9 s on Zen 5. On Zen 5, most of that difference comes from the entrypoint release.
 

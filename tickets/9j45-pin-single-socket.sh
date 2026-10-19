@@ -103,6 +103,32 @@ if pgrep -af '[p]ython.*rlp_light_create_fleet' >/dev/null 2>&1; then
 fi
 echo "no active harness"
 
+# Writing cpuset.cpus blocks forever while Firecracker/runner threads sit on
+# CPUs outside the new mask. Stop them before narrowing the slice.
+echo "=== stop runner + drain Firecracker before cpuset write ==="
+sudo systemctl stop rlp-runner || true
+sleep 1
+# pgrep -c prints 0 and exits 1 when idle — never use `|| echo 0` (that becomes 0\n0).
+fc_left() {
+  local n
+  n="$(pgrep -c firecracker 2>/dev/null || true)"
+  n="$(printf '%s' "${n:-0}" | tr -d '[:space:]')"
+  [[ "${n}" =~ ^[0-9]+$ ]] || n=0
+  printf '%s' "${n}"
+}
+if [[ "$(fc_left)" != "0" ]]; then
+  echo "pkill firecracker (would block cpuset.cpus otherwise)"
+  sudo pkill -9 firecracker 2>/dev/null || true
+  sleep 1
+fi
+fc_n="$(fc_left)"
+echo "FC=${fc_n}"
+if [[ "${fc_n}" != "0" ]]; then
+  echo "ERROR: Firecracker still running; refuse to write cpuset" >&2
+  sudo systemctl start rlp-runner || true
+  exit 1
+fi
+
 echo "=== enable cpuset controller (root → rlp.slice → vms) ==="
 if ! grep -qw cpuset /sys/fs/cgroup/cgroup.subtree_control 2>/dev/null; then
   sudo sh -c 'echo +cpuset > /sys/fs/cgroup/cgroup.subtree_control'
@@ -111,30 +137,42 @@ if ! grep -qw cpuset "$SLICE/cgroup.subtree_control" 2>/dev/null; then
   sudo sh -c "echo +cpuset > $SLICE/cgroup.subtree_control"
 fi
 
+write_cpuset() {
+  local path="$1" value="$2"
+  # timeout: a stuck cpuset write is worse than a loud fail
+  if ! printf '%s\n' "${value}" | sudo timeout 10 tee "${path}" >/dev/null; then
+    echo "ERROR: timed out writing ${path}=${value}" >&2
+    return 1
+  fi
+}
+
 echo "=== pin rlp.slice to NUMA node$NODE (cpus=$CPUS mems=$MEMS) ==="
-sudo tee "$SLICE/cpuset.cpus" >/dev/null <<<"$CPUS"
-sudo tee "$SLICE/cpuset.mems" >/dev/null <<<"$MEMS"
+# mems first, then cpus (and children before parent when narrowing)
 if [[ -d "$VMS" ]]; then
   if ! grep -qw cpuset "$VMS/cgroup.subtree_control" 2>/dev/null; then
     sudo sh -c "echo +cpuset > $VMS/cgroup.subtree_control" 2>/dev/null || true
   fi
-  sudo tee "$VMS/cpuset.cpus" >/dev/null <<<"$CPUS" || true
-  sudo tee "$VMS/cpuset.mems" >/dev/null <<<"$MEMS" || true
+  write_cpuset "$VMS/cpuset.mems" "$MEMS" || true
+  write_cpuset "$VMS/cpuset.cpus" "$CPUS" || true
 fi
+write_cpuset "$SLICE/cpuset.mems" "$MEMS"
+write_cpuset "$SLICE/cpuset.cpus" "$CPUS"
 
-echo "=== restart runner so new Firecracker procs inherit the pin ==="
-sudo systemctl restart rlp-runner
+echo "=== start runner so new Firecracker procs inherit the pin ==="
+sudo systemctl start rlp-runner
 sleep 2
 systemctl is-active rlp-runner
 curl -fsS http://127.0.0.1:8088/health
 echo
 
 echo "=== verify ==="
-echo -n "rlp.slice cpus: "; cat "$SLICE/cpuset.cpus"
-echo -n "rlp.slice mems: "; cat "$SLICE/cpuset.mems"
+# timeout: bare open of cpuset.cpus can hang the shell if something races the slice
+read_cg() { sudo timeout 5 cat "$1" 2>/dev/null || echo unread; }
+echo -n "rlp.slice cpus: "; read_cg "$SLICE/cpuset.cpus"
+echo -n "rlp.slice mems: "; read_cg "$SLICE/cpuset.mems"
 if [[ -d "$VMS" ]]; then
-  echo -n "vms cpus: "; cat "$VMS/cpuset.cpus" 2>/dev/null || echo unread
-  echo -n "vms mems: "; cat "$VMS/cpuset.mems" 2>/dev/null || echo unread
+  echo -n "vms cpus: "; read_cg "$VMS/cpuset.cpus"
+  echo -n "vms mems: "; read_cg "$VMS/cpuset.mems"
 fi
 RUNNER_PID=$(pgrep -nx rlp-runner || true)
 if [[ -n "$RUNNER_PID" ]]; then

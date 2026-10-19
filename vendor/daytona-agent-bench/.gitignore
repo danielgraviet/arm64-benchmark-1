@@ -1,0 +1,11 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+.venv
+.env
+.DS_Store
+
+# Ladder output (schema.example.jsonl is the only JSONL in git)
+results/*.jsonl
+!results/schema.example.jsonl
+data/
