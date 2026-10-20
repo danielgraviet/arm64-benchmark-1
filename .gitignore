@@ -26,3 +26,7 @@ secrets/*.tmp
 
 # Generated NVIDIA pack (fresh git repo lives here or in ../daytona-agent-bench)
 .generated/
+
+# Local secrets (backups of .env)
+.env.*
+!.env.example

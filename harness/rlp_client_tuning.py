@@ -59,6 +59,14 @@ def apply() -> None:
 
     max_conn = int(_env_f("RLP_HTTP_MAX_CONNECTIONS", 512))
 
+    # Client-side read timeout. The SDK reads with `read=None` (rlp/http.py), so a guest that wedges
+    # mid-exec hangs that call FOREVER: the daemon-side command timeout never fires because the daemon
+    # itself is stuck, and one such sandbox stalls a whole ladder. Measured on HQ Vera: a 176-level dense
+    # run sat for 20 min with 1401 of 1408 episodes done and 7 in flight; two of the live guests had kernel
+    # oopses ~1.3 s after resume (daytona/rlp#3213 family). With a read timeout those become counted
+    # failures and the run finishes. 0 / unset keeps the SDK behaviour.
+    read_timeout = _env_f("RLP_HTTP_READ_TIMEOUT_S", 0) or None
+
     # -- 1. connection pool ---------------------------------------------------
     # Rebuild the inner httpx.Client with explicit limits, mirroring the SDK's
     # own construction (rlp/http.py): same base_url, headers, and timeout.
@@ -70,7 +78,7 @@ def apply() -> None:
         self._client = httpx.Client(
             base_url=base_url.rstrip("/"),
             headers=dict(old.headers),
-            timeout=httpx.Timeout(30.0, read=None),
+            timeout=httpx.Timeout(30.0, read=read_timeout),
             limits=httpx.Limits(
                 max_connections=max_conn, max_keepalive_connections=max_conn
             ),

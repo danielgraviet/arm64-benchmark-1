@@ -1,0 +1,5 @@
+kprobe:__cgroup_procs_write    { @a[tid] = nsecs; }
+kretprobe:__cgroup_procs_write /@a[tid]/ { @join_us = hist((nsecs - @a[tid]) / 1000); @join_sum_ms = sum((nsecs - @a[tid]) / 1000000); delete(@a[tid]); }
+tracepoint:syscalls:sys_enter_clone /pid == $1/ { @s[tid] = nsecs; }
+tracepoint:syscalls:sys_exit_clone  /@s[tid]/ { @fork_us = hist((nsecs - @s[tid]) / 1000); delete(@s[tid]); }
+END { clear(@a); clear(@s); }

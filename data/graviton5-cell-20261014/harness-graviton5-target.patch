@@ -1,0 +1,134 @@
+diff -ru orig/arm64-benchmark-1/harness/paths.py g5h/arm64-benchmark-1/harness/paths.py
+--- orig/arm64-benchmark-1/harness/paths.py	2026-10-14 12:01:40.000000000 +0200
++++ g5h/arm64-benchmark-1/harness/paths.py	2026-10-14 14:05:10.439074496 +0200
+@@ -60,6 +60,8 @@
+             base = "rlp-redswitches"
+         elif target == "digitalocean":
+             base = "rlp-digitalocean"
++        elif target == "graviton5":
++            base = "rlp-graviton5"
+         elif target and target in ARM64_TARGETS:
+             base = "rlp-arm64"
+         else:
+Only in g5h/arm64-benchmark-1/harness: __pycache__
+diff -ru orig/arm64-benchmark-1/harness/regions.py g5h/arm64-benchmark-1/harness/regions.py
+--- orig/arm64-benchmark-1/harness/regions.py	2026-10-14 12:01:40.000000000 +0200
++++ g5h/arm64-benchmark-1/harness/regions.py	2026-10-14 14:05:10.425074519 +0200
+@@ -32,6 +32,9 @@
+     "arm64-test-1": "https://toolbox.arm64-test-1.rlp.trydaytona.com/toolbox",
+     "us-phoenix-1": "https://toolbox.us-phoenix-1.rlp.trydaytona.com/toolbox",
+     "vera": "http://127.0.0.1:9000/toolbox",
++    # graviton5: single-host AWS m9gd.metal-48xl bench cell (Graviton5, arm64),
++    # same build/config as the HQ Vera cell. Harness runs on the box (localhost).
++    "graviton5": os.environ.get("G5_RLP_TOOLBOX_URL", "http://127.0.0.1:9000/toolbox"),
+     "redswitches": "https://toolbox.redswitches.rlp.trydaytona.com/toolbox",
+     # digitalocean: single-host DO droplet cell, EPYC 9575F (Zen 5 / Turin).
+     "digitalocean": os.environ.get(
+@@ -44,9 +47,10 @@
+     "us-phoenix-1": "https://api.us-phoenix-1.rlp.trydaytona.com",
+     "redswitches": "https://api.redswitches.rlp.trydaytona.com",
+     "digitalocean": os.environ.get("DO_RLP_API_URL", "http://127.0.0.1:8088"),
++    "graviton5": os.environ.get("G5_RLP_API_URL", "http://127.0.0.1:8088"),
+ }
+ 
+-ARM64_TARGETS = frozenset({"arm64-test-1", "vera"})
++ARM64_TARGETS = frozenset({"arm64-test-1", "vera", "graviton5"})
+ ARM64_MACHINES = frozenset({"aarch64", "arm64"})
+ 
+ # Daytona public-cloud ARM target (Graviton5). Series folder: daytona-graviton5.
+@@ -57,24 +61,28 @@
+ RLP_TARGET_CPU_ARCH: dict[str, str] = {
+     "arm64-test-1": "arm64",
+     "vera": "arm64",
++    "graviton5": "arm64",
+ }
+ 
+ # Hardware tier / boot mode (Vera cell).
+ RLP_TARGET_CPU_TYPE: dict[str, str] = {
+     "vera": "vera",
++    "graviton5": "graviton5",
+ }
+ RLP_TARGET_MODE: dict[str, str] = {
+     "vera": "dedicated",
++    "graviton5": "dedicated",
+ }
+ 
+ VERA_TARGET = "vera"
+ PHOENIX_TARGET = "us-phoenix-1"
+ REDSWITCHES_TARGET = "redswitches"
+ DO_TARGET = "digitalocean"
++GRAVITON5_TARGET = "graviton5"
+ 
+ # Cells that boot Docker Hub images (no native NFS snap in that region).
+ REGISTRY_BOOT_TARGETS = frozenset(
+-    {VERA_TARGET, PHOENIX_TARGET, REDSWITCHES_TARGET, DO_TARGET}
++    {VERA_TARGET, PHOENIX_TARGET, REDSWITCHES_TARGET, DO_TARGET, GRAVITON5_TARGET}
+ )
+ 
+ 
+@@ -102,6 +110,10 @@
+         env_tb = _env_first("REDSWITCHES_RLP_TOOLBOX_URL", "RS_TB")
+         if env_tb:
+             return env_tb
++    if target == GRAVITON5_TARGET:
++        env_tb = _env_first("G5_RLP_TOOLBOX_URL")
++        if env_tb:
++            return env_tb
+     if target == DO_TARGET:
+         env_tb = _env_first("DO_RLP_TOOLBOX_URL")
+         if env_tb:
+@@ -241,6 +253,21 @@
+             region_routing=False,
+         )
+ 
++    if target == GRAVITON5_TARGET:
++        api_url = _env_first("G5_RLP_API_URL") or RLP_TARGET_API[GRAVITON5_TARGET]
++        api_key = _env_first("G5_RLP_API_KEY", "RLP_API_KEY")
++        if not api_key:
++            raise ValueError(
++                "RLP_API_KEY or G5_RLP_API_KEY is required for --target graviton5"
++            )
++        return _daytona_config(
++            api_url=api_url,
++            api_key=api_key,
++            toolbox_url=resolved_toolbox,
++            target=target,
++            region_routing=False,
++        )
++
+     if target == DO_TARGET:
+         api_url = _env_first("DO_RLP_API_URL") or RLP_TARGET_API[DO_TARGET]
+         api_key = _env_first("DO_RLP_API_KEY", "RLP_API_KEY")
+--- orig/arm64-benchmark-1/scripts/rlp_light_create_fleet.py	2026-10-14 12:01:40.000000000 +0200
++++ g5h/arm64-benchmark-1/scripts/rlp_light_create_fleet.py	2026-10-14 14:10:13.215583571 +0200
+@@ -82,9 +82,9 @@
+         "name": f"light-create-{idx}",
+         "resources": Resources(cpu=cpu, memory=memory, disk=disk),
+     }
+-    if target == "vera":
++    if target in ("vera", "graviton5"):
+         kwargs["cpu_arch"] = "arm64"
+-        kwargs["cpu_type"] = "vera"
++        kwargs["cpu_type"] = target
+     return CreateSandboxFromImageParams(**kwargs)
+ 
+ 
+@@ -242,6 +242,9 @@
+     if target == "vera":
+         folder = ROOT / "results" / "vera-jsonl"
+         name = f"vera_create_ready_{count}_{stamp}.jsonl"
++    elif target == "graviton5":
++        folder = ROOT / "results" / "graviton5-jsonl"
++        name = f"graviton5_create_ready_{count}_{stamp}.jsonl"
+     elif target == "epyc9755":
+         folder = ROOT / "daniel-focus-here" / "zen5-9755-jsonl"
+         name = f"epyc9755_create_ready_{count}_{stamp}.jsonl"
+@@ -258,7 +261,7 @@
+     p = argparse.ArgumentParser(description=__doc__)
+     p.add_argument(
+         "--target",
+-        choices=("vera", "redswitches", "epyc9755", "epyc9575"),
++        choices=("vera", "graviton5", "redswitches", "epyc9755", "epyc9575"),
+         required=True,
+     )
+     p.add_argument("--count", type=int, default=2000)

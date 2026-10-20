@@ -1,0 +1,30 @@
+time=2026-10-14T20:30:03.125Z level=INFO msg="vm adoption summary" adopted=9822 reconciled_lost=0 reconciled_stopped_ch=0 dnat_rules_restored=0 egress_policies_restored=0 run_dirs_removed=0 ipam_sweep_enabled=false ipam_allocs_swept=0 sweep_truncated=false dirless_vmms_found=0 dirless_vmms_reaped=0 reconcile_and_sweeps_skipped=""
+time=2026-10-14T20:30:03.704Z level=INFO msg="adopt verify: starting" adopted=9822 settle=30s interval=5m0s grace=10m0s reap_enabled=false reap_max=10 reap_max_fraction=0.5
+time=2026-10-14T20:30:33.789Z level=WARN msg="adopt verify: adopted set exceeds the batch cap; skipping the check" adopted=9822 cap=4096
+time=2026-10-14T20:30:33.790Z level=INFO msg="adopt verify pass" checked=9822 backed=0 orphans=0 killable=0 persistent_orphans=0 inconclusive=9822 candidates=0 reap_enabled=false reaped=0 suppressed=0 suppress_reason=""
+time=2026-10-14T20:35:33.813Z level=WARN msg="adopt verify: adopted set exceeds the batch cap; skipping the check" adopted=9822 cap=4096
+time=2026-10-14T20:35:33.815Z level=INFO msg="adopt verify pass" checked=9822 backed=0 orphans=0 killable=0 persistent_orphans=0 inconclusive=9822 candidates=0 reap_enabled=false reaped=0 suppressed=0 suppress_reason=""
+time=2026-10-14T20:40:33.806Z level=WARN msg="adopt verify: adopted set exceeds the batch cap; skipping the check" adopted=9822 cap=4096
+time=2026-10-14T20:40:33.808Z level=INFO msg="adopt verify pass" checked=9822 backed=0 orphans=0 killable=0 persistent_orphans=0 inconclusive=9822 candidates=0 reap_enabled=false reaped=0 suppressed=0 suppress_reason=""
+time=2026-10-14T20:45:33.815Z level=WARN msg="adopt verify: adopted set exceeds the batch cap; skipping the check" adopted=9822 cap=4096
+time=2026-10-14T20:45:33.816Z level=INFO msg="adopt verify pass" checked=9822 backed=0 orphans=0 killable=0 persistent_orphans=0 inconclusive=9822 candidates=0 reap_enabled=false reaped=0 suppressed=0 suppress_reason=""
+time=2026-10-14T20:50:33.804Z level=WARN msg="adopt verify: adopted set exceeds the batch cap; skipping the check" adopted=9822 cap=4096
+time=2026-10-14T20:50:33.806Z level=INFO msg="adopt verify pass" checked=9822 backed=0 orphans=0 killable=0 persistent_orphans=0 inconclusive=9822 candidates=0 reap_enabled=false reaped=0 suppressed=0 suppress_reason=""
+time=2026-10-14T20:55:33.786Z level=WARN msg="adopt verify: adopted set exceeds the batch cap; skipping the check" adopted=9822 cap=4096
+time=2026-10-14T20:55:33.788Z level=INFO msg="adopt verify pass" checked=9822 backed=0 orphans=0 killable=0 persistent_orphans=0 inconclusive=9822 candidates=0 reap_enabled=false reaped=0 suppressed=0 suppress_reason=""
+time=2026-10-14T21:00:33.878Z level=WARN msg="adopt verify: adopted set exceeds the batch cap; skipping the check" adopted=9822 cap=4096
+time=2026-10-14T21:00:33.881Z level=INFO msg="adopt verify pass" checked=9822 backed=0 orphans=0 killable=0 persistent_orphans=0 inconclusive=9822 candidates=0 reap_enabled=false reaped=0 suppressed=0 suppress_reason=""
+time=2026-10-14T21:05:33.789Z level=WARN msg="adopt verify: adopted set exceeds the batch cap; skipping the check" adopted=9822 cap=4096
+time=2026-10-14T21:05:33.790Z level=INFO msg="adopt verify pass" checked=9822 backed=0 orphans=0 killable=0 persistent_orphans=0 inconclusive=9822 candidates=0 reap_enabled=false reaped=0 suppressed=0 suppress_reason=""
+time=2026-10-14T21:10:33.784Z level=WARN msg="adopt verify: adopted set exceeds the batch cap; skipping the check" adopted=9822 cap=4096
+time=2026-10-14T21:10:33.786Z level=INFO msg="adopt verify pass" checked=9822 backed=0 orphans=0 killable=0 persistent_orphans=0 inconclusive=9822 candidates=0 reap_enabled=false reaped=0 suppressed=0 suppress_reason=""
+time=2026-10-14T21:15:33.788Z level=WARN msg="adopt verify: adopted set exceeds the batch cap; skipping the check" adopted=9822 cap=4096
+time=2026-10-14T21:15:33.790Z level=INFO msg="adopt verify pass" checked=9822 backed=0 orphans=0 killable=0 persistent_orphans=0 inconclusive=9822 candidates=0 reap_enabled=false reaped=0 suppressed=0 suppress_reason=""
+time=2026-10-14T21:20:33.785Z level=WARN msg="adopt verify: adopted set exceeds the batch cap; skipping the check" adopted=9822 cap=4096
+time=2026-10-14T21:20:33.786Z level=INFO msg="adopt verify pass" checked=9822 backed=0 orphans=0 killable=0 persistent_orphans=0 inconclusive=9822 candidates=0 reap_enabled=false reaped=0 suppressed=0 suppress_reason=""
+time=2026-10-14T21:25:33.853Z level=WARN msg="adopt verify: adopted set exceeds the batch cap; skipping the check" adopted=9822 cap=4096
+time=2026-10-14T21:25:33.855Z level=INFO msg="adopt verify pass" checked=9822 backed=0 orphans=0 killable=0 persistent_orphans=0 inconclusive=9822 candidates=0 reap_enabled=false reaped=0 suppressed=0 suppress_reason=""
+time=2026-10-14T21:30:33.787Z level=WARN msg="adopt verify: adopted set exceeds the batch cap; skipping the check" adopted=9822 cap=4096
+time=2026-10-14T21:30:33.788Z level=INFO msg="adopt verify pass" checked=9822 backed=0 orphans=0 killable=0 persistent_orphans=0 inconclusive=9822 candidates=0 reap_enabled=false reaped=0 suppressed=0 suppress_reason=""
+time=2026-10-14T21:35:33.785Z level=WARN msg="adopt verify: adopted set exceeds the batch cap; skipping the check" adopted=9822 cap=4096
+time=2026-10-14T21:35:33.787Z level=INFO msg="adopt verify pass" checked=9822 backed=0 orphans=0 killable=0 persistent_orphans=0 inconclusive=9822 candidates=0 reap_enabled=false reaped=0 suppressed=0 suppress_reason=""

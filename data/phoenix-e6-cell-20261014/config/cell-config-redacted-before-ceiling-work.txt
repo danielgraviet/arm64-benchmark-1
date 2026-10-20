@@ -1,0 +1,132 @@
+===BUILD
+daytona f0611fa13 [+bench patch: CREATE_MAX_QUEUE_SECS_CAP=900] + cherry-pick 6883d3366 (EROFS -b 4096) + RLP_FC_SOCK_WAIT_MS + 8d2b090ff RLP_FC_SMT (inactive); x86_64, built 2026-10-14 on phoenix-e6; same source tree as the HQ Vera cell. Guest kernel vmlinux-6.8.12-rlp3, initdisk and daemon layer rlp-rs-0.4.1 copied from the 9575F cell.
+===HOSTCHANGES
+2026-10-14T11:31:09Z hosts: added 127.0.1.1 vedran-test (backup /etc/hosts.bak-rlp)
+2026-10-14T11:31:09Z md127 (raid10 x12, empty) stopped and superblocks zeroed; /mnt/data moved to a single NVMe
+2026-10-14T11:31:33Z /mnt/data = ext4 on /dev/nvme0n1 (UUID=18abfc2d-5eff-4406-8d20-c68e5dab239f); nvme1n1..nvme11n1 left unused
+2026-10-14T11:31:44Z wrote /etc/sysctl.d/90-rlp-bench.conf (ARP 65536 v4+v6, conntrack 1M, hugepages 0) and applied
+2026-10-14T11:31:44Z udev: shadowed 70-iscsi-network-interface.rules to skip rlp*/veth*/tap*/fc* (rm /etc/udev/rules.d/70-iscsi-network-interface.rules to revert)
+2026-10-14T11:31:44Z stopped libvirtd/virtlogd/virtlockd/fwupd where present; runtime-masked libvirtd+fwupd (reboot restores)
+2026-10-14T11:31:44Z limits.conf: nofile 1048576
+2026-10-14T12:07:58Z numa_balancing=0 (HQ Vera boots numa_balancing=disable)
+2026-10-14T13:30:58Z capacity ladder: NETNS_POOL 2100->6200, MAX_LIVE_VMS 3000->8000, SUBNET_CIDR /20->/18 (a /20 caps the host at 4094 sandboxes)
+2026-10-14T15:30:32Z BENCH PATCH: api CREATE_MAX_QUEUE_SECS_CAP 60 -> 900 (api/src/events/mod.rs), RLP_CREATE_MAX_QUEUE_SECS=600. Revert by rebuilding from a clean tree. Reason: the 60s cap, not the hardware, ended the density ladder at ~4k burst / 6.7k held.
+2026-10-14T17:04:42Z MAX_LIVE_VMS 8000->20000; harness SDK scratch_mib int()->round() so sub-GiB disks are honoured (1 GiB default reservation capped the host at 6743)
+2026-10-14T19:16:06Z RLP_MAX_QUEUED_CREATES=40000 (API overload shed default 8000 was the ceiling at 8k live)
+===api.env
+DATABASE_URL=postgres://rlp:****@127.0.0.1:5439/rlplatform
+NATS_URL=nats://127.0.0.1:4222
+NATS_TOKEN****
+API_BIND=127.0.0.1:8088
+RLP_REGIONS_SEED=/etc/rlp/regions.json
+RLP_ALLOW_NON_NVMEOF_RUNNERS=1
+RLP_INTERNAL_TOKEN****
+RLP_TOOLBOX_PROXY_URL=http://127.0.0.1:9000/toolbox
+# sandbox shape bounds needed by the published benchmark (0.025 CPU / 64 MiB / 4 GiB burst / small disks)
+RLP_MIN_CPU=0.025
+RLP_MIN_MEM_MIB=64
+RLP_MIN_SCRATCH_MIB=16
+RLP_MEM_MIB_PER_CPU=8192
+RLP_BURST_MAX_CPU=1
+RLP_BURST_MAX_MEM_MIB=4096
+RLP_IDLE_REAP_ENABLED=1
+RLP_OTEL_DISABLED=1
+# Required by the global-artifact-store startup guard (G4). Name only: the API holds no S3 client.
+RLP_ARTIFACT_S3_BUCKET=rlp-artifacts-unused
+# NOTE: event auditing left at the platform default (on), as on HQ Vera. Measured to make no difference.
+RLP_CREATE_MAX_QUEUE_SECS=600
+RLP_MAX_QUEUED_CREATES=40000
+===runner.env
+RLP_NATS_URL=nats://127.0.0.1:4222
+RLP_NATS_TOKEN****
+RLP_RUNNER_ID=phoenix-e6-1
+RLP_RUNNER_REGION=phoenix-e6
+RLP_RUNNER_CPU_TYPE=turin-9j45
+RLP_PUBLIC_IP=10.6.2.170
+RLP_SUBNET_CIDR=10.102.0.0/18
+RLP_GUEST_ARCH=amd64
+RLP_NFS_ROOT=/mnt/data/rlp
+RLP_LAYERS_MOUNT=/mnt/data/rlp/layers
+RLP_CAS_DIR=/mnt/data/rlp/layers/sha256
+RLP_MANIFESTS_DIR=/mnt/data/rlp/manifests
+RLP_SYSTEM_DIR=/mnt/data/rlp/system
+RLP_TEMPLATE_CAS_DIR=/mnt/data/rlp/templates
+RLP_LOCAL_SCRATCH=/mnt/data/rlp/scratch
+RLP_KERNEL=/mnt/data/rlp/kernel/vmlinux-6.8.12-rlp3
+RLP_INITDISK=/var/lib/rlp/initdisk-rlp.ext4
+RLP_FC_BIN=/usr/local/bin/firecracker
+RLP_FCNS_BIN=/usr/local/bin/rlp-fcns
+RLP_SNAPSHOTS=1
+RLP_NETNS_NETLINK=1
+RLP_NETNS_POOL=6200
+RLP_VM_CONCURRENCY=512
+RLP_MAX_LIVE_VMS=20000
+RLP_RESERVE_PCT=95
+RLP_MEM_MIB_PER_CPU=8192
+RLP_TOOLBOX_WAIT_SEC=300
+RLP_BALLOON=0
+RLP_KSM=0
+RLP_BUILDER_IMAGE=off
+RLP_BLOCKMOUNT_ENABLED=0
+RLP_USAGE_SHIP_INTERVAL=0
+RLP_OTEL_DISABLED=1
+# bench: avoid spawn-timeout retry storms (#3212); the 3000 default fails slow-but-healthy VMs under burst
+RLP_FC_SOCK_WAIT_MS=30000
+RLP_TEMPLATE_BUILD_AFTER=1
+===proxy.env
+RLP_DB_URL=postgres://rlp:****@127.0.0.1:5439/rlplatform
+RLP_NATS_URL=nats://127.0.0.1:4222
+RLP_NATS_TOKEN****
+RLP_INTERNAL_TOKEN****
+RLP_API_URL=http://127.0.0.1:8088
+RLP_API_KEY****
+RLP_PROXY_LISTEN=0.0.0.0:9000
+RLP_SSH_LISTEN=127.0.0.1:2222
+RLP_SSH_HOST_KEY****
+RLP_REGION=phoenix-e6
+RLP_OTEL_DISABLED=1
+===regions.json
+{"macro_regions":[{"id":"phoenix-e6-cell","cell_id":"phoenix-e6-cell","name":"OCI Phoenix E6 bench cell","global_region_id":"us"}],
+ "regions":[{"id":"phoenix-e6","name":"OCI Phoenix E6","macro_region_id":"phoenix-e6-cell","is_default":true,"status":"active",
+   "auto_placement_enabled":true,"default_cpu_arch":"amd64","default_network_class":"standard","default_disk_class":"standard",
+   "toolbox_proxy_url":"http://127.0.0.1:9000/toolbox"}]}
+===sysctl
+# rlp bench cell. Default ARP table (1024) caps a host at ~1k sandboxes.
+net.ipv4.neigh.default.gc_thresh1 = 8192
+net.ipv4.neigh.default.gc_thresh2 = 32768
+net.ipv4.neigh.default.gc_thresh3 = 65536
+net.ipv6.neigh.default.gc_thresh1 = 8192
+net.ipv6.neigh.default.gc_thresh2 = 32768
+net.ipv6.neigh.default.gc_thresh3 = 65536
+net.netfilter.nf_conntrack_max = 1048576
+net.ipv4.tcp_max_syn_backlog = 65535
+vm.max_map_count = 1048576
+vm.nr_hugepages = 0
+fs.file-max = 4194304
+fs.inotify.max_user_instances = 65536
+kernel.numa_balancing = 0
+===udev
+# rlp bench: shadows /usr/lib/udev/rules.d/70-iscsi-network-interface.rules.
+# The stock rule forks net-interface-handler for EVERY net device, incl. thousands of sandbox veths.
+SUBSYSTEM=="net", KERNEL=="rlp*|veth*|tap*|fc*", GOTO="rlp_iscsi_end"
+SUBSYSTEM=="net", ACTION=="add", RUN+="/usr/lib/open-iscsi/net-interface-handler start"
+SUBSYSTEM=="net", ACTION=="remove", RUN+="/usr/lib/open-iscsi/net-interface-handler stop"
+LABEL="rlp_iscsi_end"
+===binaries
+d5f501e813a00e04f685f70555d585437d505d2de4b359fd80f4dd5d71f19e3c  /usr/local/bin/rlp-runner
+f7a0da7a419fa7b3e2123f6fbc97f56030fb24dab6176c5cdb46a2aef1b56073  /usr/local/bin/rlp-proxy
+b6d3c9173bf7fe9a0f7eadf4562bad02fc8a450c42179d2f0c95a1a7edb7ebca  /usr/local/bin/rlp-fcns
+2fd0171309af7e24cf8dafc8a6f921c1434c49b5f9349bb996b7ed0a4deb8aa7  /usr/local/bin/firecracker
+0ef16005663202b187abd824a05e8f1b9f47573a122817851dd5070587e9834a  /opt/rlp/rlp-api
+===host
+CPU(s):                                  384
+Model name:                              AMD EPYC 9J45 128-Core Processor
+Thread(s) per core:                      2
+Core(s) per socket:                      96
+Socket(s):                               2
+CPU(s) scaling MHz:                      60%
+NUMA node0 CPU(s):                       0-95,192-287
+NUMA node1 CPU(s):                       96-191,288-383
+Mem:            2267          69        2015           0         195        2198
+ext4   /dev/nvme0n1  6.9T
+6.17.0-1020-oracle
