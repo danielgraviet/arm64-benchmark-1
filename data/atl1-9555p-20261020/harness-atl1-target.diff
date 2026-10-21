@@ -1,0 +1,20 @@
+36a37
+>     "atl1": "http://127.0.0.1:9000/toolbox",
+50a52
+>     "atl1": "http://127.0.0.1:8088",
+81a84
+> ATL1_TARGET = "atl1"  # DigitalOcean/Paperspace atl1node853, EPYC 9555P (added 2026-10-16, same handling as epyc9575)
+91a95
+>         ATL1_TARGET,
+129c133
+<     if target == EPYC9575_TARGET:
+---
+>     if target in (EPYC9575_TARGET, ATL1_TARGET):
+304c308
+<     if target == EPYC9575_TARGET:
+---
+>     if target in (EPYC9575_TARGET, ATL1_TARGET):
+324c328
+<             target=EPYC9575_TARGET,
+---
+>             target=target,

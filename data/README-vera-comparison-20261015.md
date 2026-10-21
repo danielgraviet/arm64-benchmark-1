@@ -10,6 +10,7 @@ directory. Hosts were development benchmark cells, not production.
 | EPYC 9575F | AMD Zen 5, 1 × 64 cores, SMT2 (128 threads), 1,133 GiB | `vera-hq-cell-20261014/` (baselines + `epyc9575-*.tgz`) |
 | Turin (OCI `phoenix-e6`) | AMD EPYC 9J45, 2 × 96 cores, SMT2 (384 threads), 2,267 GiB | `phoenix-e6-cell-20261014/` |
 | Graviton5 (AWS m9gd) | Neoverse-V3, 192 cores, no SMT, 754 GiB | `graviton5-cell-20261014/` |
+| EPYC 9555P (Paperspace / DigitalOcean ATL1, added 2026-10-20) | AMD Zen 5, 1 × 64 cores, SMT2 (128 threads), 755 GiB | `atl1-9555p-20261020/` (same build as the 9575F, fixes ON) |
 
 ## Headline results
 
@@ -30,6 +31,11 @@ submission. Vera's host has two sockets; Graviton5 and the 9575F have one each.
 At a matched 64 sandboxes with zero failures on every host, completed passes in ~30 s were **≈ 134,000 (Vera)**,
 45,018 (Graviton5) and 22,503 (9575F).
 
+**EPYC 9555P (2026-10-20, fixes ON, byte-identical build to the 9575F):** agent throughput 7.81 jobs/s at 2,000
+sandboxes (job p50 248 s), the same as the 9575F. Idle-image startup p50 at a 1k burst is 0.97–1.03 s. With the agent
+image, 1k all-ready takes 8.2–8.5 s against the 9575F's 18.8–19.1 s; that gap is not explained yet. 0 failures in
+every run. See `atl1-9555p-20261020/BASELINE-EPYC9555P-FIXES-20261020.md`.
+
 ## Where to start
 
 | Question | Read |
@@ -39,6 +45,8 @@ At a matched 64 sandboxes with zero failures on every host, completed passes in 
 | Power + memory-bandwidth method and results | `vera-hq-cell-20261014/power-mem-20261015/RESULTS.md` |
 | Per-cell setup, config and findings | `<cell>/FINDINGS.md`, `<cell>/README.md`, `<cell>/RUNBOOK.md` |
 | Where create time actually goes, per step | `vera-hq-cell-20261014/CREATE-PATH-STEPS.md` |
+| The 9555P baseline, side by side with Vera and the 9575F | `atl1-9555p-20261020/BASELINE-EPYC9555P-FIXES-20261020.md` |
+| Network between nodes, to the internet and from sandboxes (Paperspace ATL1) | `atl1-network-20261020/RESULTS.md` |
 | Independent re-check of the published numbers | `gapfill-20261014/audit-power-memory.py` → `power-memory-audit-20261015.json` |
 
 ## Reproducing
@@ -46,7 +54,8 @@ At a matched 64 sandboxes with zero failures on every host, completed passes in 
 1. Bring a cell to the reference state: `scripts/host/bench-preflight.sh` must print `PREFLIGHT PASS` and
    `create_path_fixes ON`. Each cell's `scripts/` directory contains the exact setup scripts used.
 2. Startup / throughput: `mpfleet.py` (16 processes) and `main.py --benchmark agent` with the published recipe,
-   as recorded in each cell's `RUNBOOK.md`.
+   as recorded in each cell's `RUNBOOK.md`. `atl1-9555p-20261020/atl-suite.sh` runs the whole fixes-ON suite
+   (startup 1k/2k, ladders 176–704 and 2,000) in one go; set `T` and `BD` for another cell.
 3. Power and memory bandwidth: `scripts/power-mem/` (see its `README.md`).
 
 ## Reading the numbers safely
@@ -72,3 +81,4 @@ At a matched 64 sandboxes with zero failures on every host, completed passes in 
 | daytona/rlp#2459 | At ~8–10k live sandboxes the runner heartbeat starves and the lost-sweep orphans live VMs |
 | daytona/rlp#1554 | `gcc:14` guests panic on this build (unquoted ENV in guest init) — use `buildpack-deps:bookworm` |
 | daytona/rlp#767 | Arm64 clones keep the template's wall clock, so guest timestamps cannot be aligned with host telemetry |
+| daytona/rlp#3516 | On hosts whose public IP is a routed `/32` on `lo` (Paperspace ATL1), sandboxes get no internet: egress is masqueraded to the private bond address. The benchmarks don't need internet access, so their numbers are unaffected. |

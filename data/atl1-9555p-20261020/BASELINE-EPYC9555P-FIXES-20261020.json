@@ -1,0 +1,182 @@
+{
+ "host": "atl1node853.mgmt.atl1.paperspace.com (Paperspace ATL1, DigitalOcean; bare-metal HPE ProLiant DL325 Gen11), 1x AMD EPYC 9555P 64C/128T, 755 GiB, kernel 6.8.0-139-generic",
+ "build": {
+  "runner": "739fc73a116d",
+  "api": "93fa5e93bf20",
+  "firecracker": "2fd0171309af",
+  "guest_kernel": "a3ae79b93a20",
+  "initdisk": "4e59e8441b7a",
+  "note": "byte-identical to the EPYC 9575F baseline"
+ },
+ "fixes": "ON (initdisk=nofsync cgroup_pool=1400 neigh=1 backlog=4096)",
+ "date": "2026-10-20",
+ "startup": [
+  {
+   "count": 1000,
+   "image": "agent",
+   "rep": 1,
+   "ok": 1000,
+   "failed": 0,
+   "all_ready_s": 8.19,
+   "create_p50_s": 2.42,
+   "create_p95_s": 7.47,
+   "post_p50_s": 1.79
+  },
+  {
+   "count": 1000,
+   "image": "agent",
+   "rep": 2,
+   "ok": 1000,
+   "failed": 0,
+   "all_ready_s": 8.41,
+   "create_p50_s": 2.71,
+   "create_p95_s": 7.92,
+   "post_p50_s": 1.58
+  },
+  {
+   "count": 1000,
+   "image": "agent",
+   "rep": 3,
+   "ok": 1000,
+   "failed": 0,
+   "all_ready_s": 8.46,
+   "create_p50_s": 3.05,
+   "create_p95_s": 8.14,
+   "post_p50_s": 1.46
+  },
+  {
+   "count": 1000,
+   "image": "idle",
+   "rep": 1,
+   "ok": 1000,
+   "failed": 0,
+   "all_ready_s": 2.25,
+   "create_p50_s": 1.03,
+   "create_p95_s": 1.63,
+   "post_p50_s": 0.65
+  },
+  {
+   "count": 1000,
+   "image": "idle",
+   "rep": 2,
+   "ok": 1000,
+   "failed": 0,
+   "all_ready_s": 1.76,
+   "create_p50_s": 0.97,
+   "create_p95_s": 1.28,
+   "post_p50_s": 0.63
+  },
+  {
+   "count": 1000,
+   "image": "idle",
+   "rep": 3,
+   "ok": 1000,
+   "failed": 0,
+   "all_ready_s": 2.24,
+   "create_p50_s": 0.98,
+   "create_p95_s": 1.63,
+   "post_p50_s": 0.63
+  },
+  {
+   "count": 2000,
+   "image": "agent",
+   "rep": 1,
+   "ok": 2000,
+   "failed": 0,
+   "all_ready_s": 25.99,
+   "create_p50_s": 7.62,
+   "create_p95_s": 21.74,
+   "post_p50_s": 3.15
+  },
+  {
+   "count": 2000,
+   "image": "agent",
+   "rep": 2,
+   "ok": 2000,
+   "failed": 0,
+   "all_ready_s": 37.97,
+   "create_p50_s": 7.62,
+   "create_p95_s": 19.76,
+   "post_p50_s": 3.78
+  },
+  {
+   "count": 2000,
+   "image": "idle",
+   "rep": 1,
+   "ok": 2000,
+   "failed": 0,
+   "all_ready_s": 4.56,
+   "create_p50_s": 2.09,
+   "create_p95_s": 3.49,
+   "post_p50_s": 1.33
+  },
+  {
+   "count": 2000,
+   "image": "idle",
+   "rep": 2,
+   "ok": 2000,
+   "failed": 0,
+   "all_ready_s": 4.41,
+   "create_p50_s": 2.06,
+   "create_p95_s": 4.11,
+   "post_p50_s": 1.25
+  },
+  {
+   "count": 2000,
+   "image": "idle",
+   "rep": 3,
+   "ok": 2000,
+   "failed": 0,
+   "all_ready_s": 5.52,
+   "create_p50_s": 2.15,
+   "create_p95_s": 5.17,
+   "post_p50_s": 1.18
+  }
+ ],
+ "ladders": {
+  "ladder-176-704": [
+   {
+    "concurrency": 176,
+    "runs": 1408,
+    "failures": 0,
+    "throughput_per_sec": 7.82,
+    "p50_ms": 20391.1,
+    "p95_ms": 32678.0,
+    "p99_ms": 35157.5,
+    "max_ms": 38508.6
+   },
+   {
+    "concurrency": 352,
+    "runs": 2816,
+    "failures": 0,
+    "throughput_per_sec": 7.88,
+    "p50_ms": 41921.5,
+    "p95_ms": 67569.6,
+    "p99_ms": 74938.4,
+    "max_ms": 81319.7
+   },
+   {
+    "concurrency": 704,
+    "runs": 5632,
+    "failures": 0,
+    "throughput_per_sec": 7.68,
+    "p50_ms": 85309.0,
+    "p95_ms": 146624.4,
+    "p99_ms": 164714.8,
+    "max_ms": 188958.1
+   }
+  ],
+  "ladder-2000": [
+   {
+    "concurrency": 2000,
+    "runs": 16000,
+    "failures": 0,
+    "throughput_per_sec": 7.81,
+    "p50_ms": 247469.0,
+    "p95_ms": 341540.0,
+    "p99_ms": 404331.2,
+    "max_ms": 476571.9
+   }
+  ]
+ }
+}

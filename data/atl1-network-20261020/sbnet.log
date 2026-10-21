@@ -1,0 +1,21 @@
+kind=facts cpu=1 facts=nproc=1 mtu=1500 ip=10.255.0.2/30 egress=ip=<node853-public> colo=ATL
+kind=ping cpu=1 host=10.46.90.71 rtt=round-trip min/avg/max = 0.037/0.059/0.170 ms
+kind=ping cpu=1 host=1.1.1.1 rtt=round-trip min/avg/max = 0.646/0.703/0.781 ms
+kind=iperf cpu=1 path=node864-private flows=1 dir=sandbox->node gbps=40.58 retrans=5405
+kind=iperf cpu=1 path=node864-private flows=1 dir=node->sandbox gbps=21.24 retrans=2144
+kind=iperf cpu=1 path=node864-private flows=4 dir=sandbox->node gbps=60.51 retrans=215
+kind=iperf cpu=1 path=node864-private flows=4 dir=node->sandbox gbps=33.1 retrans=783
+kind=iperf cpu=1 path=node864-public flows=1 dir=sandbox->node gbps=37.85 retrans=2496
+kind=iperf cpu=1 path=node864-public flows=1 dir=node->sandbox gbps=22.15 retrans=1058
+kind=iperf cpu=1 path=node864-public flows=4 dir=sandbox->node gbps=57.47 retrans=0
+kind=iperf cpu=1 path=node864-public flows=4 dir=node->sandbox gbps=29.75 retrans=370
+kind=iperf cpu=1 path=internet-clouvider-atl flows=1 dir=sandbox->internet gbps=8.44 retrans=233 port=5201
+kind=iperf cpu=1 path=internet-clouvider-atl flows=8 dir=sandbox->internet gbps=8.69 retrans=4992 port=5202
+kind=iperf cpu=1 path=internet-clouvider-atl flows=1 dir=internet->sandbox gbps=3.76 retrans=685 port=5201
+kind=iperf cpu=1 path=internet-clouvider-atl flows=8 dir=internet->sandbox gbps=5.12 retrans=2130 port=5202
+kind=http-dl cpu=1 url=linode-atl-1GB http=200 gbps=1.17
+kind=iperf-many n=16 cpu=1 path=node864-private dir=sandboxes->node total_gbps=356.9 per_sandbox_min=11.64 per_sandbox_max=27.78 failed=0 errors=[]
+kind=iperf-many n=16 cpu=1 path=node864-private dir=node->sandboxes total_gbps=324.5 per_sandbox_min=16.77 per_sandbox_max=23.71 failed=0 errors=[]
+kind=iperf-many n=64 cpu=1 path=node864-private dir=sandboxes->node total_gbps=375.0 per_sandbox_min=3.05 per_sandbox_max=7.93 failed=0 errors=[]
+kind=iperf-many n=64 cpu=1 path=node864-private dir=node->sandboxes total_gbps=376.2 per_sandbox_min=2.38 per_sandbox_max=7.73 failed=0 errors=[]
+kind=done

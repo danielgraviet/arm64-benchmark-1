@@ -1,0 +1,4 @@
+Start: 2026-10-20T09:59:30+0000
+HOST: atl1node864                 Loss%   Snt   Last   Avg  Best  Wrst StDev
+  1.|-- ???                       100.0    20    0.0   0.0   0.0   0.0   0.0
+  2.|-- <node861-public>             0.0%    20    0.1   0.1   0.1   0.1   0.0

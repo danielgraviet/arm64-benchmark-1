@@ -1,0 +1,57 @@
+10:23:07 === node 853
+10:23:09   DL1 cloudflare-100M: 0.00 Gb/s (http 403, 0 MB in 0.0 s)
+10:23:18   DL1 linode-atl: 1.17 Gb/s (http 200, 1049 MB in 7.1 s)
+10:23:22   DL1 vultr-atl: 3.22 Gb/s (http 200, 1049 MB in 2.6 s)
+10:23:39   DL1 hetzner-ash: 1.54 Gb/s (http 200, 2886 MB in 15.0 s)
+10:23:48   DL1 linode-newark: 1.20 Gb/s (http 200, 1049 MB in 7.0 s)
+10:24:04   DL1 hetzner-hil: 0.33 Gb/s (http 200, 622 MB in 15.0 s)
+10:24:21   DL1 ovh-fr: 0.34 Gb/s (http 200, 631 MB in 15.0 s)
+10:24:38   DL1 hetzner-fsn: 0.25 Gb/s (http 200, 469 MB in 15.0 s)
+10:24:59   MULTI 4 servers x 8: ash-speed.hetzner.com=2.16 speedtest.atlanta.linode.com=3.36 speedtest.newark.linode.com=3.36 ga-us-ping.vultr.com=0.42 | total 9.29 Gb/s
+10:24:59 === node 864
+10:25:01   DL1 cloudflare-100M: 0.00 Gb/s (http 403, 0 MB in 0.1 s)
+10:25:10   DL1 linode-atl: 1.13 Gb/s (http 200, 1049 MB in 7.5 s)
+10:25:14   DL1 vultr-atl: 3.57 Gb/s (http 200, 1049 MB in 2.3 s)
+10:25:31   DL1 hetzner-ash: 1.55 Gb/s (http 200, 2902 MB in 15.0 s)
+10:25:41   DL1 linode-newark: 1.01 Gb/s (http 200, 1049 MB in 8.3 s)
+10:25:57   DL1 hetzner-hil: 0.33 Gb/s (http 200, 622 MB in 15.0 s)
+10:26:14   DL1 ovh-fr: 0.33 Gb/s (http 200, 617 MB in 15.0 s)
+10:26:31   DL1 hetzner-fsn: 0.26 Gb/s (http 200, 490 MB in 15.0 s)
+10:26:52   MULTI 4 servers x 8: ash-speed.hetzner.com=3.22 speedtest.atlanta.linode.com=3.36 speedtest.newark.linode.com=3.36 ga-us-ping.vultr.com=0.42 | total 10.35 Gb/s
+10:26:52 === node 861
+10:26:54   DL1 cloudflare-100M: 0.00 Gb/s (http 403, 0 MB in 0.0 s)
+10:27:03   DL1 linode-atl: 1.17 Gb/s (http 200, 1049 MB in 7.1 s)
+10:27:07   DL1 vultr-atl: 3.30 Gb/s (http 200, 1049 MB in 2.5 s)
+10:27:24   DL1 hetzner-ash: 1.06 Gb/s (http 200, 1995 MB in 15.0 s)
+10:27:32   DL1 linode-newark: 1.22 Gb/s (http 200, 1049 MB in 6.9 s)
+10:27:49   DL1 hetzner-hil: 0.33 Gb/s (http 200, 627 MB in 15.0 s)
+10:28:06   DL1 ovh-fr: 0.34 Gb/s (http 200, 631 MB in 15.0 s)
+10:28:22   DL1 hetzner-fsn: 0.25 Gb/s (http 200, 472 MB in 15.0 s)
+10:28:44   MULTI 4 servers x 8: ash-speed.hetzner.com=3.31 speedtest.atlanta.linode.com=3.36 speedtest.newark.linode.com=3.36 ga-us-ping.vultr.com=0.42 | total 10.44 Gb/s
+10:28:44 === node 865
+10:28:46   DL1 cloudflare-100M: 0.00 Gb/s (http 403, 0 MB in 0.0 s)
+10:28:54   DL1 linode-atl: 1.20 Gb/s (http 200, 1049 MB in 7.0 s)
+10:28:59   DL1 vultr-atl: 2.90 Gb/s (http 200, 1049 MB in 2.9 s)
+10:29:16   DL1 hetzner-ash: 1.02 Gb/s (http 200, 1910 MB in 15.0 s)
+10:29:24   DL1 linode-newark: 1.19 Gb/s (http 200, 1049 MB in 7.1 s)
+10:29:41   DL1 hetzner-hil: 0.33 Gb/s (http 200, 626 MB in 15.0 s)
+10:29:58   DL1 ovh-fr: 0.34 Gb/s (http 200, 635 MB in 15.0 s)
+10:30:14   DL1 hetzner-fsn: 0.26 Gb/s (http 200, 492 MB in 15.0 s)
+10:30:36   MULTI 4 servers x 8: ash-speed.hetzner.com=2.14 speedtest.atlanta.linode.com=3.36 speedtest.newark.linode.com=3.36 ga-us-ping.vultr.com=0.42 | total 9.27 Gb/s
+10:30:36 === node 857
+10:30:38   DL1 cloudflare-100M: 0.00 Gb/s (http 403, 0 MB in 0.0 s)
+10:30:46   DL1 linode-atl: 1.18 Gb/s (http 200, 1049 MB in 7.1 s)
+10:30:50   DL1 vultr-atl: 3.56 Gb/s (http 200, 1049 MB in 2.4 s)
+10:31:07   DL1 hetzner-ash: 1.04 Gb/s (http 200, 1950 MB in 15.0 s)
+10:31:16   DL1 linode-newark: 1.15 Gb/s (http 200, 1049 MB in 7.3 s)
+10:31:33   DL1 hetzner-hil: 0.33 Gb/s (http 200, 628 MB in 15.0 s)
+10:31:49   DL1 ovh-fr: 0.35 Gb/s (http 200, 654 MB in 15.0 s)
+10:32:06   DL1 hetzner-fsn: 0.25 Gb/s (http 200, 467 MB in 15.0 s)
+10:32:28   MULTI 4 servers x 8: ash-speed.hetzner.com=3.45 speedtest.atlanta.linode.com=3.36 speedtest.newark.linode.com=2.42 ga-us-ping.vultr.com=0.42 | total 9.64 Gb/s
+10:32:28 === all five nodes at once, 4 servers x 8 streams each
+10:32:50   ALL5 MULTI node 865: ash-speed.hetzner.com=3.23 speedtest.atlanta.linode.com=1.90 speedtest.newark.linode.com=1.81 ga-us-ping.vultr.com=0.42 | total 7.36 Gb/s
+10:32:50   ALL5 MULTI node 864: ash-speed.hetzner.com=2.25 speedtest.atlanta.linode.com=1.66 speedtest.newark.linode.com=1.60 ga-us-ping.vultr.com=0.42 | total 5.93 Gb/s
+10:32:50   ALL5 MULTI node 857: ash-speed.hetzner.com=2.29 speedtest.atlanta.linode.com=1.74 speedtest.newark.linode.com=1.64 ga-us-ping.vultr.com=0.00 | total 5.68 Gb/s
+10:32:50   ALL5 MULTI node 861: ash-speed.hetzner.com=2.75 speedtest.atlanta.linode.com=1.64 speedtest.newark.linode.com=1.80 ga-us-ping.vultr.com=0.42 | total 6.61 Gb/s
+10:32:50   ALL5 MULTI node 853: ash-speed.hetzner.com=3.19 speedtest.atlanta.linode.com=2.18 speedtest.newark.linode.com=2.01 ga-us-ping.vultr.com=0.42 | total 7.81 Gb/s
+10:32:50 DONE -> /tmp/opencode/net/inet2-20261020_102307

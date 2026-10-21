@@ -1,0 +1,21 @@
+{"kind": "facts", "cpu": 1, "facts": "nproc=1 mtu=1500 ip=10.255.0.2/30 egress=ip=<node853-public> colo=ATL", "t": 1792493392.0963397}
+{"kind": "ping", "cpu": 1, "host": "10.46.90.71", "rtt": "round-trip min/avg/max = 0.037/0.059/0.170 ms", "t": 1792493401.8989465}
+{"kind": "ping", "cpu": 1, "host": "1.1.1.1", "rtt": "round-trip min/avg/max = 0.646/0.703/0.781 ms", "t": 1792493411.7022536}
+{"kind": "iperf", "cpu": 1, "path": "node864-private", "flows": 1, "dir": "sandbox->node", "gbps": 40.58, "retrans": 5405, "t": 1792493423.7076495}
+{"kind": "iperf", "cpu": 1, "path": "node864-private", "flows": 1, "dir": "node->sandbox", "gbps": 21.24, "retrans": 2144, "t": 1792493435.713172}
+{"kind": "iperf", "cpu": 1, "path": "node864-private", "flows": 4, "dir": "sandbox->node", "gbps": 60.51, "retrans": 215, "t": 1792493447.7203624}
+{"kind": "iperf", "cpu": 1, "path": "node864-private", "flows": 4, "dir": "node->sandbox", "gbps": 33.1, "retrans": 783, "t": 1792493459.7299998}
+{"kind": "iperf", "cpu": 1, "path": "node864-public", "flows": 1, "dir": "sandbox->node", "gbps": 37.85, "retrans": 2496, "t": 1792493471.7353115}
+{"kind": "iperf", "cpu": 1, "path": "node864-public", "flows": 1, "dir": "node->sandbox", "gbps": 22.15, "retrans": 1058, "t": 1792493483.7403114}
+{"kind": "iperf", "cpu": 1, "path": "node864-public", "flows": 4, "dir": "sandbox->node", "gbps": 57.47, "retrans": 0, "t": 1792493495.7475538}
+{"kind": "iperf", "cpu": 1, "path": "node864-public", "flows": 4, "dir": "node->sandbox", "gbps": 29.75, "retrans": 370, "t": 1792493507.7572334}
+{"kind": "iperf", "cpu": 1, "path": "internet-clouvider-atl", "flows": 1, "dir": "sandbox->internet", "gbps": 8.44, "retrans": 233, "port": 5201, "t": 1792493519.849865}
+{"kind": "iperf", "cpu": 1, "path": "internet-clouvider-atl", "flows": 8, "dir": "sandbox->internet", "gbps": 8.69, "retrans": 4992, "port": 5202, "t": 1792493531.9501543}
+{"kind": "iperf", "cpu": 1, "path": "internet-clouvider-atl", "flows": 1, "dir": "internet->sandbox", "gbps": 3.76, "retrans": 685, "port": 5201, "t": 1792493544.042011}
+{"kind": "iperf", "cpu": 1, "path": "internet-clouvider-atl", "flows": 8, "dir": "internet->sandbox", "gbps": 5.12, "retrans": 2130, "port": 5202, "t": 1792493556.1403413}
+{"kind": "http-dl", "cpu": 1, "url": "linode-atl-1GB", "http": "200", "gbps": 1.17, "t": 1792493563.3236134}
+{"kind": "iperf-many", "n": 16, "cpu": 1, "path": "node864-private", "dir": "sandboxes->node", "total_gbps": 356.9, "per_sandbox_min": 11.64, "per_sandbox_max": 27.78, "failed": 0, "errors": [], "t": 1792493582.7939162}
+{"kind": "iperf-many", "n": 16, "cpu": 1, "path": "node864-private", "dir": "node->sandboxes", "total_gbps": 324.5, "per_sandbox_min": 16.77, "per_sandbox_max": 23.71, "failed": 0, "errors": [], "t": 1792493600.8088856}
+{"kind": "iperf-many", "n": 64, "cpu": 1, "path": "node864-private", "dir": "sandboxes->node", "total_gbps": 375.0, "per_sandbox_min": 3.05, "per_sandbox_max": 7.93, "failed": 0, "errors": [], "t": 1792493620.8449209}
+{"kind": "iperf-many", "n": 64, "cpu": 1, "path": "node864-private", "dir": "node->sandboxes", "total_gbps": 376.2, "per_sandbox_min": 2.38, "per_sandbox_max": 7.73, "failed": 0, "errors": [], "t": 1792493638.8900788}
+{"kind": "done", "t": 1792493639.070337}

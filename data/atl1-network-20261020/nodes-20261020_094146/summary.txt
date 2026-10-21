@@ -1,0 +1,58 @@
+09:41:46 == 1. latency, private network, full mesh
+09:42:11 LAT 853->864 ping min/avg/max/mdev(ms)= 0.011/0.012/0.101/0.003 ms | tcp_rr min,p50,p99,mean(us),trans/s=12,13,17,13.62,73027.140
+09:42:35 LAT 853->861 ping min/avg/max/mdev(ms)= 0.011/0.014/0.148/0.004 ms | tcp_rr min,p50,p99,mean(us),trans/s=12,13,17,13.70,72594.456
+09:43:00 LAT 853->865 ping min/avg/max/mdev(ms)= 0.011/0.013/0.122/0.005 ms | tcp_rr min,p50,p99,mean(us),trans/s=12,14,21,14.85,66985.779
+09:43:24 LAT 853->857 ping min/avg/max/mdev(ms)= 0.011/0.012/0.138/0.004 ms | tcp_rr min,p50,p99,mean(us),trans/s=13,15,18,15.24,65285.182
+09:43:48 LAT 864->853 ping min/avg/max/mdev(ms)= 0.011/0.013/0.115/0.004 ms | tcp_rr min,p50,p99,mean(us),trans/s=12,13,17,13.52,73535.132
+09:44:12 LAT 864->861 ping min/avg/max/mdev(ms)= 0.012/0.013/0.121/0.003 ms | tcp_rr min,p50,p99,mean(us),trans/s=11,13,17,13.21,75254.921
+09:44:37 LAT 864->865 ping min/avg/max/mdev(ms)= 0.013/0.015/0.139/0.004 ms | tcp_rr min,p50,p99,mean(us),trans/s=12,14,20,13.98,71125.317
+09:45:01 LAT 864->857 ping min/avg/max/mdev(ms)= 0.011/0.012/0.106/0.003 ms | tcp_rr min,p50,p99,mean(us),trans/s=11,13,17,13.04,76236.040
+09:45:25 LAT 861->853 ping min/avg/max/mdev(ms)= 0.011/0.013/0.096/0.003 ms | tcp_rr min,p50,p99,mean(us),trans/s=12,14,18,14.00,71059.831
+09:45:50 LAT 861->864 ping min/avg/max/mdev(ms)= 0.011/0.012/0.076/0.002 ms | tcp_rr min,p50,p99,mean(us),trans/s=12,13,19,13.43,74027.316
+09:46:14 LAT 861->865 ping min/avg/max/mdev(ms)= 0.013/0.014/0.132/0.003 ms | tcp_rr min,p50,p99,mean(us),trans/s=12,13,17,13.36,74419.339
+09:46:38 LAT 861->857 ping min/avg/max/mdev(ms)= 0.011/0.012/0.122/0.003 ms | tcp_rr min,p50,p99,mean(us),trans/s=12,13,17,13.48,73770.052
+09:47:03 LAT 865->853 ping min/avg/max/mdev(ms)= 0.011/0.012/0.068/0.002 ms | tcp_rr min,p50,p99,mean(us),trans/s=12,13,17,13.56,73368.653
+09:47:27 LAT 865->864 ping min/avg/max/mdev(ms)= 0.011/0.011/0.051/0.001 ms | tcp_rr min,p50,p99,mean(us),trans/s=11,13,18,13.22,75220.228
+09:47:51 LAT 865->861 ping min/avg/max/mdev(ms)= 0.012/0.013/0.069/0.002 ms | tcp_rr min,p50,p99,mean(us),trans/s=11,13,17,13.25,75063.021
+09:48:15 LAT 865->857 ping min/avg/max/mdev(ms)= 0.011/0.012/0.097/0.003 ms | tcp_rr min,p50,p99,mean(us),trans/s=12,13,90,17.50,56918.748
+09:48:40 LAT 857->853 ping min/avg/max/mdev(ms)= 0.011/0.012/0.107/0.003 ms | tcp_rr min,p50,p99,mean(us),trans/s=12,14,18,13.96,71270.803
+09:49:04 LAT 857->864 ping min/avg/max/mdev(ms)= 0.010/0.011/0.054/0.001 ms | tcp_rr min,p50,p99,mean(us),trans/s=11,13,58,14.99,66388.175
+09:49:28 LAT 857->861 ping min/avg/max/mdev(ms)= 0.011/0.012/0.041/0.001 ms | tcp_rr min,p50,p99,mean(us),trans/s=12,14,18,14.44,68868.915
+09:49:53 LAT 857->865 ping min/avg/max/mdev(ms)= 0.011/0.013/0.075/0.002 ms | tcp_rr min,p50,p99,mean(us),trans/s=12,13,17,13.46,73905.471
+09:49:55 == 2. throughput, private network
+09:50:14 TPUT priv-864-861-f1 flows=1: 34.3 Gb/s retrans=10403
+09:50:32 TPUT priv-861-864-f1 flows=1: 37.1 Gb/s retrans=16322
+09:50:51 TPUT priv-864-861-f8 flows=8: 280.0 Gb/s retrans=83121
+09:51:10 TPUT priv-861-864-f8 flows=8: 276.2 Gb/s retrans=91305
+09:51:28 TPUT priv-864-861-f64 flows=64: 374.0 Gb/s retrans=70
+09:51:47 TPUT priv-861-864-f64 flows=64: 368.7 Gb/s retrans=0
+09:52:06 TPUT mesh-853-864-f8 flows=8: 263.0 Gb/s retrans=88969
+09:52:24 TPUT mesh-853-861-f8 flows=8: 281.6 Gb/s retrans=87707
+09:52:43 TPUT mesh-853-865-f8 flows=8: 257.0 Gb/s retrans=194829
+09:53:02 TPUT mesh-853-857-f8 flows=8: 263.3 Gb/s retrans=49865
+09:53:21 TPUT mesh-864-853-f8 flows=8: 228.0 Gb/s retrans=57344
+09:53:39 TPUT mesh-864-861-f8 flows=8: 294.1 Gb/s retrans=68732
+09:53:58 TPUT mesh-864-865-f8 flows=8: 313.8 Gb/s retrans=32947
+09:54:17 TPUT mesh-864-857-f8 flows=8: 308.3 Gb/s retrans=78060
+09:54:35 TPUT mesh-861-853-f8 flows=8: 265.4 Gb/s retrans=81297
+09:54:54 TPUT mesh-861-864-f8 flows=8: 224.5 Gb/s retrans=23356
+09:55:13 TPUT mesh-861-865-f8 flows=8: 279.9 Gb/s retrans=67321
+09:55:31 TPUT mesh-861-857-f8 flows=8: 295.6 Gb/s retrans=89548
+09:55:50 TPUT mesh-865-853-f8 flows=8: 215.7 Gb/s retrans=11034
+09:56:09 TPUT mesh-865-864-f8 flows=8: 243.4 Gb/s retrans=28419
+09:56:27 TPUT mesh-865-861-f8 flows=8: 295.8 Gb/s retrans=80429
+09:56:46 TPUT mesh-865-857-f8 flows=8: 287.7 Gb/s retrans=85766
+09:57:05 TPUT mesh-857-853-f8 flows=8: 237.8 Gb/s retrans=71444
+09:57:24 TPUT mesh-857-864-f8 flows=8: 302.1 Gb/s retrans=131589
+09:57:42 TPUT mesh-857-861-f8 flows=8: 291.7 Gb/s retrans=92637
+09:58:01 TPUT mesh-857-865-f8 flows=8: 260.6 Gb/s retrans=35846
+09:58:01 == 3. throughput, public addresses
+09:58:20 TPUT pub-864-861-f1 flows=1: 39.8 Gb/s retrans=4165
+09:58:38 TPUT pub-861-864-f1 flows=1: 40.5 Gb/s retrans=4500
+09:58:57 TPUT pub-864-861-f64 flows=64: 374.0 Gb/s retrans=23674
+09:59:16 TPUT pub-861-864-f64 flows=64: 375.9 Gb/s retrans=25521
+09:59:28 LAT public 864->861 ping= 0.041/0.045/0.113/0.007 ms
+09:59:55 == 4. two disjoint pairs at once, 64 flows each
+10:00:14 TPUT pair2-864-861 flows=64: 376.4 Gb/s retrans=1844
+10:00:14 TPUT pair2-865-857 flows=64: 371.7 Gb/s retrans=0
+10:00:16 DONE -> /tmp/opencode/net/nodes-20261020_094146
