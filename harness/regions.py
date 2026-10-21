@@ -49,6 +49,8 @@ RLP_TARGET_TOOLBOX: dict[str, str] = {
     "epyc9575": os.environ.get(
         "EPYC9575_RLP_TOOLBOX_URL", "http://127.0.0.1:9000/toolbox"
     ),
+    # atl1: Paperspace (DigitalOcean) ATL1 bare-metal node atl1node853, 1 x EPYC 9555P.
+    "atl1": os.environ.get("ATL1_RLP_TOOLBOX_URL", "http://127.0.0.1:9000/toolbox"),
     "redswitches": "https://toolbox.redswitches.rlp.trydaytona.com/toolbox",
     # digitalocean: single-host DO droplet cell, EPYC 9575F (Zen 5 / Turin).
     "digitalocean": os.environ.get(
@@ -67,6 +69,7 @@ RLP_TARGET_API: dict[str, str] = {
     "phoenix-e6": os.environ.get("PHOENIX_E6_RLP_API_URL", "http://127.0.0.1:8088"),
     "graviton5": os.environ.get("G5_RLP_API_URL", "http://127.0.0.1:8088"),
     "epyc9575": os.environ.get("EPYC9575_RLP_API_URL", "http://127.0.0.1:8088"),
+    "atl1": os.environ.get("ATL1_RLP_API_URL", "http://127.0.0.1:8088"),
 }
 
 ARM64_TARGETS = frozenset({"arm64-test-1", "vera"})
@@ -97,6 +100,7 @@ REDSWITCHES_TARGET = "redswitches"
 EPYC9755_TARGET = "epyc9755"
 EPYC9575_TARGET = "epyc9575"
 DO_TARGET = "digitalocean"
+ATL1_TARGET = "atl1"
 
 # Cells that boot Docker Hub images (no native NFS snap in that region).
 REGISTRY_BOOT_TARGETS = frozenset(
@@ -108,6 +112,7 @@ REGISTRY_BOOT_TARGETS = frozenset(
         EPYC9755_TARGET,
         EPYC9575_TARGET,
         DO_TARGET,
+        ATL1_TARGET,
     }
 )
 
@@ -157,6 +162,10 @@ def resolve_rlp_toolbox_url(target: str | None, toolbox_url: str | None) -> str 
             "REDSWITCHES_RLP_TOOLBOX_URL",
             "RLP_TOOLBOX_URL",
         )
+        if env_tb:
+            return env_tb
+    if target == ATL1_TARGET:
+        env_tb = _env_first("ATL1_RLP_TOOLBOX_URL", "RLP_TOOLBOX_URL")
         if env_tb:
             return env_tb
     if target == DO_TARGET:
@@ -225,7 +234,7 @@ def resolve_rlp_client_config(
     ``REDSWITCHES_RLP_API_URL`` / ``RS_API`` and key ``REDSWITCHES_RLP_API_KEY``
     / ``RLP_API_KEY`` / ``RS_KEY``). On-box 9755, prefer ``--target epyc9755``.
 
-    For ``epyc9755`` / ``epyc9575`` / ``phoenix-e6``, pin localhost API +
+    For ``epyc9755`` / ``epyc9575`` / ``atl1`` / ``phoenix-e6``, pin localhost API +
     toolbox and use the cell bench key (``RLP_API_KEY``, ``dtn_`` prefix after
     the 2026-09 rotate).
     """
@@ -348,6 +357,21 @@ def resolve_rlp_client_config(
             api_key=api_key,
             toolbox_url=resolved_toolbox,
             target=EPYC9575_TARGET,
+            region_routing=False,
+        )
+
+    if target == ATL1_TARGET:
+        api_url = _env_first("ATL1_RLP_API_URL", "RLP_API_URL") or RLP_TARGET_API[ATL1_TARGET]
+        api_key = _env_first("ATL1_RLP_API_KEY", "RLP_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "RLP_API_KEY is required for --target atl1 (cell bench key, dtn_ prefix)"
+            )
+        return _daytona_config(
+            api_url=api_url,
+            api_key=api_key,
+            toolbox_url=resolved_toolbox,
+            target=ATL1_TARGET,
             region_routing=False,
         )
 

@@ -68,6 +68,9 @@ def result_series_name(
             base = "rlp-phoenix-e6"
         elif target == "digitalocean":
             base = "rlp-digitalocean"
+        elif target == "atl1":
+            # Paperspace (DigitalOcean) ATL1 node 853, EPYC 9555P.
+            base = "rlp-atl1-9555p"
         elif target == "phoenix-e6":
             base = "rlp-phoenix-e6"
         elif target == "graviton5":

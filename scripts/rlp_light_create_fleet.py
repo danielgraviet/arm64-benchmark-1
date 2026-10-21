@@ -258,7 +258,7 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument(
         "--target",
-        choices=("vera", "redswitches", "epyc9755", "epyc9575"),
+        choices=("vera", "redswitches", "epyc9755", "epyc9575", "atl1"),
         required=True,
     )
     p.add_argument("--count", type=int, default=2000)
