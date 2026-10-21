@@ -1,0 +1,25 @@
+harness/paths.py
+  s_5fa36428907df3::t_cf680dcfff5a7c 71-73
+harness/regions.py
+  s_5fa36428907df3::t_18b9f6475a72a7 52-53,72,103,115,167-170,237,363-377
+scripts/rlp_light_create_fleet.py
+  s_5fa36428907df3::t_ed0e0e67387e24 261
+tests/test_rlp_vera_target.py
+  s_5fa36428907df3::t_86f72d39c1035c 49-53,79,222-247,271-273
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fc6d6ad40173db8b1cd820b7d93890e2a9a6452d",
+  "prompts": {},
+  "sessions": {
+    "s_5fa36428907df3": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fa3c61e74ffeDTVau8vzjc33Tp",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Vedran Jukic <vedran.jukic@gmail.com>"
+    }
+  }
+}
