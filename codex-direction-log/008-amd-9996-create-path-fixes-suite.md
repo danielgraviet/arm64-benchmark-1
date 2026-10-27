@@ -4,6 +4,23 @@ You are Codex on the AMD vendor box (`daytonaio@165.204.53.121`, clone `~/arm64-
 
 Playbook: [`tickets/amd-codex-host.md`](../tickets/amd-codex-host.md). Pack: [`amd/`](../amd/). Target: `--target epyc9996`.
 
+### HARD GATE — host only, abort if sandboxed
+
+Run this direction only as user `daytonaio` on the DUT, inside tmux session `codex`, with a **host** Codex process (not a container / “no new privileges” sandbox / Cursor cloud sandbox).
+
+Before doing anything else:
+
+```bash
+id -un                                    # must be daytonaio
+hostname                                  # AMD vendor box, not a sandbox hostname
+sudo -n true && echo sudo=ok              # must print sudo=ok
+test -e /dev/kvm && echo kvm=yes
+test -w .git/HEAD && echo git=writable
+curl -fsS -m 2 http://127.0.0.1:8088/health || echo 'api not up yet (ok before ./o start)'
+```
+
+If `sudo` says **no new privileges**, or `.git` is read-only, or you are not `daytonaio` on the DUT: **stop immediately**. Do not patch binaries, do not touch systemd, do not run benchmarks. Tell the human: start Codex on the host in `tmux attach -t codex` (see ticket). Leave October JSONL untouched.
+
 ## Goal (today)
 
 Rebuild **harness PR #2** patched runner/api (not upstream lbrecic PRs), turn create-path fixes **ON**, pin NUMA node 0, then run the methodology suite comparable to Vera / 9575F / 9555P `BASELINE-*-FIXES-*` files.
