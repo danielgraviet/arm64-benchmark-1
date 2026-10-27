@@ -4,22 +4,37 @@ You are Codex on the AMD vendor box (`daytonaio@165.204.53.121`, clone `~/arm64-
 
 Playbook: [`tickets/amd-codex-host.md`](../tickets/amd-codex-host.md). Pack: [`amd/`](../amd/). Target: `--target epyc9996`.
 
-### HARD GATE — host only, abort if sandboxed
+### HARD GATE — host Codex with full shell access
 
-Run this direction only as user `daytonaio` on the DUT, inside tmux session `codex`, with a **host** Codex process (not a container / “no new privileges” sandbox / Cursor cloud sandbox).
+Run this only as `daytonaio` on the DUT (`nigeria-5253-os`), inside tmux `codex`. Cursor Mac / Cursor cloud / Codex **workspace-write** shell sandbox will fail this gate — that is expected.
 
-Before doing anything else:
+Codex on this box must execute shells with **`sandbox_mode = danger-full-access`**. Default Codex sandbox blocks `sudo` and `127.0.0.1:8088` even when the TUI is on the DUT.
+
+Start (or restart) Codex like this:
+
+```bash
+cd ~/arm64-benchmark-1
+export PATH="$HOME/.local/bin:$PATH"
+# preferred: persist in ~/.codex/config.toml then:
+codex -s danger-full-access
+# equivalent one-shot:
+# codex --sandbox danger-full-access
+```
+
+Before doing anything else in-session:
 
 ```bash
 id -un                                    # must be daytonaio
-hostname                                  # AMD vendor box, not a sandbox hostname
+hostname                                  # nigeria-5253-os (or this vendor hostname)
 sudo -n true && echo sudo=ok              # must print sudo=ok
 test -e /dev/kvm && echo kvm=yes
 test -w .git/HEAD && echo git=writable
 curl -fsS -m 2 http://127.0.0.1:8088/health || echo 'api not up yet (ok before ./o start)'
 ```
 
-If `sudo` says **no new privileges**, or `.git` is read-only, or you are not `daytonaio` on the DUT: **stop immediately**. Do not patch binaries, do not touch systemd, do not run benchmarks. Tell the human: start Codex on the host in `tmux attach -t codex` (see ticket). Leave October JSONL untouched.
+If `sudo` says **no new privileges**: you are in Codex’s shell sandbox. **Stop.** Tell the human to quit this Codex TUI and relaunch with `-s danger-full-access` (config should already set that). Do not patch binaries, do not touch systemd, do not run benchmarks. Leave October JSONL untouched.
+
+If you are not `daytonaio` on this host: same stop.
 
 ## Goal (today)
 
