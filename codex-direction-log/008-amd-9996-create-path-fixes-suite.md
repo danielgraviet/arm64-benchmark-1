@@ -87,26 +87,32 @@ sudo install -m0755 scripts/host/bench-preflight.sh /usr/local/bin/bench-preflig
 
 ## 1) Build patched binaries (PR #2 patches only)
 
-Source pin: `daytona/rlp` **`f0611fa13`**, then the harness patches under `data/graviton5-cell-20261014/patches/`. Do **not** apply upstream PRs #3454 / #3366 / #3370 / #3261 / #3269.
+Source pin: **`daytona/rlp`** (private; not `daytonaio/rlp`) at **`f0611fa13`**, then harness patches under `data/graviton5-cell-20261014/patches/`. Do **not** apply upstream PRs #3454 / #3366 / #3370 / #3261 / #3269.
+
+Note: `~/rlp` on this cell is `danielgraviet/rlp-bench-pin` (NVIDIA pin). It does **not** contain `f0611fa13`. Do not build fixes from it.
+
+**Preferred (already staged by Mac):** if `~/rlp-build/src-fixes/.bench-source-sha` reads `f0611fa1385c7c64a258724ef45fb5cfff04fac8`, skip clone and go straight to apply + build.
 
 ```bash
 PATCHES=~/arm64-benchmark-1/data/graviton5-cell-20261014/patches
 B=$HOME/rlp-build
-rm -rf "$B/src-fixes"
-mkdir -p "$B/src-fixes" "$B/out-fixes" "$B/logs"
+mkdir -p "$B/out-fixes" "$B/logs"
 
-# Prefer an existing ~/rlp clone; otherwise clone.
-if [[ -d $HOME/rlp/.git ]]; then
-  git -C "$HOME/rlp" fetch --all --tags
-  git -C "$HOME/rlp" worktree remove --force "$B/src-fixes" 2>/dev/null || true
-  rm -rf "$B/src-fixes"
-  git -C "$HOME/rlp" worktree add --detach "$B/src-fixes" f0611fa13
+if [[ -f $B/src-fixes/.bench-source-sha ]] \
+  && grep -qx 'f0611fa1385c7c64a258724ef45fb5cfff04fac8' "$B/src-fixes/.bench-source-sha"; then
+  echo "using staged src-fixes $(cat "$B/src-fixes/.bench-source-sha")"
 else
-  git clone https://github.com/daytonaio/rlp.git "$B/src-fixes"
+  # Needs GH auth (gh auth status / GH_TOKEN in ~/arm64-benchmark-1/.env).
+  set -a; . ~/arm64-benchmark-1/.env; set +a
+  rm -rf "$B/src-fixes"
+  git clone https://github.com/daytona/rlp.git "$B/src-fixes"
   git -C "$B/src-fixes" checkout f0611fa13
 fi
 
 cd "$B/src-fixes"
+# Fresh apply if resuming: reset hard to the staged root commit first if needed
+git am --abort 2>/dev/null || true
+git checkout -- . 2>/dev/null || true
 git am "$PATCHES"/bench-build/0*.patch
 git apply "$PATCHES"/bench-build/zz-uncommitted-working-tree.diff
 git apply "$PATCHES"/api-backlog.diff
